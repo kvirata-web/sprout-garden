@@ -3187,34 +3187,35 @@ export default function SproutAIGarden() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError]   = useState("");
 
-  const loadOrCreateProfile = async (user) => {
-    const domain  = user.email.split("@")[1];
-    const country = COUNTRY_MAP[domain];
-    const { data: existing } = await supabase
-      .from("profiles").select("*").eq("id", user.id).single();
-    if (existing) {
-      return { email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener };
-    }
-    const displayName = user.email.split("@")[0];
-    await supabase.from("profiles").insert({ id: user.id, email: user.email, display_name: displayName, country, is_gardener: false });
-    return { email: user.email, displayName, country, isGardener: false };
-  };
-
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const profile = await loadOrCreateProfile(session.user);
-        setAuthUser(profile);
-      }
-      setAuthLoading(false);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        const profile = await loadOrCreateProfile(session.user);
-        setAuthUser(profile);
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
         setAuthUser(null);
+        setAuthLoading(false);
+        return;
       }
+
+      // Immediately unblock the UI using session data
+      const domain      = session.user.email.split("@")[1];
+      const country     = COUNTRY_MAP[domain] || "PH";
+      const displayName = session.user.email.split("@")[0];
+      const fallback    = { email: session.user.email, displayName, country, isGardener: false };
+      setAuthUser(fallback);
+      setAuthLoading(false);
+
+      // Then sync the real profile from DB in the background
+      supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
+        .then(({ data: existing }) => {
+          if (existing) {
+            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener });
+          } else {
+            supabase.from("profiles").insert({
+              id: session.user.id, email: session.user.email,
+              display_name: displayName, country, is_gardener: false,
+            }).catch(e => console.warn("Profile insert error:", e));
+          }
+        })
+        .catch(e => console.warn("Profile select error:", e));
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -3425,9 +3426,6 @@ export default function SproutAIGarden() {
 
       {profileModal==="profile"&&<ProfileModal authUser={authUser} projects={projects} wishes={wishes} onClose={()=>setProfileModal(null)}/>}
       {profileModal==="about"&&<AboutModal onClose={()=>setProfileModal(null)}/>}
-      {countryPrompt&&(
-        <FirstTimeCountryModal onSelect={c=>{setAuthUser(u=>({...u,country:c}));setCountryPrompt(false);}}/>
-      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
