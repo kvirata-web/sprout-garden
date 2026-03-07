@@ -961,26 +961,33 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject}) => {
 // ── AI Features ───────────────────────────────────────────────────────────────
 
 // AI Project Summarizer — calls Claude API to generate a clean description
+async function callEdgeFunction(name, body) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session?.access_token}`,
+      "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} from ${name}`);
+  return res.json();
+}
+
 async function generateProjectSummary({name, builtBy, builtFor, capability, problemSpace, dataSource, impact}) {
-  try {
-    const { data, error } = await supabase.functions.invoke("summarize", {
-      body: { name, builtBy, builtFor, capability, problemSpace, dataSource, impact },
-    });
-    if (error) { console.error("summarize:", error); return null; }
-    return data?.text || null;
-  } catch(e) {
-    return null;
-  }
+  const data = await callEdgeFunction("summarize", { name, builtBy, builtFor, capability, problemSpace, dataSource, impact });
+  if (!data?.text) throw new Error("No text returned from function");
+  return data.text;
 }
 
 // AI Duplicate Detector — calls Supabase edge function with pre-filtered candidates
 async function detectDuplicates(newProject, candidates) {
   if (!candidates.length) return [];
   try {
-    const { data, error } = await supabase.functions.invoke("check-duplicates", {
-      body: { newProject, candidates },
-    });
-    if (error) { console.error("check-duplicates:", error); return []; }
+    const data = await callEdgeFunction("check-duplicates", { newProject, candidates });
     return data?.overlaps || [];
   } catch(e) {
     return [];
@@ -2367,6 +2374,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   // AI states
   const [aiSummarizing, setAiSummarizing] = useState(false);
   const [aiSummaryDone, setAiSummaryDone] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState(null);
   const [aiChecking, setAiChecking] = useState(false);
   const [aiOverlaps, setAiOverlaps] = useState(null); // null=unchecked, []=none found, [...]=overlaps
   const [aiOverlapChecked, setAiOverlapChecked] = useState(false);
@@ -2384,10 +2392,14 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   const handleSummarize = async () => {
     if (!form.name.trim()) return;
     setAiSummarizing(true);
-    const summary = await generateProjectSummary(form);
-    if (summary) {
+    setAiSummaryError(null);
+    try {
+      const summary = await generateProjectSummary(form);
       setForm(p=>({...p, description:summary}));
       setAiSummaryDone(true);
+    } catch(e) {
+      console.error("summarize error:", e);
+      setAiSummaryError(e?.message || "Something went wrong. Check the browser console.");
     }
     setAiSummarizing(false);
   };
@@ -2447,41 +2459,6 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
 
         <ModalField label="Project Name *" k="name" ph="e.g. SmartSort AI" form={form} onChange={setField}/>
 
-        {/* Description + AI Summarizer */}
-        <div style={{marginBottom:12}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-            <label style={{fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5}}>Description</label>
-            <button
-              onClick={handleSummarize}
-              disabled={!form.name.trim()||aiSummarizing}
-              style={{
-                display:"flex",alignItems:"center",gap:5,
-                padding:"3px 10px",borderRadius:DS.radius.full,
-                border:"1.5px solid "+(aiSummaryDone?C.kangkong400:C.ubas400),
-                background:aiSummaryDone?C.kangkong50:C.ubas100,
-                color:aiSummaryDone?C.kangkong600:C.ubas500,
-                fontFamily:FF,fontSize:11,fontWeight:700,cursor:form.name.trim()?"pointer":"not-allowed",
-                opacity:form.name.trim()?1:0.5,transition:"all 0.15s",
-              }}
-            >
-              {aiSummarizing
-                ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:11}}>⟳</span> Writing…</>
-                : aiSummaryDone
-                ? <><IcoCheck size={11} color={C.kangkong500}/> AI wrote this</>
-                : <>✦ Write with AI</>
-              }
-            </button>
-          </div>
-          <textarea rows={3} value={form.description} onChange={e=>setField("description",e.target.value)}
-            placeholder="Describe what this project does, the problem it solves, and who benefits…"
-            style={{...modalInputStyle,resize:"vertical",lineHeight:1.6}}/>
-          {aiSummaryDone&&(
-            <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
-              <IcoCheck size={11} color={C.kangkong500}/> AI-generated — feel free to edit
-            </div>
-          )}
-        </div>
-
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <ModalField label="Built By (your team)" k="builtBy" type="select" opts={DEPTS} form={form} onChange={setField}/>
           <ModalField label="Built For (beneficiary)" k="builtFor" type="select" opts={DEPTS} form={form} onChange={setField}/>
@@ -2493,6 +2470,45 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
         <ModalField label="Data Source" k="dataSource" ph="e.g. Customer emails" form={form} onChange={setField}/>
         <ModalField label="Builder (Farmer)" k="builder" ph="e.g. Priya Mehta" form={form} onChange={setField}/>
         <ModalField label="Expected Impact" k="impact" ph="e.g. Saves 2 hrs/week" form={form} onChange={setField}/>
+
+        {/* Description + AI Summarizer — placed after form fields so AI can read them */}
+        <div style={{marginBottom:12}}>
+          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>Description</label>
+          <textarea rows={3} value={form.description} onChange={e=>setField("description",e.target.value)}
+            placeholder="Describe what this project does, the problem it solves, and who benefits…"
+            style={{...modalInputStyle,resize:"vertical",lineHeight:1.6}}/>
+          <button
+            onClick={handleSummarize}
+            disabled={!form.name.trim()||aiSummarizing}
+            style={{
+              display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
+              marginTop:6,padding:"7px 12px",borderRadius:DS.radius.md,
+              border:"1.5px solid "+(aiSummaryDone?C.kangkong400:C.ubas400),
+              background:aiSummaryDone?C.kangkong50:C.ubas50,
+              color:aiSummaryDone?C.kangkong600:C.ubas600,
+              fontFamily:FF,fontSize:12,fontWeight:700,
+              cursor:form.name.trim()&&!aiSummarizing?"pointer":"not-allowed",
+              opacity:form.name.trim()?1:0.5,transition:"all 0.15s",
+            }}
+          >
+            {aiSummarizing
+              ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:12}}>⟳</span> Writing description…</>
+              : aiSummaryDone
+              ? <><IcoCheck size={12} color={C.kangkong500}/> Regenerate description from fields above</>
+              : <>✦ Generate description from fields above</>
+            }
+          </button>
+          {aiSummaryDone&&(
+            <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
+              <IcoCheck size={11} color={C.kangkong500}/> AI-generated — feel free to edit before saving
+            </div>
+          )}
+          {aiSummaryError&&(
+            <div style={{fontFamily:FF,fontSize:11,color:C.tomato600,marginTop:5,background:C.tomato50,border:"1px solid "+C.tomato200,borderRadius:DS.radius.md,padding:"6px 10px"}}>
+              AI failed: {aiSummaryError}
+            </div>
+          )}
+        </div>
 
         {/* Stage selector */}
         <div style={{marginBottom:16}}>
