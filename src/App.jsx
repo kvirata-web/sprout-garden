@@ -2327,6 +2327,25 @@ function AddWishModal({onClose, onAdd, authUser}) {
 }
 
 
+// ── ModalField — must be defined outside AddProjectModal to prevent focus loss ──
+const modalInputStyle = {width:"100%",padding:"8px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mushroom300,fontFamily:FF,fontSize:13,color:C.mushroom800,background:C.mushroom50,outline:"none",boxSizing:"border-box"};
+
+function ModalField({label, k, type="text", ph, opts, form, onChange}) {
+  return (
+    <div style={{marginBottom:12}}>
+      <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>{label}</label>
+      {type==="textarea"
+        ?<textarea rows={2} value={form[k]} onChange={e=>onChange(k,e.target.value)} placeholder={ph} style={{...modalInputStyle,resize:"vertical",lineHeight:1.6}}/>
+        :type==="select"
+        ?<select value={form[k]} onChange={e=>onChange(k,e.target.value)} style={modalInputStyle}>
+          {opts.map(o=><option key={o}>{o}</option>)}
+        </select>
+        :<input type="text" value={form[k]} onChange={e=>onChange(k,e.target.value)} placeholder={ph} style={modalInputStyle}/>
+      }
+    </div>
+  );
+}
+
 // ── Add Project Modal (with AI Summarizer + Duplicate Detector) ───────────────
 const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   const DEPTS = Object.keys(DEPT_ZONES);
@@ -2392,21 +2411,6 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
     onClose();
   };
 
-  const inputStyle = {width:"100%",padding:"8px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mushroom300,fontFamily:FF,fontSize:13,color:C.mushroom800,background:C.mushroom50,outline:"none",boxSizing:"border-box"};
-
-  const Field = ({label,k,type="text",ph,opts}) => (
-    <div style={{marginBottom:12}}>
-      <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>{label}</label>
-      {type==="textarea"
-        ?<textarea rows={2} value={form[k]} onChange={e=>setField(k,e.target.value)} placeholder={ph} style={{...inputStyle,resize:"vertical",lineHeight:1.6}}/>
-        :type==="select"
-        ?<select value={form[k]} onChange={e=>setField(k,e.target.value)} style={inputStyle}>
-          {opts.map(o=><option key={o}>{o}</option>)}
-        </select>
-        :<input type="text" value={form[k]} onChange={e=>setField(k,e.target.value)} placeholder={ph} style={inputStyle}/>
-      }
-    </div>
-  );
 
   return (
     <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.55)",backdropFilter:"blur(6px)"}} onClick={onClose}>
@@ -2430,7 +2434,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           </div>
         )}
 
-        <Field label="Project Name *" k="name" ph="e.g. SmartSort AI"/>
+        <ModalField label="Project Name *" k="name" ph="e.g. SmartSort AI" form={form} onChange={setField}/>
 
         {/* Description + AI Summarizer */}
         <div style={{marginBottom:12}}>
@@ -2468,16 +2472,16 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <Field label="Built By (your team)" k="builtBy" type="select" opts={DEPTS}/>
-          <Field label="Built For (beneficiary)" k="builtFor" type="select" opts={DEPTS}/>
+          <ModalField label="Built By (your team)" k="builtBy" type="select" opts={DEPTS} form={form} onChange={setField}/>
+          <ModalField label="Built For (beneficiary)" k="builtFor" type="select" opts={DEPTS} form={form} onChange={setField}/>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <Field label="AI Type" k="capability" type="select" opts={CAPABILITIES.filter(c=>c!=="All")}/>
-          <Field label="Problem Space" k="problemSpace" type="select" opts={PROBLEM_SPACES}/>
+          <ModalField label="AI Type" k="capability" type="select" opts={CAPABILITIES.filter(c=>c!=="All")} form={form} onChange={setField}/>
+          <ModalField label="Problem Space" k="problemSpace" type="select" opts={PROBLEM_SPACES} form={form} onChange={setField}/>
         </div>
-        <Field label="Data Source" k="dataSource" ph="e.g. Customer emails"/>
-        <Field label="Builder (Farmer)" k="builder" ph="e.g. Priya Mehta"/>
-        <Field label="Expected Impact" k="impact" ph="e.g. Saves 2 hrs/week"/>
+        <ModalField label="Data Source" k="dataSource" ph="e.g. Customer emails" form={form} onChange={setField}/>
+        <ModalField label="Builder (Farmer)" k="builder" ph="e.g. Priya Mehta" form={form} onChange={setField}/>
+        <ModalField label="Expected Impact" k="impact" ph="e.g. Saves 2 hrs/week" form={form} onChange={setField}/>
 
         {/* Stage selector */}
         <div style={{marginBottom:16}}>
