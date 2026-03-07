@@ -2463,7 +2463,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           </div>
           <textarea rows={3} value={form.description} onChange={e=>setField("description",e.target.value)}
             placeholder="Describe what this project does, the problem it solves, and who benefits…"
-            style={{...inputStyle,resize:"vertical",lineHeight:1.6}}/>
+            style={{...modalInputStyle,resize:"vertical",lineHeight:1.6}}/>
           {aiSummaryDone&&(
             <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
               <IcoCheck size={11} color={C.kangkong500}/> AI-generated — feel free to edit
@@ -2514,7 +2514,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>Project Image URL <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span></label>
           <input type="text" value={form.imageUrl} onChange={e=>setField("imageUrl",e.target.value)}
             placeholder="https://..."
-            style={{...inputStyle}}
+            style={{...modalInputStyle}}
           />
           {form.imageUrl&&(
             <div style={{marginTop:8,borderRadius:DS.radius.lg,overflow:"hidden",border:"1px solid "+C.mushroom200,height:120}}>
@@ -3268,7 +3268,7 @@ export default function SproutAIGarden() {
   };
 
   const addProject = async (proj) => {
-    const withCountry = {...proj, country: proj.country || authUser?.country || "PH"};
+    const withCountry = {...proj, country: proj.country || authUser?.country || "PH", builderEmail: proj.builderEmail || authUser?.email || ''};
     const row = fromProject(withCountry);
     const { data, error } = await supabase.from("projects").insert(row).select().single();
     if (error) { console.error("addProject:", error); return; }

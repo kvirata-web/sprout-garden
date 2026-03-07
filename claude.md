@@ -142,9 +142,9 @@ Four phases. Complete in order. Do not start the next phase until done-states ar
 
 | Phase | Name | Status | Cumulative % |
 |---|---|---|---|
-| 0 | Scaffold — Vite app runs locally | ⬜ Not started | 10% |
-| 1 | Supabase — tables, auth, domain validation, RLS | ⬜ Not started | 35% |
-| 2 | Data layer — replace in-memory state with Supabase | ⬜ Not started | 75% |
+| 0 | Scaffold — Vite app runs locally | ✅ Complete | 10% |
+| 1 | Supabase — tables, auth, domain validation, RLS | ✅ Complete | 35% |
+| 2 | Data layer — replace in-memory state with Supabase | ✅ Complete | 75% |
 | 3 | Deploy — Vercel, live URL | ⬜ Not started | 100% |
 
 ---
