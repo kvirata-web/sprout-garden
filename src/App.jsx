@@ -3335,6 +3335,7 @@ export default function SproutAIGarden() {
     if (error) { console.error("addProject:", error); return; }
     const saved = toProject(data);
     setProjects(prev => [...prev, saved]);
+    if (!authUser?.hasDismissedWelcome) handleDismissWelcomePermanently();
     if (prefilledWish) {
       await supabase.from("wishes").update({ fulfilled_by: saved.name }).eq("id", prefilledWish.id);
       setWishes(prev => prev.map(w => w.id === prefilledWish.id ? {...w, fulfilledBy: saved.name} : w));
@@ -3367,6 +3368,7 @@ export default function SproutAIGarden() {
     const { data, error } = await supabase.from("wishes").insert(row).select().single();
     if (error) { console.error("handleAddWish:", error); return; }
     setWishes(prev => [toWish(data), ...prev]);
+    if (!authUser?.hasDismissedWelcome) handleDismissWelcomePermanently();
   };
 
   const handleUpvote = (wishId) => {
@@ -3548,18 +3550,12 @@ export default function SproutAIGarden() {
       {profileModal==="profile"&&<ProfileModal authUser={authUser} projects={projects} wishes={wishes} onClose={()=>setProfileModal(null)}/>}
       {profileModal==="about"&&<AboutModal onClose={()=>setProfileModal(null)}/>}
 
-      {(() => {
-        const userHasActivity =
-          projects.some(p => p.builderEmail === authUser?.email) ||
-          wishes.some(w => w.wisherEmail === authUser?.email);
-        const show = authUser && !authUser.hasDismissedWelcome && !welcomeSeen && !userHasActivity && !dataLoading;
-        return show ? (
-          <WelcomeModal
-            onExplore={() => setWelcomeSeen(true)}
-            onDismissPermanently={handleDismissWelcomePermanently}
-          />
-        ) : null;
-      })()}
+      {authUser && !authUser.hasDismissedWelcome && !welcomeSeen && !dataLoading && (
+        <WelcomeModal
+          onExplore={() => setWelcomeSeen(true)}
+          onDismissPermanently={handleDismissWelcomePermanently}
+        />
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
