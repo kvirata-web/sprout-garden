@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "./lib/supabase";
 
 // ── Sprout Design System Tokens ───────────────────────────────────────────────
 const DS = {
@@ -2869,8 +2870,8 @@ function AboutModal({onClose}) {
 
 // ── Auth Gate (Prototype Mode) ─────────────────────────────────────────────────
 // Firebase auth is stubbed out for prototype testing.
-// To enable real Firebase auth, replace handleLogin with signInWithPopup.
-const ALLOWED_DOMAIN = "sprout.ph";
+const ALLOWED_DOMAINS = ["sprout.ph", "sproutsolutions.io"];
+const isAllowedEmail  = (email) => ALLOWED_DOMAINS.some(d => email.endsWith("@" + d));
 
 // Prototype demo user — auto-logged in on load
 const DEMO_USER = {
@@ -2928,13 +2929,14 @@ function FirstTimeCountryModal({onSelect}) {
   );
 }
 
-function LoginScreen({onLogin, error, loading}) {
+function LoginScreen({onLogin, onSignUp, onReset, error, loading}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState("login"); // "login" | "reset"
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [mode, setMode] = useState("login"); // "login" | "signup" | "reset"
   const [resetSent, setResetSent] = useState(false);
 
-  const isDomainValid = email.endsWith("@"+ALLOWED_DOMAIN);
+  const isDomainValid = isAllowedEmail(email);
 
   return (
     <div style={{
@@ -2970,7 +2972,7 @@ function LoginScreen({onLogin, error, loading}) {
           <>
             <div style={{marginBottom:20}}>
               <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Welcome back</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Sign in with your <strong>@sprout.ph</strong> account</div>
+              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Sign in with your <strong>@sprout.ph</strong> or <strong>@sproutsolutions.io</strong> account</div>
             </div>
 
             <div style={{marginBottom:14}}>
@@ -2990,7 +2992,7 @@ function LoginScreen({onLogin, error, loading}) {
               />
               {email&&!isDomainValid&&(
                 <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
-                  <IcoWarning size={12} color={C.tomato500}/> Only @sprout.ph email addresses are allowed
+                  <IcoWarning size={12} color={C.tomato500}/> Only @sprout.ph and @sproutsolutions.io addresses are allowed
                 </div>
               )}
             </div>
@@ -3040,18 +3042,88 @@ function LoginScreen({onLogin, error, loading}) {
               {loading ? "Signing in…" : "Sign In"}
             </button>
 
-            <div style={{textAlign:"center"}}>
+            <div style={{textAlign:"center",display:"flex",justifyContent:"center",gap:16}}>
               <button onClick={()=>setMode("reset")} style={{
                 background:"none",border:"none",cursor:"pointer",
                 fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,
               }}>Forgot password?</button>
+              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom300}}>|</span>
+              <button onClick={()=>setMode("signup")} style={{
+                background:"none",border:"none",cursor:"pointer",
+                fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,
+              }}>Create account</button>
+            </div>
+          </>
+        ) : mode==="signup" ? (
+          <>
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Create account</div>
+              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Use your <strong>@sprout.ph</strong> or <strong>@sproutsolutions.io</strong> email</div>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Work Email</label>
+              <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                placeholder="yourname@sprout.ph"
+                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(email&&!isDomainValid?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
+                onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                onBlur={e=>e.target.style.borderColor=email&&!isDomainValid?C.tomato500:C.mushroom300}
+              />
+              {email&&!isDomainValid&&(
+                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
+                  <IcoWarning size={12} color={C.tomato500}/> Only @sprout.ph and @sproutsolutions.io addresses are allowed
+                </div>
+              )}
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Password</label>
+              <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
+                onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                onBlur={e=>e.target.style.borderColor=C.mushroom300}
+              />
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Confirm Password</label>
+              <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
+                onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                onBlur={e=>e.target.style.borderColor=confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300}
+              />
+              {confirmPassword&&confirmPassword!==password&&(
+                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Passwords do not match</div>
+              )}
+            </div>
+
+            {error&&(
+              <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
+                <IcoWarning size={14} color={C.tomato500}/> {error}
+              </div>
+            )}
+
+            <button
+              onClick={()=>onSignUp(email,password)}
+              disabled={!isDomainValid||!password||password!==confirmPassword||loading}
+              style={{width:"100%",padding:"11px",background:isDomainValid&&password&&password===confirmPassword?C.kangkong600:C.mushroom300,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:isDomainValid&&password&&password===confirmPassword?"pointer":"not-allowed",fontFamily:FF,fontSize:13,fontWeight:700,transition:"all 0.2s",marginBottom:14}}
+            >
+              {loading ? "Creating…" : "Create Account"}
+            </button>
+
+            <div style={{textAlign:"center"}}>
+              <button onClick={()=>{setMode("login");setConfirmPassword("");}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600}}>
+                Already have an account? Sign in
+              </button>
             </div>
           </>
         ) : (
           <>
             <div style={{marginBottom:20}}>
               <div style={{fontFamily:FF,fontSize:20,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Reset password</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>We'll send a reset link to your <strong>@sprout.ph</strong> inbox</div>
+              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>We'll send a reset link to your Sprout inbox</div>
             </div>
 
             {resetSent ? (
@@ -3078,7 +3150,7 @@ function LoginScreen({onLogin, error, loading}) {
                 borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom600,fontWeight:600,
               }}>Back</button>
               {!resetSent&&(
-                <button onClick={()=>setResetSent(true)} disabled={!isDomainValid} style={{
+                <button onClick={async()=>{await onReset(email);setResetSent(true);}} disabled={!isDomainValid} style={{
                   flex:2,padding:"10px",background:isDomainValid?C.kangkong600:C.mushroom300,
                   border:"none",borderRadius:DS.radius.lg,cursor:isDomainValid?"pointer":"not-allowed",
                   fontFamily:FF,fontSize:13,color:C.white,fontWeight:700,
@@ -3089,7 +3161,7 @@ function LoginScreen({onLogin, error, loading}) {
         )}
 
         <div style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.mushroom100,textAlign:"center",fontFamily:FF,fontSize:11,color:C.mushroom400}}>
-          Access restricted to <strong>@sprout.ph</strong> accounts only
+          Access restricted to <strong>@sprout.ph</strong> and <strong>@sproutsolutions.io</strong> accounts
         </div>
       </div>
     </div>
@@ -3110,21 +3182,77 @@ export default function SproutAIGarden() {
   const [profileModal, setProfileModal] = useState(null); // null | "profile" | "about"
   const profileDropRef = useRef(null);
 
-  // ── Auth state (Prototype: auto-logged in as demo user) ────────────────────
-  const [authUser, setAuthUser] = useState(DEMO_USER);
-  const [countryPrompt, setCountryPrompt] = useState(false);
-  const handleLogin = () => {};
-  const handleLogout = () => setAuthUser(DEMO_USER);
+  // ── Auth state ────────────────────────────────────────────────────────────
+  const [authUser, setAuthUser]     = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError]   = useState("");
 
-  // When user switches account, check if country is known
-  const handleSwitchUser = (user) => {
-    if (!user.country) {
-      setAuthUser(user);
-      setCountryPrompt(true);
-    } else {
-      setAuthUser(user);
+  const loadOrCreateProfile = async (user) => {
+    const domain  = user.email.split("@")[1];
+    const country = COUNTRY_MAP[domain];
+    const { data: existing } = await supabase
+      .from("profiles").select("*").eq("id", user.id).single();
+    if (existing) {
+      return { email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener };
     }
-    setProfileOpen(false);
+    const displayName = user.email.split("@")[0];
+    await supabase.from("profiles").insert({ id: user.id, email: user.email, display_name: displayName, country, is_gardener: false });
+    return { email: user.email, displayName, country, isGardener: false };
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const profile = await loadOrCreateProfile(session.user);
+        setAuthUser(profile);
+      }
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        const profile = await loadOrCreateProfile(session.user);
+        setAuthUser(profile);
+      } else {
+        setAuthUser(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogin = async (email, password) => {
+    setAuthError("");
+    setAuthLoading(true);
+    const domain = email.split("@")[1];
+    if (!COUNTRY_MAP[domain]) {
+      setAuthError("Only @sprout.ph and @sproutsolutions.io email addresses are allowed.");
+      setAuthLoading(false);
+      return;
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError(error.message);
+    setAuthLoading(false);
+  };
+
+  const handleSignUp = async (email, password) => {
+    setAuthError("");
+    setAuthLoading(true);
+    const domain = email.split("@")[1];
+    if (!COUNTRY_MAP[domain]) {
+      setAuthError("Only @sprout.ph and @sproutsolutions.io email addresses are allowed.");
+      setAuthLoading(false);
+      return;
+    }
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) setAuthError(error.message);
+    setAuthLoading(false);
+  };
+
+  const handleReset = async (email) => {
+    await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   // Close profile dropdown on outside click
@@ -3151,10 +3279,17 @@ export default function SproutAIGarden() {
   const handleClaimWish = w => { setPrefilledWish(w); setShowForm(true); };
 
   // Auth gate — after all hooks
+  if (authLoading) {
+    return (
+      <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,"+C.kangkong800+" 0%,"+C.kangkong400+" 100%)"}}>
+        <div style={{fontFamily:FF,color:C.kangkong200,fontSize:14,fontWeight:600}}>Loading…</div>
+      </div>
+    );
+  }
   if (!authUser) {
     return (
       <>
-        <LoginScreen onLogin={handleLogin} error="" loading={false}/>
+        <LoginScreen onLogin={handleLogin} onSignUp={handleSignUp} onReset={handleReset} error={authError} loading={authLoading}/>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
           @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -3251,29 +3386,6 @@ export default function SproutAIGarden() {
                     <span style={{fontSize:15}}>{item.icon}</span>{item.label}
                   </button>
                 ))}
-                <div style={{borderTop:"1px solid "+C.mushroom100}}>
-                  <div style={{padding:"8px 14px 4px",fontFamily:FF,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,color:C.mushroom400}}>Switch account</div>
-                  {[
-                    {user:DEMO_USER,    label:"Demo User 🇵🇭"},
-                    {user:DEMO_USER_TH, label:"Demo User 🇹🇭"},
-                    {user:ADMIN_USER,   label:"VK Virata (Gardener)"},
-                  ].map(item=>(
-                    <button key={item.label} onClick={()=>handleSwitchUser(item.user)} style={{
-                      width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 14px",
-                      background:authUser.email===item.user.email?C.kangkong50:"none",
-                      border:"none",cursor:"pointer",fontFamily:FF,fontSize:12,
-                      color:authUser.email===item.user.email?C.kangkong700:C.mushroom600,
-                      textAlign:"left",transition:"background 0.1s",
-                    }}
-                      onMouseOver={e=>{if(authUser.email!==item.user.email)e.currentTarget.style.background=C.mushroom50;}}
-                      onMouseOut={e=>{if(authUser.email!==item.user.email)e.currentTarget.style.background="none";}}
-                    >
-                      <UserAvatar user={item.user} size={20}/>
-                      {item.label}
-                      {authUser.email===item.user.email&&<IcoCheck size={12} color={C.kangkong500}/>}
-                    </button>
-                  ))}
-                </div>
                 <div style={{borderTop:"1px solid "+C.mushroom100}}>
                   <button onClick={()=>{handleLogout();setProfileOpen(false);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:FF,fontSize:13,color:C.tomato500,textAlign:"left",transition:"background 0.1s"}}
                     onMouseOver={e=>e.currentTarget.style.background=C.tomato100}
