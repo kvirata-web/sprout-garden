@@ -2327,6 +2327,58 @@ function AddWishModal({onClose, onAdd, authUser}) {
 }
 
 
+// ── WelcomeModal ──────────────────────────────────────────────────────────────
+function WelcomeModal({onExplore, onDismissPermanently}) {
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.6)",backdropFilter:"blur(8px)"}}>
+      <div style={{background:C.white,borderRadius:DS.radius.xl,padding:36,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:36,marginBottom:12,lineHeight:1}}>🌿</div>
+          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>Welcome to Grove</div>
+          <div style={{fontFamily:FF,fontSize:14,color:C.mushroom600,lineHeight:1.6}}>
+            Sprout's living map of AI in the making. Every idea, prototype, and breakthrough from Manila to Bangkok, in one place.
+          </div>
+        </div>
+
+        {/* Contribution cards */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
+          <div style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start"}}>
+            <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌱</span>
+            <div>
+              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong700,marginBottom:3}}>Plant a Seed</div>
+              <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Got an idea for an AI tool but haven't built it yet? Add it to the Wishlist. Your team can upvote it, claim it, and bring it to life.</div>
+            </div>
+          </div>
+          <div style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start"}}>
+            <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌾</span>
+            <div>
+              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to Garden</div>
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Already building or shipped something? Add it to the Garden so the whole company can see what you've made and follow its progress.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center",marginBottom:20}}>
+          Start by exploring what's already growing — or plant your first seed.
+        </div>
+
+        {/* Buttons */}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <button onClick={onExplore} style={{width:"100%",padding:"11px 0",borderRadius:DS.radius.lg,background:C.kangkong500,border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",transition:"background 0.15s"}}>
+            Start exploring
+          </button>
+          <button onClick={onDismissPermanently} style={{width:"100%",padding:"10px 0",borderRadius:DS.radius.lg,background:"none",border:"1.5px solid "+C.mushroom200,color:C.mushroom500,fontFamily:FF,fontSize:13,fontWeight:500,cursor:"pointer",transition:"all 0.15s"}}>
+            Got it, don't show again
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // ── ModalField — must be defined outside AddProjectModal to prevent focus loss ──
 const modalInputStyle = {width:"100%",padding:"8px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mushroom300,fontFamily:FF,fontSize:13,color:C.mushroom800,background:C.mushroom50,outline:"none",boxSizing:"border-box"};
 
@@ -3151,6 +3203,7 @@ export default function SproutAIGarden() {
   const [projects, setProjects] = useState([]);
   const [wishes, setWishes]     = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [welcomeSeen, setWelcomeSeen] = useState(false);
   const [view, setView]         = useState("dashboard");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -3184,7 +3237,7 @@ export default function SproutAIGarden() {
       supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
         .then(({ data: existing }) => {
           if (existing) {
-            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener });
+            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener, hasDismissedWelcome: existing.has_dismissed_welcome || false });
           } else {
             supabase.from("profiles").insert({
               id: session.user.id, email: session.user.email,
@@ -3231,6 +3284,14 @@ export default function SproutAIGarden() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+  };
+
+  const handleDismissWelcomePermanently = async () => {
+    setWelcomeSeen(true);
+    setAuthUser(prev => ({...prev, hasDismissedWelcome: true}));
+    if (authUser?.email) {
+      await supabase.from("profiles").update({ has_dismissed_welcome: true }).eq("email", authUser.email);
+    }
   };
 
   // ── Load data from Supabase when auth is ready ───────────────────────────
@@ -3486,6 +3547,19 @@ export default function SproutAIGarden() {
 
       {profileModal==="profile"&&<ProfileModal authUser={authUser} projects={projects} wishes={wishes} onClose={()=>setProfileModal(null)}/>}
       {profileModal==="about"&&<AboutModal onClose={()=>setProfileModal(null)}/>}
+
+      {(() => {
+        const userHasActivity =
+          projects.some(p => p.builderEmail === authUser?.email) ||
+          wishes.some(w => w.wisherEmail === authUser?.email);
+        const show = authUser && !authUser.hasDismissedWelcome && !welcomeSeen && !userHasActivity && !dataLoading;
+        return show ? (
+          <WelcomeModal
+            onExplore={() => setWelcomeSeen(true)}
+            onDismissPermanently={handleDismissWelcomePermanently}
+          />
+        ) : null;
+      })()}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
