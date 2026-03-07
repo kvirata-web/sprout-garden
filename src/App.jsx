@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
+import { loadProjects, loadWishes, fromProject, fromWish, toProject, toWish } from "./lib/db";
 
 // ── Sprout Design System Tokens ───────────────────────────────────────────────
 const DS = {
@@ -1190,7 +1191,7 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, authUser}) 
 
 
 // ── Unified Garden Hub (Directory + Garden + Board) ───────────────────────────
-const GardenHub = ({projects, setProjects, wishes, setWishes, selected, setSelected, authUser, onClaimWish}) => {
+const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWish, onMoveStage, onWishClaim}) => {
   const [viewMode, setViewMode] = useState("directory");
   const [deptFilter, setDeptFilter] = useState("All");
   const [capFilter, setCapFilter] = useState("All");
@@ -1235,28 +1236,11 @@ const GardenHub = ({projects, setProjects, wishes, setWishes, selected, setSelec
 
   const showSeeds = stageFilter === "All" || stageFilter === "seed";
 
-  const moveStage = (project, dirOrStage) => {
-    let next;
-    if (typeof dirOrStage === "string") {
-      next = dirOrStage;
-    } else {
-      const cur = STAGE_ORDER[project.stage];
-      next = STAGES[cur + dirOrStage];
-    }
-    if (!next || next === project.stage) return;
-    setProjects(prev => prev.map(p => p.id === project.id
-      ? {...p, stage:next, lastUpdated:0, milestones:[...p.milestones, STAGE_LABELS[next]+" — "+new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})]}
-      : p
-    ));
-  };
+  const moveStage = (project, dirOrStage) => onMoveStage(project, dirOrStage);
 
   const handleConfirmClaim = () => {
     if (!claimingWish) return;
-    setWishes(prev => prev.map(w => w.id===claimingWish.id
-      ? {...w, claimedBy:authUser.displayName, claimedByEmail:authUser.email, claimedAt: new Date().toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}
-      : w
-    ));
-    // Update selectedWish so panel refreshes
+    onWishClaim(claimingWish.id);
     setSelectedWish(prev => prev?.id===claimingWish.id ? {...prev, claimedBy:authUser.displayName, claimedByEmail:authUser.email} : prev);
     setClaimingWish(null);
   };
@@ -1978,7 +1962,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
 // ── Add Project Modal ─────────────────────────────────────────────────────────
 
 // ── Wishlist View ─────────────────────────────────────────────────────────────
-function WishlistView({wishes, setWishes, projects, onClaim, authUser}) {
+function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish, onWishClaim}) {
   const [deptFilter, setDeptFilter] = useState("All");
   const [sort, setSort] = useState("upvotes");
   const [showAddWish, setShowAddWish] = useState(false);
@@ -1992,16 +1976,7 @@ function WishlistView({wishes, setWishes, projects, onClaim, authUser}) {
       : a.createdDaysAgo - b.createdDaysAgo
     );
 
-  const toggleUpvote = (wishId) => {
-    setWishes(prev => prev.map(w => {
-      if (w.id !== wishId) return w;
-      const already = w.upvoters.includes(currentUser);
-      return {...w, upvoters: already
-        ? w.upvoters.filter(u => u !== currentUser)
-        : [...w.upvoters, currentUser]
-      };
-    }));
-  };
+  const toggleUpvote = (wishId) => onUpvote(wishId);
 
   const DEPTS = ["All","Engineering","Marketing","Operations","Finance","Customer Experience","HR"];
 
@@ -2215,16 +2190,13 @@ function WishlistView({wishes, setWishes, projects, onClaim, authUser}) {
       </div>
 
       {/* Add Wish Modal */}
-      {showAddWish&&<AddWishModal authUser={authUser} onClose={()=>setShowAddWish(false)} onAdd={w=>{setWishes(p=>[w,...p]);setShowAddWish(false);}}/>}
+      {showAddWish&&<AddWishModal authUser={authUser} onClose={()=>setShowAddWish(false)} onAdd={w=>{onAddWish(w);setShowAddWish(false);}}/>}
       {claimingWish&&(
         <ClaimModal
           wish={claimingWish} authUser={authUser}
           onClose={()=>setClaimingWish(null)}
           onClaim={()=>{
-            setWishes(prev=>prev.map(w=>w.id===claimingWish.id
-              ?{...w,claimedBy:authUser.displayName,claimedByEmail:authUser.email,claimedAt:new Date().toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}
-              :w
-            ));
+            onWishClaim(claimingWish.id);
             setClaimingWish(null);
           }}
         />
@@ -2243,12 +2215,12 @@ function AddWishModal({onClose, onAdd, authUser}) {
   const submit = () => {
     if(!canSubmit) return;
     onAdd({
-      id:"w"+Date.now(),
+      id:"w"+Date.now(),  // temp id; replaced by DB-returned id in handleAddWish
       title:form.title.trim(),
       why:form.why.trim(),
       builtFor:form.builtFor,
       wisherName:form.wisherName.trim(),
-      wisherEmail:form.wisherEmail.trim(),
+      wisherEmail:form.wisherEmail.trim() || authUser?.email || "",
       country: authUser?.country || "PH",
       createdDaysAgo:0,
       upvoters:[],
@@ -3172,8 +3144,9 @@ function LoginScreen({onLogin, onSignUp, onReset, error, loading}) {
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function SproutAIGarden() {
-  const [projects, setProjects] = useState(INITIAL_PROJECTS);
-  const [wishes, setWishes]     = useState(INITIAL_WISHES);
+  const [projects, setProjects] = useState([]);
+  const [wishes, setWishes]     = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [view, setView]         = useState("dashboard");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -3256,6 +3229,17 @@ export default function SproutAIGarden() {
     await supabase.auth.signOut();
   };
 
+  // ── Load data from Supabase when auth is ready ───────────────────────────
+  useEffect(() => {
+    if (!authUser) return;
+    setDataLoading(true);
+    Promise.all([loadProjects(), loadWishes()]).then(([projs, wishs]) => {
+      setProjects(projs);
+      setWishes(wishs);
+      setDataLoading(false);
+    });
+  }, [authUser?.email]);
+
   // Close profile dropdown on outside click
   useEffect(() => {
     const handler = e => { if (profileDropRef.current && !profileDropRef.current.contains(e.target)) setProfileOpen(false); };
@@ -3267,17 +3251,81 @@ export default function SproutAIGarden() {
     if (selected) setSelected(projects.find(p=>p.id===selected.id)||null);
   }, [projects]);
 
-  const addNote    = (id,text) => { if(!text.trim())return; setProjects(prev=>prev.map(p=>p.id===id?{...p,notes:[...(p.notes||[]),text.trim()]}:p)); };
-  const addProject = proj => {
-    // Auto-inject country from logged-in user
+  // ── Project mutations ─────────────────────────────────────────────────────
+
+  const addNote = (id, text) => {
+    if (!text.trim()) return;
+    const updated = projects.find(p => p.id === id);
+    if (!updated) return;
+    const newNotes = [...(updated.notes || []), text.trim()];
+    setProjects(prev => prev.map(p => p.id === id ? {...p, notes: newNotes} : p));
+    supabase.from("projects").update({ notes: newNotes }).eq("id", id)
+      .then(({ error }) => { if (error) console.error("addNote:", error); });
+  };
+
+  const addProject = async (proj) => {
     const withCountry = {...proj, country: proj.country || authUser?.country || "PH"};
-    setProjects(prev=>[...prev, withCountry]);
+    const row = fromProject(withCountry);
+    const { data, error } = await supabase.from("projects").insert(row).select().single();
+    if (error) { console.error("addProject:", error); return; }
+    const saved = toProject(data);
+    setProjects(prev => [...prev, saved]);
     if (prefilledWish) {
-      setWishes(prev=>prev.map(w=>w.id===prefilledWish.id?{...w,fulfilledBy:withCountry.name}:w));
+      await supabase.from("wishes").update({ fulfilled_by: saved.name }).eq("id", prefilledWish.id);
+      setWishes(prev => prev.map(w => w.id === prefilledWish.id ? {...w, fulfilledBy: saved.name} : w));
+      setPrefilledWish(null);
     }
   };
+
+  const handleMoveStage = (project, dirOrStage) => {
+    let next;
+    if (typeof dirOrStage === "string") {
+      next = dirOrStage;
+    } else {
+      const cur = STAGE_ORDER[project.stage];
+      next = STAGES[cur + dirOrStage];
+    }
+    if (!next || next === project.stage) return;
+    const newMilestones = [...project.milestones, STAGE_LABELS[next] + " — " + new Date().toLocaleDateString("en-PH", {month:"short", year:"numeric"})];
+    setProjects(prev => prev.map(p => p.id === project.id
+      ? {...p, stage: next, lastUpdated: 0, milestones: newMilestones}
+      : p
+    ));
+    supabase.from("projects").update({ stage: next, milestones: newMilestones, last_updated: new Date().toISOString() }).eq("id", project.id)
+      .then(({ error }) => { if (error) console.error("handleMoveStage:", error); });
+  };
+
+  // ── Wish mutations ────────────────────────────────────────────────────────
+
+  const handleAddWish = async (wish) => {
+    const row = fromWish(wish);
+    const { data, error } = await supabase.from("wishes").insert(row).select().single();
+    if (error) { console.error("handleAddWish:", error); return; }
+    setWishes(prev => [toWish(data), ...prev]);
+  };
+
+  const handleUpvote = (wishId) => {
+    const currentUser = authUser?.displayName || authUser?.email;
+    setWishes(prev => prev.map(w => {
+      if (w.id !== wishId) return w;
+      const already = w.upvoters.includes(currentUser);
+      const newUpvoters = already ? w.upvoters.filter(u => u !== currentUser) : [...w.upvoters, currentUser];
+      supabase.from("wishes").update({ upvoters: newUpvoters }).eq("id", wishId)
+        .then(({ error }) => { if (error) console.error("handleUpvote:", error); });
+      return {...w, upvoters: newUpvoters};
+    }));
+  };
+
+  const handleClaimWish = (wishId) => {
+    const claimedAt = new Date().toLocaleDateString("en-PH", {month:"short", day:"numeric", year:"numeric"});
+    setWishes(prev => prev.map(w => w.id !== wishId ? w : {
+      ...w, claimedBy: authUser.displayName, claimedByEmail: authUser.email, claimedAt,
+    }));
+    supabase.from("wishes").update({ claimed_by: authUser.displayName, claimed_by_email: authUser.email, claimed_at: claimedAt }).eq("id", wishId)
+      .then(({ error }) => { if (error) console.error("handleClaimWish:", error); });
+  };
   const handleSelectProject = p => { setSelected(p); if(view==="dashboard") setView("garden"); };
-  const handleClaimWish = w => { setPrefilledWish(w); setShowForm(true); };
+  const handlePromoteWish = w => { setPrefilledWish(w); setShowForm(true); };
 
   // Auth gate — after all hooks
   if (authLoading) {
@@ -3297,6 +3345,14 @@ export default function SproutAIGarden() {
           * { box-sizing:border-box; }
         `}</style>
       </>
+    );
+  }
+
+  if (dataLoading) {
+    return (
+      <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.mushroom100}}>
+        <div style={{fontFamily:FF,color:C.kangkong600,fontSize:14,fontWeight:600}}>Loading garden…</div>
+      </div>
     );
   }
 
@@ -3405,8 +3461,8 @@ export default function SproutAIGarden() {
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
           {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject}/>}
-          {view==="garden"    && <GardenHub projects={projects} setProjects={setProjects} wishes={wishes} setWishes={setWishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handleClaimWish}/>}
-          {view==="wishlist"  && <WishlistView wishes={wishes} setWishes={setWishes} projects={projects} onClaim={handleClaimWish} authUser={authUser}/>}
+          {view==="garden"    && <GardenHub projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish}/>}
+          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish}/>}
         </div>
 
         {selected && (
