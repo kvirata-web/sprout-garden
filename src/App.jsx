@@ -749,7 +749,7 @@ const SproutLogo = () => (
       <IcoGarden size={18} color={C.kangkong200}/>
     </div>
     <div>
-      <div style={{fontFamily:FF,fontWeight:700,fontSize:16,color:C.mushroom900,lineHeight:1.1}}>AI Garden</div>
+      <div style={{fontFamily:FF,fontWeight:700,fontSize:16,color:C.mushroom900,lineHeight:1.1}}>Grove</div>
       <div style={{fontFamily:FF,fontSize:10,color:C.kangkong600,fontWeight:600,letterSpacing:1,textTransform:"uppercase"}}>by Sprout</div>
     </div>
   </div>
@@ -2859,7 +2859,7 @@ function AboutModal({onClose}) {
                 <IcoGarden size={22} color={C.kangkong200}/>
               </div>
               <div>
-                <div style={{fontFamily:FF,fontSize:20,fontWeight:800,color:C.white,lineHeight:1}}>AI Garden</div>
+                <div style={{fontFamily:FF,fontSize:20,fontWeight:800,color:C.white,lineHeight:1}}>Grove</div>
                 <div style={{fontFamily:FF,fontSize:11,color:C.kangkong300,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase"}}>by Sprout</div>
               </div>
             </div>
@@ -2867,7 +2867,7 @@ function AboutModal({onClose}) {
               Every great idea starts as a seed.
             </div>
             <div style={{fontFamily:FF,fontSize:14,color:C.kangkong200,lineHeight:1.7}}>
-              AI Garden is where Sprout's AI transformation takes root — a living map of every AI project our teams are building, from the first spark of an idea to measurable, company-wide impact.
+              Grove is where Sprout's AI transformation takes root — a living map of every AI project our teams are building, from the first spark of an idea to measurable, company-wide impact.
             </div>
           </div>
         </div>
@@ -2992,7 +2992,7 @@ function LoginScreen({onLogin, onSignUp, onReset, error, loading}) {
           }}>
             <IcoGarden size={28} color={C.kangkong200}/>
           </div>
-          <div style={{fontFamily:FF,fontWeight:800,fontSize:22,color:C.mushroom900,lineHeight:1.1}}>AI Garden</div>
+          <div style={{fontFamily:FF,fontWeight:800,fontSize:22,color:C.mushroom900,lineHeight:1.1}}>Grove</div>
           <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginTop:3}}>by Sprout</div>
         </div>
 
@@ -3501,7 +3501,7 @@ export default function SproutAIGarden() {
                 </div>
                 {[
                   {label:"My Profile", icon:"👤", action:()=>{setProfileModal("profile");setProfileOpen(false);}},
-                  {label:"About AI Garden", icon:"🌿", action:()=>{setProfileModal("about");setProfileOpen(false);}},
+                  {label:"About Grove", icon:"🌿", action:()=>{setProfileModal("about");setProfileOpen(false);}},
                 ].map(item=>(
                   <button key={item.label} onClick={item.action} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom700,textAlign:"left",transition:"background 0.1s"}}
                     onMouseOver={e=>e.currentTarget.style.background=C.mushroom50}
