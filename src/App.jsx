@@ -963,75 +963,25 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject}) => {
 // AI Project Summarizer — calls Claude API to generate a clean description
 async function generateProjectSummary({name, builtBy, builtFor, capability, problemSpace, dataSource, impact}) {
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        messages:[{
-          role:"user",
-          content:`You are helping document an internal AI project at Sprout, a company going through an AI transformation. Write a single clear paragraph (2-3 sentences, max 60 words) describing this project for an internal company directory. Make it concrete, outcome-focused, and easy for non-technical employees to understand. Do not use jargon. Do not start with "This project".
-
-Project Name: ${name}
-Built by: ${builtBy} team
-Built for: ${builtFor} team  
-AI Capability: ${capability}
-Problem Space: ${problemSpace}
-Data Source: ${dataSource || "internal data"}
-Expected Impact: ${impact || "TBD"}
-
-Respond with ONLY the paragraph, no preamble.`
-        }]
-      })
+    const { data, error } = await supabase.functions.invoke("summarize", {
+      body: { name, builtBy, builtFor, capability, problemSpace, dataSource, impact },
     });
-    const data = await response.json();
-    return data.content?.[0]?.text || null;
+    if (error) { console.error("summarize:", error); return null; }
+    return data?.text || null;
   } catch(e) {
     return null;
   }
 }
 
-// AI Duplicate Detector — calls Claude API to analyze overlap with existing projects
-async function detectDuplicates({name, description, capability, problemSpace, builtFor}, existingProjects) {
-  if (!existingProjects.length) return [];
+// AI Duplicate Detector — calls Supabase edge function with pre-filtered candidates
+async function detectDuplicates(newProject, candidates) {
+  if (!candidates.length) return [];
   try {
-    const projectList = existingProjects.map(p =>
-      `- "${p.name}" (${p.builtBy} → ${p.builtFor}, ${p.capability}, ${p.problemSpace}): ${p.description}`
-    ).join("\n");
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        messages:[{
-          role:"user",
-          content:`You are a project deduplication assistant for an internal AI project tracker at Sprout company.
-
-A new project is being submitted:
-Name: "${name}"
-Description: "${description || "No description yet"}"
-AI Capability: ${capability}
-Problem Space: ${problemSpace}
-Built for: ${builtFor}
-
-Existing projects in the system:
-${projectList}
-
-Identify which existing projects significantly overlap with the new one. Only flag genuine overlaps — same problem being solved, same users benefiting, or same data/approach being used. Ignore superficial matches.
-
-Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
-{"overlaps":[{"name":"project name","reason":"one sentence why they overlap","severity":"high|medium"}]}`
-        }]
-      })
+    const { data, error } = await supabase.functions.invoke("check-duplicates", {
+      body: { newProject, candidates },
     });
-    const data = await response.json();
-    const text = data.content?.[0]?.text || "{}";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
-    return parsed.overlaps || [];
+    if (error) { console.error("check-duplicates:", error); return []; }
+    return data?.overlaps || [];
   } catch(e) {
     return [];
   }
@@ -2420,11 +2370,11 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   const [aiChecking, setAiChecking] = useState(false);
   const [aiOverlaps, setAiOverlaps] = useState(null); // null=unchecked, []=none found, [...]=overlaps
   const [aiOverlapChecked, setAiOverlapChecked] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const setField = (k,v) => {
     setForm(p=>({...p,[k]:v}));
     setAiSummaryDone(false);
-    // Reset overlap check if key fields change
     if (["name","description","capability","problemSpace","builtFor"].includes(k)) {
       setAiOverlaps(null);
       setAiOverlapChecked(false);
@@ -2442,17 +2392,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
     setAiSummarizing(false);
   };
 
-  const handleCheckDuplicates = async () => {
-    if (!form.name.trim()) return;
-    setAiChecking(true);
-    const overlaps = await detectDuplicates(form, projects);
-    setAiOverlaps(overlaps);
-    setAiOverlapChecked(true);
-    setAiChecking(false);
-  };
-
-  const submit = () => {
-    if (!form.name.trim()) return;
+  const doAdd = () => {
     onAdd({
       ...form,
       id:Date.now(), lastUpdated:0, notes:[],
@@ -2462,6 +2402,24 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
       imageUrl: form.imageUrl||"",
     });
     onClose();
+  };
+
+  const submit = async () => {
+    if (!form.name.trim() || submitting) return;
+    // If overlaps already shown, user is confirming — save directly
+    if (aiOverlapChecked && aiOverlaps?.length > 0) { doAdd(); return; }
+    setSubmitting(true);
+    setAiChecking(true);
+    const candidates = projects.filter(p =>
+      p.capability === form.capability || p.problemSpace === form.problemSpace
+    );
+    const overlaps = await detectDuplicates(form, candidates);
+    setAiOverlaps(overlaps);
+    setAiOverlapChecked(true);
+    setAiChecking(false);
+    setSubmitting(false);
+    if (overlaps.length === 0) { doAdd(); }
+    // else: overlaps shown in card — user reads and clicks "Save anyway"
   };
 
 
@@ -2577,68 +2535,62 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           )}
         </div>
 
-        {/* AI Duplicate Detector */}
-        <div style={{
-          background:aiOverlapChecked&&aiOverlaps?.length===0?C.kangkong50:aiOverlaps?.length>0?C.mango100:C.mushroom50,
-          border:"1.5px solid "+(aiOverlapChecked&&aiOverlaps?.length===0?C.kangkong200:aiOverlaps?.length>0?C.mango500:C.mushroom200),
-          borderRadius:DS.radius.lg,padding:"12px 14px",marginBottom:16,
-        }}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom: aiOverlaps?.length>0?10:0}}>
-            <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:aiOverlapChecked&&aiOverlaps?.length===0?C.kangkong600:aiOverlaps?.length>0?C.mango600:C.mushroom600,display:"flex",alignItems:"center",gap:6}}>
+        {/* AI Duplicate Check — auto-runs on submit */}
+        {aiOverlapChecked&&(
+          <div style={{
+            background:aiOverlaps?.length===0?C.kangkong50:C.mango100,
+            border:"1.5px solid "+(aiOverlaps?.length===0?C.kangkong200:C.mango500),
+            borderRadius:DS.radius.lg,padding:"12px 14px",marginBottom:16,
+          }}>
+            <div style={{fontFamily:FF,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6,
+              color:aiOverlaps?.length===0?C.kangkong600:C.mango600,
+              marginBottom:aiOverlaps?.length>0?10:0,
+            }}>
               {aiOverlaps?.length>0
                 ? <><IcoWarning size={14} color={C.mango500}/> {aiOverlaps.length} potential overlap{aiOverlaps.length>1?"s":""} found</>
-                : aiOverlapChecked
-                ? <><IcoCheck size={14} color={C.kangkong500}/> No overlaps found — you're good to go</>
-                : <>✦ AI Duplicate Check</>
+                : <><IcoCheck size={14} color={C.kangkong500}/> No overlaps found</>
               }
             </div>
-            {!aiOverlapChecked&&(
-              <button
-                onClick={handleCheckDuplicates}
-                disabled={!form.name.trim()||aiChecking}
-                style={{
-                  padding:"4px 12px",borderRadius:DS.radius.full,
-                  border:"1.5px solid "+C.ubas400,background:C.ubas100,color:C.ubas500,
-                  fontFamily:FF,fontSize:11,fontWeight:700,
-                  cursor:form.name.trim()?"pointer":"not-allowed",
-                  opacity:form.name.trim()?1:0.5,transition:"all 0.15s",
-                }}
-              >
-                {aiChecking
-                  ? <span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Checking…</span>
-                  : "Check for duplicates"
-                }
-              </button>
+            {aiOverlaps?.length>0&&(
+              <div>
+                {aiOverlaps.map((o,i)=>(
+                  <div key={i} style={{background:C.white,border:"1px solid "+C.mango500,borderRadius:DS.radius.md,padding:"8px 10px",marginBottom:6,display:"flex",gap:8,alignItems:"flex-start"}}>
+                    <span style={{background:o.severity==="high"?C.tomato100:C.mango100,color:o.severity==="high"?C.tomato600:C.mango600,fontFamily:FF,fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:DS.radius.full,textTransform:"uppercase",flexShrink:0,marginTop:1}}>{o.severity}</span>
+                    <div>
+                      <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom900}}>{o.name}</div>
+                      <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600,marginTop:2}}>{o.reason}</div>
+                    </div>
+                  </div>
+                ))}
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,marginTop:4}}>Consider collaborating with these teams instead of building separately.</div>
+              </div>
             )}
           </div>
+        )}
 
-          {aiOverlaps?.length>0&&(
-            <div>
-              {aiOverlaps.map((o,i)=>(
-                <div key={i} style={{background:C.white,border:"1px solid #f6d98a",borderRadius:DS.radius.md,padding:"8px 10px",marginBottom:6,display:"flex",gap:8,alignItems:"flex-start"}}>
-                  <span style={{background:o.severity==="high"?C.tomato100:C.mango100,color:o.severity==="high"?C.tomato600:C.mango600,fontFamily:FF,fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:DS.radius.full,textTransform:"uppercase",flexShrink:0,marginTop:1}}>{o.severity}</span>
-                  <div>
-                    <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom900}}>{o.name}</div>
-                    <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600,marginTop:2}}>{o.reason}</div>
-                  </div>
-                </div>
-              ))}
-              <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,marginTop:4}}>Consider collaborating with these teams instead of building separately.</div>
-            </div>
-          )}
-        </div>
-
-        <button onClick={submit} disabled={!form.name.trim()} style={{
-          width:"100%",padding:"11px",
-          background:form.name.trim()?C.kangkong500:C.mushroom300,
-          color:C.white,border:"none",borderRadius:DS.radius.lg,
-          cursor:form.name.trim()?"pointer":"not-allowed",
-          fontFamily:FF,fontSize:13,fontWeight:700,
-          boxShadow:form.name.trim()?"0 4px 16px "+C.kangkong500+"40":"none",
-          transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-        }}>
-          <IcoAdd size={16} color={C.white}/> Add to Garden
-        </button>
+        {(() => {
+          const hasOverlaps = aiOverlapChecked && aiOverlaps?.length > 0;
+          const canSubmit = form.name.trim() && !submitting;
+          const bg = !canSubmit ? C.mushroom300 : hasOverlaps ? C.mango500 : C.kangkong500;
+          const shadow = canSubmit ? "0 4px 16px "+(hasOverlaps?C.mango500:C.kangkong500)+"40" : "none";
+          return (
+            <button onClick={submit} disabled={!canSubmit} style={{
+              width:"100%",padding:"11px",background:bg,
+              color:C.white,border:"none",borderRadius:DS.radius.lg,
+              cursor:canSubmit?"pointer":"not-allowed",
+              fontFamily:FF,fontSize:13,fontWeight:700,
+              boxShadow:shadow,transition:"all 0.2s",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+            }}>
+              {submitting
+                ? <><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Checking for duplicates…</>
+                : hasOverlaps
+                ? <><IcoWarning size={16} color={C.white}/> Save anyway</>
+                : <><IcoAdd size={16} color={C.white}/> Add to Garden</>
+              }
+            </button>
+          );
+        })()}
       </div>
     </div>
   );
