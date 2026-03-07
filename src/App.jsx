@@ -81,9 +81,9 @@ const FlagSVG = ({country, w=24, h=16}) => {
 const CountryBadge = ({country, size="sm"}) => {
   if (!country) return null;
   const isPH   = country === "PH";
-  const bg     = isPH ? "#fef9ec" : "#eff6ff";
-  const color  = isPH ? "#92400e" : "#1e40af";
-  const border = isPH ? "#fcd34d" : "#bfdbfe";
+  const bg     = isPH ? C.mango100     : C.blueberry100;
+  const color  = isPH ? C.mango600     : C.blueberry500;
+  const border = isPH ? C.mango500     : C.blueberry400;
   const label  = isPH ? "PH" : "TH";
   const flagW  = size === "lg" ? 20 : 16;
   const flagH  = size === "lg" ? 14 : 11;
@@ -125,19 +125,19 @@ const STAGE_FLORA = {
 const STAGE_ORDER = {seed:-1,sprout:0,growing:1,blooming:2,thriving:3};
 
 const STAGE_COLORS = {
-  seed:     {bg:C.mushroom100,     text:C.mushroom600,    border:C.mushroom300,  dot:C.mushroom400},
-  sprout:   {bg:C.mango100,        text:C.mango600,       border:"#f6d98a",      dot:C.mango500},
-  growing:  {bg:C.wintermelon100,  text:C.wintermelon500, border:"#9de6e0",      dot:C.wintermelon400},
-  blooming: {bg:C.kangkong100,     text:C.kangkong600,    border:C.kangkong200,  dot:C.kangkong500},
-  thriving: {bg:C.blueberry100,    text:C.blueberry500,   border:C.blueberry400, dot:C.blueberry500},
+  seed:     {bg:C.mushroom100,     text:C.mushroom600,      border:C.mushroom300,    dot:C.mushroom400},
+  sprout:   {bg:C.mango100,        text:C.mango600,         border:C.mango500,       dot:C.mango500},
+  growing:  {bg:C.wintermelon100,  text:C.wintermelon500,   border:C.wintermelon400, dot:C.wintermelon400},
+  blooming: {bg:C.kangkong100,     text:C.kangkong600,      border:C.kangkong200,    dot:C.kangkong500},
+  thriving: {bg:C.blueberry100,    text:C.blueberry500,     border:C.blueberry400,   dot:C.blueberry500},
 };
 
 const CAP_COLORS = {
-  LLM:              {bg:C.ubas100,      text:C.ubas500,      border:"#d6bcfa"},
-  "Computer Vision":{bg:C.blueberry100, text:C.blueberry500, border:C.blueberry400},
-  Automation:       {bg:C.wintermelon100,text:C.wintermelon500,border:"#9de6e0"},
-  Prediction:       {bg:C.carrot100,    text:C.carrot500,    border:"#fbd38d"},
-  NLP:              {bg:C.kangkong100,  text:C.kangkong600,  border:C.kangkong200},
+  LLM:              {bg:C.ubas100,        text:C.ubas500,        border:C.ubas400},
+  "Computer Vision":{bg:C.blueberry100,   text:C.blueberry500,   border:C.blueberry400},
+  Automation:       {bg:C.wintermelon100, text:C.wintermelon500, border:C.wintermelon400},
+  Prediction:       {bg:C.carrot100,      text:C.carrot500,      border:C.carrot500},
+  NLP:              {bg:C.kangkong100,    text:C.kangkong600,    border:C.kangkong200},
 };
 
 const DEPT_COLORS = {
@@ -720,7 +720,7 @@ function Card({children,tone="plain",style={},onClick,hoverable}) {
     neutral: {bg:C.mushroom50,    border:C.mushroom200},
     success: {bg:C.kangkong50,    border:C.kangkong200},
     info:    {bg:C.blueberry100,  border:C.blueberry400},
-    pending: {bg:C.mango100,      border:"#f6d98a"},
+    pending: {bg:C.mango100,      border:C.mango500},
     caution: {bg:C.carrot100,     border:"#fbd38d"},
     accent:  {bg:C.ubas100,       border:"#d6bcfa"},
     danger:  {bg:C.tomato100,     border:C.tomato500},
@@ -1128,7 +1128,7 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, authUser}) 
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
               <StageBadge stage="seed"/>
-              {isClaimed&&!wish.fulfilledBy&&<span style={{fontFamily:FF,fontSize:10,fontWeight:700,background:C.wintermelon100,color:C.wintermelon500,border:"1px solid #9de6e0",borderRadius:DS.radius.full,padding:"2px 8px"}}>🔨 Being built</span>}
+              {isClaimed&&!wish.fulfilledBy&&<span style={{fontFamily:FF,fontSize:10,fontWeight:700,background:C.wintermelon100,color:C.wintermelon500,border:"1px solid "+C.wintermelon400,borderRadius:DS.radius.full,padding:"2px 8px"}}>🔨 Being built</span>}
             </div>
             <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
           </div>
@@ -1142,7 +1142,7 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, authUser}) 
         <div style={{padding:"20px 24px"}}>
           <div style={{fontFamily:FF,fontSize:13,color:C.mushroom600,lineHeight:1.7,marginBottom:16}}>{wish.why}</div>
           {isClaimed&&(
-            <div style={{background:C.wintermelon100,border:"1px solid #9de6e0",borderRadius:DS.radius.lg,padding:"10px 14px",marginBottom:16,display:"flex",gap:10,alignItems:"center"}}>
+            <div style={{background:C.wintermelon100,border:"1px solid "+C.wintermelon400,borderRadius:DS.radius.lg,padding:"10px 14px",marginBottom:16,display:"flex",gap:10,alignItems:"center"}}>
               <span style={{fontSize:16}}>🔨</span>
               <div>
                 <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.wintermelon500}}>Being built by {wish.claimedBy}</div>
@@ -1360,13 +1360,14 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
               <div style={{marginTop:14}}>
                 <div style={{fontFamily:FF,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,color:C.mushroom400,marginBottom:8}}>Country</div>
                 <div style={{display:"flex",gap:6}}>
-                  {[{k:"All",label:"All"},{k:"PH",label:"🇵🇭 Philippines"},{k:"TH",label:"🇹🇭 Thailand"}].map(opt=>(
+                  {[{k:"All",label:"All",flag:null},{k:"PH",label:"Philippines",flag:"PH"},{k:"TH",label:"Thailand",flag:"TH"}].map(opt=>(
                     <button key={opt.k} onClick={()=>setCountryFilter(opt.k)} style={{
+                      display:"inline-flex",alignItems:"center",gap:5,
                       padding:"6px 14px",borderRadius:DS.radius.full,border:"1.5px solid "+(countryFilter===opt.k?C.kangkong500:C.mushroom200),
                       background:countryFilter===opt.k?C.kangkong50:C.white,
                       color:countryFilter===opt.k?C.kangkong700:C.mushroom600,
                       fontFamily:FF,fontSize:12,fontWeight:countryFilter===opt.k?700:500,cursor:"pointer",transition:"all 0.12s",
-                    }}>{opt.label}</button>
+                    }}>{opt.flag&&<FlagSVG country={opt.flag} w={14} h={10}/>}{opt.label}</button>
                   ))}
                 </div>
               </div>
@@ -1529,7 +1530,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                     const deptColor = DEPT_COLORS[w.builtFor]||C.mushroom400;
                     return (
                       <div key={w.id} onClick={()=>setSelectedWish(w)}
-                        style={{background:C.mushroom50,borderRadius:DS.radius.lg,padding:"11px 13px",marginBottom:8,border:"1.5px dashed "+(w.readyForReview?"#f6d98a":w.claimedBy?C.wintermelon400:C.mushroom300),cursor:"pointer",transition:"all 0.15s"}}
+                        style={{background:C.mushroom50,borderRadius:DS.radius.lg,padding:"11px 13px",marginBottom:8,border:"1.5px dashed "+(w.readyForReview?C.mango500:w.claimedBy?C.wintermelon400:C.mushroom300),cursor:"pointer",transition:"all 0.15s"}}
                         onMouseOver={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.boxShadow=DS.shadow.md;}}
                         onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.boxShadow="none";}}
                       >
@@ -1778,10 +1779,10 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
             <div style={{width:1,height:12,background:C.mushroom300}}/>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               {projects.some(p=>p.country==="PH")&&(
-                <span style={{fontFamily:FF,fontSize:10,color:C.mushroom500,fontWeight:600}}>🇵🇭 {projects.filter(p=>p.country==="PH").length}</span>
+                <span style={{fontFamily:FF,fontSize:10,color:C.mushroom500,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="PH" w={14} h={10}/>{projects.filter(p=>p.country==="PH").length}</span>
               )}
               {projects.some(p=>p.country==="TH")&&(
-                <span style={{fontFamily:FF,fontSize:10,color:C.mushroom500,fontWeight:600}}>🇹🇭 {projects.filter(p=>p.country==="TH").length}</span>
+                <span style={{fontFamily:FF,fontSize:10,color:C.mushroom500,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="TH" w={14} h={10}/>{projects.filter(p=>p.country==="TH").length}</span>
               )}
             </div>
           </>
@@ -1882,7 +1883,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
                   display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
                   marginBottom:6,borderRadius:DS.radius.md,cursor:"pointer",
                   background:isSP?C.carrot100:C.mushroom50,
-                  border:"1px solid "+(isSP?"#fbd38d":C.mushroom200),
+                  border:"1px solid "+(isSP?C.carrot500:C.mushroom200),
                   transition:"all 0.15s",
                 }}
                   onMouseOver={e=>e.currentTarget.style.boxShadow=DS.shadow.sm}
@@ -1981,7 +1982,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
   const DEPTS = ["All","Engineering","Marketing","Operations","Finance","Customer Experience","HR"];
 
   return (
-    <div style={{flex:1,overflow:"auto",padding:"28px 32px",background:"#faf8f4"}}>
+    <div style={{flex:1,overflow:"auto",padding:"28px 32px",background:C.mushroom50}}>
       {/* Header */}
       <div style={{marginBottom:28}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:16}}>
@@ -2056,7 +2057,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
           return (
             <div key={wish.id} style={{
               background:C.white,borderRadius:DS.radius.xl,
-              border:"1.5px solid "+(fulfilled?"#aadcaa":C.mushroom200),
+              border:"1.5px solid "+(fulfilled?C.kangkong200:C.mushroom200),
               padding:"20px 22px",
               boxShadow:DS.shadow.sm,
               position:"relative",overflow:"hidden",
@@ -2154,7 +2155,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
                       {hasUpvoted?"✓ I need this":"+ I need this"}
                     </button>
                     {wish.claimedBy
-                      ? <div style={{flex:1,padding:"7px 12px",borderRadius:DS.radius.md,background:C.wintermelon100,border:"1px solid #9de6e0",fontFamily:FF,fontSize:12,fontWeight:600,color:C.wintermelon500,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                      ? <div style={{flex:1,padding:"7px 12px",borderRadius:DS.radius.md,background:C.wintermelon100,border:"1px solid "+C.wintermelon400,fontFamily:FF,fontSize:12,fontWeight:600,color:C.wintermelon500,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
                           🔨 {wish.claimedBy === currentUser ? "You're building this" : `${wish.claimedBy.split(" ")[0]} is building this`}
                         </div>
                       : <button onClick={()=>setClaimingWish(wish)} style={{
@@ -2408,7 +2409,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
     builtFor: prefill?.builtFor||"Engineering",
     capability:"LLM",
     builder:"",impact:"",
-    stage:"sprout",
+    stage:STAGES[0],
     problemSpace:"Process Automation",dataSource:"",
     imageUrl:"",
   });
@@ -2579,7 +2580,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
         {/* AI Duplicate Detector */}
         <div style={{
           background:aiOverlapChecked&&aiOverlaps?.length===0?C.kangkong50:aiOverlaps?.length>0?C.mango100:C.mushroom50,
-          border:"1.5px solid "+(aiOverlapChecked&&aiOverlaps?.length===0?C.kangkong200:aiOverlaps?.length>0?"#f6d98a":C.mushroom200),
+          border:"1.5px solid "+(aiOverlapChecked&&aiOverlaps?.length===0?C.kangkong200:aiOverlaps?.length>0?C.mango500:C.mushroom200),
           borderRadius:DS.radius.lg,padding:"12px 14px",marginBottom:16,
         }}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom: aiOverlaps?.length>0?10:0}}>
@@ -2748,10 +2749,10 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
               {/* Role badges */}
               <div style={{marginTop:8,display:"flex",gap:5,flexWrap:"wrap"}}>
                 {authUser.isGardener&&(
-                  <span title="Tends the Garden — promotes seeds, manages stages, oversees the ecosystem" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.kangkong900,background:"#d6f0d6",borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌿 Gardener</span>
+                  <span title="Tends the Garden — promotes seeds, manages stages, oversees the ecosystem" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.kangkong900,background:C.kangkong100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌿 Gardener</span>
                 )}
                 {claimedSeeds.length>0&&(
-                  <span title="Claims seeds and builds AI projects in the Garden" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:"#744210",background:C.mango100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌾 Farmer</span>
+                  <span title="Claims seeds and builds AI projects in the Garden" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mango600,background:C.mango100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌾 Farmer</span>
                 )}
                 {mySeeds.length>0&&(
                   <span title="Submits seed ideas to the wishlist for the team to build" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom700,background:"rgba(255,255,255,0.85)",borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌱 Planter</span>
@@ -2823,11 +2824,11 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
                 </div>
               : claimedSeeds.map(w=>{
                   return (
-                    <div key={w.id} style={{padding:"12px 14px",marginBottom:10,borderRadius:DS.radius.lg,background:C.wintermelon100,border:"1.5px solid #9de6e0"}}>
+                    <div key={w.id} style={{padding:"12px 14px",marginBottom:10,borderRadius:DS.radius.lg,background:C.wintermelon100,border:"1.5px solid "+C.wintermelon400}}>
                       <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900,marginBottom:4}}>{w.title}</div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:4}}>
                         <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>For {w.builtFor} · Claimed {w.claimedAt}</span>
-                        <span style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.wintermelon500,padding:"2px 8px",background:C.white,borderRadius:DS.radius.full,border:"1px solid #9de6e0"}}>🔨 In progress</span>
+                        <span style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.wintermelon500,padding:"2px 8px",background:C.white,borderRadius:DS.radius.full,border:"1px solid "+C.wintermelon400}}>🔨 In progress</span>
                       </div>
                     </div>
                   );
@@ -2936,8 +2937,8 @@ function FirstTimeCountryModal({onSelect}) {
           We'll use this to tag your projects and ideas in the shared garden.
         </div>
         <div style={{display:"flex",gap:12}}>
-          {[{country:"PH",flag:"🇵🇭",name:"Philippines",color:C.kangkong600,bg:C.kangkong50,border:C.kangkong300},
-            {country:"TH",flag:"🇹🇭",name:"Thailand",   color:"#1a5276",    bg:"#eaf4fb",   border:"#85c1e9"}
+          {[{country:"PH",name:"Philippines",color:C.kangkong600,bg:C.kangkong50, border:C.kangkong300},
+            {country:"TH",name:"Thailand",   color:C.blueberry500,bg:C.blueberry100,border:C.blueberry400}
           ].map(opt=>(
             <button key={opt.country} onClick={()=>onSelect(opt.country)} style={{
               flex:1,padding:"20px 12px",borderRadius:DS.radius.xl,cursor:"pointer",
@@ -2947,7 +2948,7 @@ function FirstTimeCountryModal({onSelect}) {
               onMouseOver={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.md;}}
               onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}
             >
-              <div style={{fontSize:36,marginBottom:8}}>{opt.flag}</div>
+              <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><FlagSVG country={opt.country} w={48} h={32}/></div>
               <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:opt.color}}>{opt.name}</div>
             </button>
           ))}
