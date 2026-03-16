@@ -554,9 +554,31 @@ function PlantTree({size=88, wilting=false}) {
 }
 
 const PlantMap = {seedling:PlantSprout,nursery:PlantSprout,sprout:PlantGrowing,bloom:PlantBlooming,thriving:PlantTree};
-const GardenSizes = {seedling:{w:60,h:72},nursery:{w:60,h:72},sprout:{w:74,h:84},bloom:{w:78,h:88},thriving:{w:90,h:102}};
+const GardenSizes = {seedling:{w:50,h:60},nursery:{w:55,h:66},sprout:{w:74,h:84},bloom:{w:78,h:88},thriving:{w:90,h:102}};
 
 // Stage icon (small, inline) — named components to avoid JSX-in-object errors
+function SIcoSeedling({size,col}) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      {/* small single shoot — simpler than sprout */}
+      <line x1="8" y1="13" x2="8" y2="8" stroke={col} strokeWidth="1.4" strokeLinecap="round"/>
+      <path d="M8 10 Q6 9 5 10.5 Q6.5 8.5 8 10Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
+      <path d="M8 8.5 Q10 7.5 11 9 Q9.5 7 8 8.5Z" fill={col} fillOpacity="0.45" stroke={col} strokeWidth="0.6"/>
+      <circle cx="8" cy="13" r="1.5" fill={col} fillOpacity="0.3"/>
+    </svg>
+  );
+}
+function SIcoNursery({size,col}) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      {/* plant in a pot */}
+      <rect x="5" y="11" width="6" height="3.5" rx="1" fill={col} fillOpacity="0.25" stroke={col} strokeWidth="0.7"/>
+      <line x1="8" y1="11" x2="8" y2="6" stroke={col} strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M8 9 Q5.5 8 4.5 9.5 Q6.5 7 8 9Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
+      <path d="M8 7.5 Q10.5 6.5 11.5 8 Q9.5 6 8 7.5Z" fill={col} fillOpacity="0.45" stroke={col} strokeWidth="0.6"/>
+    </svg>
+  );
+}
 // SIcoSprout — tiny sprouting bean icon for stage badges
 function SIcoSprout({size,col}) {
   return (
@@ -611,8 +633,8 @@ function StageIcon({stage, size=16}) {
   const c = STAGE_COLORS[stage];
   if (!c) return null;
   const col = c.text;
-  if (stage==="seedling") return <SIcoSprout size={size} col={col}/>;
-  if (stage==="nursery")  return <SIcoSprout size={size} col={col}/>;
+  if (stage==="seedling") return <SIcoSeedling size={size} col={col}/>;
+  if (stage==="nursery")  return <SIcoNursery size={size} col={col}/>;
   if (stage==="sprout")   return <SIcoGrowing size={size} col={col}/>;
   if (stage==="bloom")    return <SIcoBlooming size={size} col={col}/>;
   if (stage==="thriving") return <SIcoTree size={size} col={col}/>;
