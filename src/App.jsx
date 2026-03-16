@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
-import { loadProjects, loadWishes, fromProject, fromWish, toProject, toWish } from "./lib/db";
+import { loadProjects, loadWishes, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo } from "./lib/db";
 
 // ── Sprout Design System Tokens ───────────────────────────────────────────────
 const DS = {
@@ -14,7 +14,7 @@ const DS = {
     mushroom600:"#736f5e",mushroom700:"#565244",mushroom800:"#3a372e",
     mushroom900:"#201e18",mushroom950:"#111009",
     tomato500:"#e53e3e",tomato100:"#fed7d7",tomato600:"#c53030",
-    mango500:"#d69e2e",mango100:"#fefcbf",mango600:"#b7791f",
+    mango50:"#fffff0",mango100:"#fefcbf",mango200:"#faf089",mango300:"#f6e05e",mango400:"#ecc94b",mango500:"#d69e2e",mango600:"#b7791f",mango700:"#975a16",
     carrot500:"#dd6b20",carrot100:"#feebc8",
     wintermelon500:"#2c7a7b",wintermelon100:"#e6fffa",wintermelon400:"#38b2ac",
     blueberry500:"#3182ce",blueberry100:"#ebf8ff",blueberry400:"#63b3ed",
@@ -108,27 +108,27 @@ const getCountry   = (email="") => {
 };
 
 // ── Stage constants ────────────────────────────────────────────────────────────
-const STAGES      = ["sprout","growing","blooming","thriving"];
+const STAGES      = ["seedling","nursery","sprout","bloom","thriving"];
 const STAGE_LABELS = {
-  seed:"Seed", sprout:"Sprout", growing:"Growing", blooming:"Blooming", thriving:"Thriving",
+  seedling:"Seedling", nursery:"Nursery", sprout:"Sprout", bloom:"Bloom", thriving:"Thriving",
 };
 const STAGE_DESC = {
-  seed:     "Ideas the team wants built",
-  sprout:   "In development, testing internally",
-  growing:  "Testing with real users",
-  blooming: "Shipped and running",
-  thriving: "Delivering measurable results",
+  seedling: "Being built",
+  nursery:  "Awaiting ExCom review",
+  sprout:   "Approved, in development",
+  bloom:    "In user testing",
+  thriving: "Live and delivering value",
 };
 const STAGE_FLORA = {
-  seed:"Seed", sprout:"Sprout", growing:"Growing", blooming:"Blooming", thriving:"Thriving",
+  seedling:"Seedling", nursery:"Nursery", sprout:"Sprout", bloom:"Bloom", thriving:"Thriving",
 };
-const STAGE_ORDER = {seed:-1,sprout:0,growing:1,blooming:2,thriving:3};
+const STAGE_ORDER = {seedling:0,nursery:1,sprout:2,bloom:3,thriving:4};
 
 const STAGE_COLORS = {
-  seed:     {bg:C.mushroom100,     text:C.mushroom600,      border:C.mushroom300,    dot:C.mushroom400},
-  sprout:   {bg:C.mango100,        text:C.mango600,         border:C.mango500,       dot:C.mango500},
-  growing:  {bg:C.wintermelon100,  text:C.wintermelon500,   border:C.wintermelon400, dot:C.wintermelon400},
-  blooming: {bg:C.kangkong100,     text:C.kangkong600,      border:C.kangkong200,    dot:C.kangkong500},
+  seedling: {bg:C.mushroom100,     text:C.mushroom600,      border:C.mushroom300,    dot:C.mushroom400},
+  nursery:  {bg:C.mango100,        text:C.mango600,         border:C.mango500,       dot:C.mango500},
+  sprout:   {bg:C.wintermelon100,  text:C.wintermelon500,   border:C.wintermelon400, dot:C.wintermelon400},
+  bloom:    {bg:C.kangkong100,     text:C.kangkong600,      border:C.kangkong200,    dot:C.kangkong500},
   thriving: {bg:C.blueberry100,    text:C.blueberry500,     border:C.blueberry400,   dot:C.blueberry500},
 };
 
@@ -183,20 +183,20 @@ const TOOLS = ["Claude Chat","Claude Code","Cowork","ChatGPT","Copilot","Cursor"
 
 const INITIAL_PROJECTS = [
   // 🇵🇭 Philippines
-  {id:1, country:"PH", name:"SmartReply",    builtBy:"Engineering",       builtFor:"Customer Experience",capability:"LLM",            stage:"blooming", lastUpdated:5, impact:"Saves 3 hrs/agent/day",   impactNum:"3 hrs",  builder:"Maya Santos",   builderEmail:"maya@sprout.ph",    zx:30,zy:40,notes:["Great progress! — Lena"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024","Launched — Apr 2024"],description:"AI-powered email response suggestions for customer support agents, cutting response time by 40%.",problemSpace:"Customer Support",  dataSource:"Customer emails",       demoLink:"#",interestedUsers:["rob@sprout.ph"],   imageUrl:"https://picsum.photos/id/1/400/200"},
+  {id:1, country:"PH", name:"SmartReply",    builtBy:"Engineering",       builtFor:"Customer Experience",capability:"LLM",            stage:"bloom",    lastUpdated:5, impact:"Saves 3 hrs/agent/day",   impactNum:"3 hrs",  builder:"Maya Santos",   builderEmail:"maya@sprout.ph",    zx:30,zy:40,notes:["Great progress! — Lena"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024","Launched — Apr 2024"],description:"AI-powered email response suggestions for customer support agents, cutting response time by 40%.",problemSpace:"Customer Support",  dataSource:"Customer emails",       demoLink:"#",interestedUsers:["rob@sprout.ph"],   imageUrl:"https://picsum.photos/id/1/400/200"},
   {id:2, country:"PH", name:"ForecastIQ",    builtBy:"Operations",        builtFor:"Operations",          capability:"Prediction",     stage:"thriving",  lastUpdated:12,impact:"20% waste reduction",      impactNum:"20%",    builder:"James Reyes",   builderEmail:"james@sprout.ph",   zx:40,zy:55,notes:["Saved us big last Q"],   milestones:["Ideation — Sep 2023","Model training — Nov 2023","Beta — Jan 2024","Launched — Feb 2024","Scaled — May 2024"],description:"Predictive inventory model that reduces overstock by anticipating demand shifts two weeks ahead.",problemSpace:"Data Analysis",      dataSource:"Inventory & sales data",  demoLink:"#",interestedUsers:["sofia@sprout.ph"],imageUrl:"https://picsum.photos/id/20/400/200"},
-  {id:3, country:"PH", name:"DocScan AI",    builtBy:"Engineering",       builtFor:"Finance",             capability:"Computer Vision",stage:"growing",   lastUpdated:8, impact:"800 docs/week processed",  impactNum:"800",    builder:"Lena Park",     builderEmail:"lena@sprout.ph",    zx:55,zy:55,notes:[],milestones:["Ideation — Feb 2024","Dataset — Mar 2024","Building — Apr 2024"],description:"Computer vision tool that auto-reads and categorizes incoming vendor invoices with 94% accuracy.",problemSpace:"Finance & Budgeting",dataSource:"Vendor invoices",         demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/40/400/200"},
-  {id:4, country:"PH", name:"ToneGuard",     builtBy:"Marketing",         builtFor:"Marketing",           capability:"NLP",            stage:"sprout",    lastUpdated:3, impact:"Est. 15% fewer revisions",  impactNum:"15%",    builder:"Carlos Ruiz",   builderEmail:"carlos@sprout.ph",  zx:30,zy:40,notes:[],milestones:["Ideation — Mar 2024","In development — Apr 2024"],description:"NLP tool that reviews outbound comms for brand tone consistency before they're sent.",problemSpace:"Content Creation",   dataSource:"Marketing copy",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/60/400/200"},
-  {id:5, country:"PH", name:"OnboardBot",    builtBy:"Engineering",       builtFor:"HR",                  capability:"Automation",     stage:"blooming",  lastUpdated:21,impact:"NPS +28 pts for new hires", impactNum:"+28 NPS",builder:"Dana Osei",     builderEmail:"dana@sprout.ph",    zx:50,zy:45,notes:["New hires love this"],   milestones:["Ideation — Nov 2023","Journey mapping — Jan 2024","Pilot — Feb 2024","Launched — Mar 2024"],description:"Automated onboarding assistant that guides new employees through their first 30 days.",problemSpace:"HR & Onboarding",    dataSource:"HR records & docs",       demoLink:"#",interestedUsers:["priya@sprout.ph"],imageUrl:"https://picsum.photos/id/80/400/200"},
+  {id:3, country:"PH", name:"DocScan AI",    builtBy:"Engineering",       builtFor:"Finance",             capability:"Computer Vision",stage:"sprout",    lastUpdated:8, impact:"800 docs/week processed",  impactNum:"800",    builder:"Lena Park",     builderEmail:"lena@sprout.ph",    zx:55,zy:55,notes:[],milestones:["Ideation — Feb 2024","Dataset — Mar 2024","Building — Apr 2024"],description:"Computer vision tool that auto-reads and categorizes incoming vendor invoices with 94% accuracy.",problemSpace:"Finance & Budgeting",dataSource:"Vendor invoices",         demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/40/400/200"},
+  {id:4, country:"PH", name:"ToneGuard",     builtBy:"Marketing",         builtFor:"Marketing",           capability:"NLP",            stage:"seedling",  lastUpdated:3, impact:"Est. 15% fewer revisions",  impactNum:"15%",    builder:"Carlos Ruiz",   builderEmail:"carlos@sprout.ph",  zx:30,zy:40,notes:[],milestones:["Ideation — Mar 2024","In development — Apr 2024"],description:"NLP tool that reviews outbound comms for brand tone consistency before they're sent.",problemSpace:"Content Creation",   dataSource:"Marketing copy",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/60/400/200"},
+  {id:5, country:"PH", name:"OnboardBot",    builtBy:"Engineering",       builtFor:"HR",                  capability:"Automation",     stage:"bloom",     lastUpdated:21,impact:"NPS +28 pts for new hires", impactNum:"+28 NPS",builder:"Dana Osei",     builderEmail:"dana@sprout.ph",    zx:50,zy:45,notes:["New hires love this"],   milestones:["Ideation — Nov 2023","Journey mapping — Jan 2024","Pilot — Feb 2024","Launched — Mar 2024"],description:"Automated onboarding assistant that guides new employees through their first 30 days.",problemSpace:"HR & Onboarding",    dataSource:"HR records & docs",       demoLink:"#",interestedUsers:["priya@sprout.ph"],imageUrl:"https://picsum.photos/id/80/400/200"},
   {id:6, country:"PH", name:"CodeReview AI", builtBy:"Engineering",       builtFor:"Engineering",         capability:"LLM",            stage:"thriving",  lastUpdated:2, impact:"30% faster PR cycles",      impactNum:"30%",    builder:"Kai Nakamura",  builderEmail:"kai@sprout.ph",     zx:60,zy:50,notes:["Team loves it"],        milestones:["Ideation — Aug 2023","Prototype — Oct 2023","Beta — Dec 2023","Launched — Jan 2024","Scaled — Mar 2024"],description:"Automated pull request review tool that catches bugs and style issues before human review.",problemSpace:"Process Automation", dataSource:"Git repositories",        demoLink:"#",interestedUsers:[],                  imageUrl:"https://picsum.photos/id/100/400/200"},
-  {id:7, country:"PH", name:"SentimentPulse",builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"NLP",           stage:"sprout",    lastUpdated:1, impact:"TBD",                        impactNum:"TBD",    builder:"Priya Mehta",   builderEmail:"priya@sprout.ph",   zx:70,zy:70,notes:[],milestones:["Ideation — Apr 2024"],description:"Real-time sentiment analysis of customer feedback across all channels.",problemSpace:"Customer Support",  dataSource:"Customer feedback",       demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/120/400/200"},
-  {id:8, country:"PH", name:"BudgetBot",     builtBy:"Finance",           builtFor:"Finance",             capability:"LLM",            stage:"sprout",    lastUpdated:45,impact:"Est. 2 hrs saved/week",     impactNum:"2 hrs",  builder:"Tom Eriksen",   builderEmail:"tom@sprout.ph",     zx:20,zy:65,notes:["Needs update"],          milestones:["Ideation — Jan 2024","In development — Feb 2024 (stalled)"],description:"Conversational AI for querying budget reports in plain language.",problemSpace:"Finance & Budgeting",dataSource:"Budget reports",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/140/400/200"},
-  {id:9, country:"PH", name:"AdOptimizer",   builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"growing",   lastUpdated:6, impact:"12% lower CAC",              impactNum:"12%",    builder:"Sofia Ali",     builderEmail:"sofia@sprout.ph",   zx:70,zy:50,notes:[],milestones:["Ideation — Jan 2024","Data pipeline — Feb 2024","Tuning — Apr 2024"],description:"ML model that auto-adjusts ad spend across channels based on live performance data.",problemSpace:"Sales & Marketing",  dataSource:"Ad performance data",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/160/400/200"},
-  {id:10,country:"PH", name:"MeetingSumAI",  builtBy:"Engineering",       builtFor:"Engineering",         capability:"LLM",            stage:"sprout",    lastUpdated:2, impact:"TBD",                        impactNum:"TBD",    builder:"Rob Chen",      builderEmail:"rob@sprout.ph",     zx:25,zy:75,notes:[],milestones:["Ideation — Apr 2024"],description:"Auto-generates structured meeting summaries and action items from transcripts.",problemSpace:"Process Automation", dataSource:"Meeting transcripts",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/180/400/200"},
+  {id:7, country:"PH", name:"SentimentPulse",builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"NLP",           stage:"seedling",  lastUpdated:1, impact:"TBD",                        impactNum:"TBD",    builder:"Priya Mehta",   builderEmail:"priya@sprout.ph",   zx:70,zy:70,notes:[],milestones:["Ideation — Apr 2024"],description:"Real-time sentiment analysis of customer feedback across all channels.",problemSpace:"Customer Support",  dataSource:"Customer feedback",       demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/120/400/200"},
+  {id:8, country:"PH", name:"BudgetBot",     builtBy:"Finance",           builtFor:"Finance",             capability:"LLM",            stage:"seedling",  lastUpdated:45,impact:"Est. 2 hrs saved/week",     impactNum:"2 hrs",  builder:"Tom Eriksen",   builderEmail:"tom@sprout.ph",     zx:20,zy:65,notes:["Needs update"],          milestones:["Ideation — Jan 2024","In development — Feb 2024 (stalled)"],description:"Conversational AI for querying budget reports in plain language.",problemSpace:"Finance & Budgeting",dataSource:"Budget reports",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/140/400/200"},
+  {id:9, country:"PH", name:"AdOptimizer",   builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"sprout",    lastUpdated:6, impact:"12% lower CAC",              impactNum:"12%",    builder:"Sofia Ali",     builderEmail:"sofia@sprout.ph",   zx:70,zy:50,notes:[],milestones:["Ideation — Jan 2024","Data pipeline — Feb 2024","Tuning — Apr 2024"],description:"ML model that auto-adjusts ad spend across channels based on live performance data.",problemSpace:"Sales & Marketing",  dataSource:"Ad performance data",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/160/400/200"},
+  {id:10,country:"PH", name:"MeetingSumAI",  builtBy:"Engineering",       builtFor:"Engineering",         capability:"LLM",            stage:"seedling",  lastUpdated:2, impact:"TBD",                        impactNum:"TBD",    builder:"Rob Chen",      builderEmail:"rob@sprout.ph",     zx:25,zy:75,notes:[],milestones:["Ideation — Apr 2024"],description:"Auto-generates structured meeting summaries and action items from transcripts.",problemSpace:"Process Automation", dataSource:"Meeting transcripts",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/180/400/200"},
   // 🇹🇭 Thailand
-  {id:11,country:"TH", name:"LeadScore TH",  builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"blooming",  lastUpdated:4, impact:"18% higher conversion",      impactNum:"18%",    builder:"Niran Kositchai",builderEmail:"niran@sproutsolutions.io", zx:45,zy:35,notes:["Converting well"],  milestones:["Ideation — Oct 2023","Model training — Dec 2023","Pilot — Feb 2024","Launched — Mar 2024"],description:"ML model that scores inbound leads by likelihood to convert, helping the sales team prioritize outreach.",problemSpace:"Sales & Marketing",  dataSource:"CRM & web analytics",     demoLink:"#",interestedUsers:[],                  imageUrl:"https://picsum.photos/id/200/400/200"},
-  {id:12,country:"TH", name:"ChatAssist TH", builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"LLM",           stage:"growing",   lastUpdated:7, impact:"40% faster first response",  impactNum:"40%",    builder:"Ploy Siriwat",  builderEmail:"ploy@sproutsolutions.io",  zx:60,zy:60,notes:["Users love the speed"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024"],description:"AI chat assistant that handles first-line customer queries in Thai and English, escalating complex issues to human agents.",problemSpace:"Customer Support",  dataSource:"Support ticket history",  demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/220/400/200"},
-  {id:13,country:"TH", name:"InventoryAI TH",builtBy:"Operations",        builtFor:"Operations",          capability:"Prediction",     stage:"sprout",    lastUpdated:3, impact:"TBD",                        impactNum:"TBD",    builder:"Tanawat Burin", builderEmail:"tanawat@sproutsolutions.io",zx:35,zy:60,notes:[],milestones:["Ideation — Feb 2024","In development — Mar 2024"],description:"Demand forecasting tool built for Thailand's seasonal sales patterns, reducing overstock during low-demand months.",problemSpace:"Data Analysis",      dataSource:"Sales & inventory records",demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/240/400/200"},
+  {id:11,country:"TH", name:"LeadScore TH",  builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"bloom",     lastUpdated:4, impact:"18% higher conversion",      impactNum:"18%",    builder:"Niran Kositchai",builderEmail:"niran@sproutsolutions.io", zx:45,zy:35,notes:["Converting well"],  milestones:["Ideation — Oct 2023","Model training — Dec 2023","Pilot — Feb 2024","Launched — Mar 2024"],description:"ML model that scores inbound leads by likelihood to convert, helping the sales team prioritize outreach.",problemSpace:"Sales & Marketing",  dataSource:"CRM & web analytics",     demoLink:"#",interestedUsers:[],                  imageUrl:"https://picsum.photos/id/200/400/200"},
+  {id:12,country:"TH", name:"ChatAssist TH", builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"LLM",           stage:"sprout",    lastUpdated:7, impact:"40% faster first response",  impactNum:"40%",    builder:"Ploy Siriwat",  builderEmail:"ploy@sproutsolutions.io",  zx:60,zy:60,notes:["Users love the speed"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024"],description:"AI chat assistant that handles first-line customer queries in Thai and English, escalating complex issues to human agents.",problemSpace:"Customer Support",  dataSource:"Support ticket history",  demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/220/400/200"},
+  {id:13,country:"TH", name:"InventoryAI TH",builtBy:"Operations",        builtFor:"Operations",          capability:"Prediction",     stage:"seedling",  lastUpdated:3, impact:"TBD",                        impactNum:"TBD",    builder:"Tanawat Burin", builderEmail:"tanawat@sproutsolutions.io",zx:35,zy:60,notes:[],milestones:["Ideation — Feb 2024","In development — Mar 2024"],description:"Demand forecasting tool built for Thailand's seasonal sales patterns, reducing overstock during low-demand months.",problemSpace:"Data Analysis",      dataSource:"Sales & inventory records",demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/240/400/200"},
 ];
 
 const ORIGINS = ["Hackathon","Side Project","Leadership Directive","Customer Request","Team Initiative"];
@@ -553,10 +553,32 @@ function PlantTree({size=88, wilting=false}) {
   );
 }
 
-const PlantMap = {sprout:PlantSprout,growing:PlantGrowing,blooming:PlantBlooming,thriving:PlantTree};
-const GardenSizes = {sprout:{w:60,h:72},growing:{w:74,h:84},blooming:{w:78,h:88},thriving:{w:90,h:102}};
+const PlantMap = {seedling:PlantSprout,nursery:PlantSprout,sprout:PlantGrowing,bloom:PlantBlooming,thriving:PlantTree};
+const GardenSizes = {seedling:{w:50,h:60},nursery:{w:55,h:66},sprout:{w:74,h:84},bloom:{w:78,h:88},thriving:{w:90,h:102}};
 
 // Stage icon (small, inline) — named components to avoid JSX-in-object errors
+function SIcoSeedling({size,col}) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      {/* small single shoot — simpler than sprout */}
+      <line x1="8" y1="13" x2="8" y2="8" stroke={col} strokeWidth="1.4" strokeLinecap="round"/>
+      <path d="M8 10 Q6 9 5 10.5 Q6.5 8.5 8 10Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
+      <path d="M8 8.5 Q10 7.5 11 9 Q9.5 7 8 8.5Z" fill={col} fillOpacity="0.45" stroke={col} strokeWidth="0.6"/>
+      <circle cx="8" cy="13" r="1.5" fill={col} fillOpacity="0.3"/>
+    </svg>
+  );
+}
+function SIcoNursery({size,col}) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      {/* plant in a pot */}
+      <rect x="5" y="11" width="6" height="3.5" rx="1" fill={col} fillOpacity="0.25" stroke={col} strokeWidth="0.7"/>
+      <line x1="8" y1="11" x2="8" y2="6" stroke={col} strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M8 9 Q5.5 8 4.5 9.5 Q6.5 7 8 9Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
+      <path d="M8 7.5 Q10.5 6.5 11.5 8 Q9.5 6 8 7.5Z" fill={col} fillOpacity="0.45" stroke={col} strokeWidth="0.6"/>
+    </svg>
+  );
+}
 // SIcoSprout — tiny sprouting bean icon for stage badges
 function SIcoSprout({size,col}) {
   return (
@@ -611,10 +633,11 @@ function StageIcon({stage, size=16}) {
   const c = STAGE_COLORS[stage];
   if (!c) return null;
   const col = c.text;
-  if (stage==="sprout")   return <SIcoSprout size={size} col={col}/>;
-  if (stage==="growing")  return <SIcoGrowing size={size} col={col}/>;
-  if (stage==="blooming") return <SIcoBlooming size={size} col={col}/>;
-  if (stage==="thriving")     return <SIcoTree size={size} col={col}/>;
+  if (stage==="seedling") return <SIcoSeedling size={size} col={col}/>;
+  if (stage==="nursery")  return <SIcoNursery size={size} col={col}/>;
+  if (stage==="sprout")   return <SIcoGrowing size={size} col={col}/>;
+  if (stage==="bloom")    return <SIcoBlooming size={size} col={col}/>;
+  if (stage==="thriving") return <SIcoTree size={size} col={col}/>;
   return null;
 }
 
@@ -839,8 +862,8 @@ const findRelated = (project, allProjects) => {
 const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden, onNavigateWishlist}) => {
   const [rankMode, setRankMode] = useState("builtBy"); // "builtBy" | "builtFor"
 
-  const launched   = projects.filter(p=>p.stage==="blooming"||p.stage==="thriving");
-  const inProgress = projects.filter(p=>p.stage==="growing"||p.stage==="sprout");
+  const launched   = projects.filter(p=>p.stage==="bloom"||p.stage==="thriving");
+  const inProgress = projects.filter(p=>p.stage==="sprout"||p.stage==="seedling");
   const wilting    = projects.filter(p=>p.lastUpdated>30);
   const totalImpacts = launched.filter(p=>p.impact!=="TBD");
   const spotlight  = launched.sort((a,b)=>a.lastUpdated-b.lastUpdated)[0];
@@ -854,7 +877,7 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
       ? projects.filter(p=>p.builtBy===dept)
       : projects.filter(p=>p.builtFor===dept);
     const sc = ps.reduce((s,p)=>s+STAGE_ORDER[p.stage],0);
-    const la = ps.filter(p=>p.stage==="blooming"||p.stage==="thriving").length;
+    const la = ps.filter(p=>p.stage==="bloom"||p.stage==="thriving").length;
     return {dept,total:ps.length,launched:la,score:sc};
   }).sort((a,b)=>b.score-a.score);
 
@@ -867,29 +890,24 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
         </div>
       </div>
 
-      {/* Key metrics — Seeds now = wishes */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:16,marginBottom:24}}>
+      {/* Key metrics — 6 tiles: Seeds + 5 pipeline stages */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>
         {[
-          {label:"Seed",       value:seedCount,                                           sub:STAGE_DESC.seed,       tone:"neutral", plant:<WishSeed size={32} color={C.mushroom500}/>},
-          {label:"Sprout",     value:projects.filter(p=>p.stage==="sprout").length,       sub:STAGE_DESC.sprout,     tone:"pending", plant:<PlantSprout size={36}/>},
-          {label:"Growing",    value:projects.filter(p=>p.stage==="growing").length,      sub:STAGE_DESC.growing,    tone:"plain",   plant:<PlantGrowing size={36}/>},
-          {label:"Blooming", value:projects.filter(p=>p.stage==="blooming").length,   sub:STAGE_DESC.blooming, tone:"success", plant:<PlantBlooming size={36}/>},
-          {label:"Thriving",      value:projects.filter(p=>p.stage==="thriving").length,        sub:STAGE_DESC.thriving,      tone:"info",    plant:<PlantTree size={36}/>},
-        ].map((s,i) => {
-          const isWishlist = s.label === "Seed";
-          const onClick = isWishlist
-            ? () => onNavigateWishlist?.()
-            : () => onNavigateGarden?.("board", s.label.toLowerCase());
-          return (
-            <Card key={i} tone={s.tone} hoverable onClick={onClick} style={{textAlign:"center",padding:"16px 12px",cursor:"pointer"}}>
-              <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>{s.plant}</div>
-              <div style={{fontFamily:FF,fontSize:30,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
-              <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
-              <div style={{fontFamily:FF,fontSize:10,color:C.kangkong500,marginTop:6,fontWeight:600}}>View all →</div>
-            </Card>
-          );
-        })}
+          {label:"Seeds",    value:seedCount,                                                 sub:"Ideas waiting to be built",  tone:"neutral",    plant:<WishSeed size={28} color={C.mushroom500}/>,  nav:()=>onNavigateWishlist?.()},
+          {label:"Seedling", value:projects.filter(p=>p.stage==="seedling").length,           sub:STAGE_DESC.seedling,  tone:"neutral",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","seedling")},
+          {label:"Nursery",  value:projects.filter(p=>p.stage==="nursery").length,            sub:STAGE_DESC.nursery,   tone:"pending",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","nursery")},
+          {label:"Sprout",   value:projects.filter(p=>p.stage==="sprout").length,             sub:STAGE_DESC.sprout,    tone:"plain",      plant:<PlantGrowing size={32}/>,                  nav:()=>onNavigateGarden?.("board","sprout")},
+          {label:"Bloom",    value:projects.filter(p=>p.stage==="bloom").length,              sub:STAGE_DESC.bloom,     tone:"success",    plant:<PlantBlooming size={32}/>,                 nav:()=>onNavigateGarden?.("board","bloom")},
+          {label:"Thriving", value:projects.filter(p=>p.stage==="thriving").length,           sub:STAGE_DESC.thriving,  tone:"info",       plant:<PlantTree size={32}/>,                     nav:()=>onNavigateGarden?.("board","thriving")},
+        ].map((s,i) => (
+          <Card key={i} tone={s.tone} hoverable onClick={s.nav} style={{textAlign:"center",padding:"14px 10px",cursor:"pointer"}}>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:6}}>{s.plant}</div>
+            <div style={{fontFamily:FF,fontSize:26,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
+            <div style={{fontFamily:FF,fontSize:11,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
+            <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
+            <div style={{fontFamily:FF,fontSize:10,color:C.kangkong500,marginTop:5,fontWeight:600}}>View all →</div>
+          </Card>
+        ))}
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
@@ -950,7 +968,7 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
               if (!p.builder) return;
               if (!builderMap[p.builder]) builderMap[p.builder] = {name:p.builder, total:0, launched:0, team:p.builtBy, country:p.country};
               builderMap[p.builder].total++;
-              if (p.stage==="blooming"||p.stage==="thriving") builderMap[p.builder].launched++;
+              if (p.stage==="bloom"||p.stage==="thriving") builderMap[p.builder].launched++;
             });
             const builders = Object.values(builderMap).sort((a,b)=>b.total-a.total);
             const maxTotal = builders[0]?.total||1;
@@ -1175,7 +1193,7 @@ function ActiveFilterChip({label, onRemove, color, icon}) {
 }
 
 // ── Wish Detail Panel ──────────────────────────────────────────────────────────
-function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, authUser}) {
+function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
   const deptColor = DEPT_COLORS[wish.builtFor]||C.mushroom500;
   const isBuilder  = wish.claimedByEmail === authUser?.email;
   const isGardener = authUser?.isGardener;
@@ -1230,11 +1248,6 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, aut
                 <IcoCheck size={16} color={C.kangkong500}/> Built as <strong>{wish.fulfilledBy}</strong>
               </div>
             : <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {(isBuilder||isGardener)&&(
-                  <button onClick={onPromoteToSprout} style={{width:"100%",padding:"11px",background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 16px "+C.kangkong500+"40"}}>
-                    🌿 I have a prototype — Add to Garden as Sprout
-                  </button>
-                )}
                 {!isClaimed&&(
                   <button onClick={onClaim} style={{width:"100%",padding:"11px",background:C.kangkong700,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
                     <IcoAdd size={16} color={C.white}/> I'll build this
@@ -1255,7 +1268,7 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, aut
 
 
 // ── Unified Garden Hub (Directory + Garden + Board) ───────────────────────────
-const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWish, onMoveStage, onWishClaim, onUpdateWish, initialViewMode="directory", initialStageFilter="All"}) => {
+const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveStage, onWishClaim, onUnclaimSeed, onUpdateWish, initialViewMode="directory", initialStageFilter="All"}) => {
   const [viewMode, setViewMode] = useState(initialViewMode);
   const [deptFilter, setDeptFilter] = useState("All");
   const [capFilter, setCapFilter] = useState("All");
@@ -1310,10 +1323,6 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
     setClaimingWish(null);
   };
 
-  const handlePromoteToSprout = (wish) => {
-    setSelectedWish(null);
-    onClaimWish(wish); // opens AddProjectModal pre-filled at Sprout
-  };
 
   const VIEW_MODES = [
     {id:"directory", label:"Directory", Icon:IcoViewGrid},
@@ -1575,7 +1584,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
           {/* Seed column — from wishes */}
           {(()=>{
             const seedCol = wishes.filter(w=>!w.fulfilledBy);
-            const sc = STAGE_COLORS["seed"];
+            const sc = {bg:C.mushroom100, text:C.mushroom600, border:C.mushroom300, dot:C.mushroom400};
             return (
               <div style={{
                 minWidth:220,maxWidth:240,flex:1,marginRight:12,
@@ -1590,7 +1599,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                     <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:sc.text}}>Seed</span>
                     <span style={{marginLeft:"auto",fontFamily:FF,fontSize:11,fontWeight:700,background:sc.border,color:sc.text,borderRadius:DS.radius.full,padding:"1px 8px"}}>{seedCol.length}</span>
                   </div>
-                  <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.7}}>{STAGE_FLORA["seed"]}</div>
+                  <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.7}}>Community ideas awaiting adoption</div>
                 </div>
                 <div style={{overflowY:"auto",flex:1,padding:"10px"}}>
                   {seedCol.length===0&&(
@@ -1611,7 +1620,21 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                           {w.readyForReview
                             ? <span style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mango600,padding:"2px 6px",background:C.mango100,borderRadius:DS.radius.full}}>⏳ Review</span>
                             : w.claimedBy
-                            ? <span style={{fontFamily:FF,fontSize:10,fontWeight:600,color:C.wintermelon500}}>🔨 {w.claimedBy.split(" ")[0]}</span>
+                            ? (
+                              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                                {(() => {
+                                  const builderCount = projects.filter(p => p.id === w.fulfilledBy).length;
+                                  return builderCount > 1 ? <span style={{fontFamily:FF,fontSize:9,color:C.mushroom500,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 5px"}}>{builderCount} builders</span> : null;
+                                })()}
+                                <span style={{fontFamily:FF,fontSize:10,fontWeight:600,color:C.wintermelon500}}>🔨 {w.claimedBy.split(" ")[0]}</span>
+                                {w.claimedByEmail===authUser?.email && projects.find(p=>p.id===w.fulfilledBy)?.stage==="seedling" && (
+                                  <button onClick={e=>{e.stopPropagation();onUnclaimSeed(w.id);}} style={{
+                                    fontFamily:FF,fontSize:9,color:C.mushroom500,background:"none",
+                                    border:"1px solid "+C.mushroom300,borderRadius:DS.radius.sm,padding:"1px 5px",cursor:"pointer",
+                                  }}>Release</button>
+                                )}
+                              </div>
+                            )
                             : <button onClick={e=>{e.stopPropagation();setClaimingWish(w);}} style={{
                                 background:C.kangkong50,border:"1px solid "+C.kangkong300,
                                 borderRadius:DS.radius.sm,padding:"2px 8px",cursor:"pointer",
@@ -1636,6 +1659,8 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                 onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDragOverStage(null);}}
                 onDrop={e=>{
                   e.preventDefault();
+                  // Nursery is not a valid drag-drop target
+                  if (stage === 'nursery') { setDragProjectId(null); setDragOverStage(null); return; }
                   if(dragProjectId&&dragProjectId!==stage){
                     const p=projects.find(pr=>pr.id===dragProjectId);
                     if(p&&p.stage!==stage) moveStage(p, stage);
@@ -1656,6 +1681,11 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                     <StageIcon stage={stage} size={15}/>
                     <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:sc.text}}>{STAGE_LABELS[stage]}</span>
                     <span style={{marginLeft:"auto",fontFamily:FF,fontSize:11,fontWeight:700,background:sc.border,color:sc.text,borderRadius:DS.radius.full,padding:"1px 8px"}}>{col.length}</span>
+                    {stage==="seedling"&&col.filter(p=>p.prototypeLink&&p.deckLink).length>0&&(
+                      <span style={{fontFamily:FF,fontSize:10,color:C.mango600,marginLeft:4,fontWeight:600}}>
+                        ({col.filter(p=>p.prototypeLink&&p.deckLink).length} ready)
+                      </span>
+                    )}
                   </div>
                   <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.7}}>{STAGE_FLORA[stage]}</div>
                 </div>
@@ -1673,9 +1703,11 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                         onDragEnd={()=>{setDragProjectId(null);setDragOverStage(null);}}
                         onClick={()=>setSelected(p)}
                         style={{
-                          background:dragProjectId===p.id?sc.bg:C.mushroom50,
+                          background:dragProjectId===p.id ? sc.bg
+                            : (stage==="seedling"&&p.prototypeLink&&p.deckLink) ? C.mango50
+                            : C.mushroom50,
                           borderRadius:DS.radius.lg,padding:"11px 13px",marginBottom:8,
-                          border:"1px solid "+C.mushroom200,borderLeft:"3px solid "+dc,
+                          border:"1px solid "+((stage==="seedling"&&p.prototypeLink&&p.deckLink)?C.mango300:C.mushroom200),borderLeft:"3px solid "+dc,
                           cursor:"grab",transition:"all 0.15s",boxShadow:DS.shadow.sm,
                           opacity:dragProjectId===p.id?0.5:1,
                         }}
@@ -1703,8 +1735,23 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                             <IcoImpact size={11} color={C.kangkong600}/> {p.impact}
                           </div>
                         )}
+                        {stage==="seedling"&&(
+                          <div style={{display:"flex",gap:4,marginBottom:4,flexWrap:"wrap"}}>
+                            {!p.prototypeLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Prototype needed</span>}
+                            {!p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Deck needed</span>}
+                            {p.prototypeLink&&p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mango600,fontWeight:600,border:"1px solid "+C.mango300,background:C.mango50,borderRadius:DS.radius.full,padding:"1px 7px"}}>Ready for Nursery →</span>}
+                          </div>
+                        )}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>{p.lastUpdated===0?"Today":p.lastUpdated+"d ago"}</span>
+                          {stage==="nursery"&&p.submittedAt&&(()=>{
+                            const daysAgoVal = daysAgo(p.submittedAt);
+                            return (
+                              <span style={{fontFamily:FF,fontSize:10,color:daysAgoVal>7?C.mango600:C.mushroom400,fontWeight:daysAgoVal>7?600:400}}>
+                                {daysAgoVal===0?"Submitted today":`Submitted ${daysAgoVal}d ago`}
+                              </span>
+                            );
+                          })()}
                           <span style={{fontSize:10,color:C.mushroom300,userSelect:"none"}}>⠿ drag</span>
                         </div>
                       </div>
@@ -1724,7 +1771,6 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
           authUser={authUser}
           onClose={()=>setSelectedWish(null)}
           onClaim={()=>setClaimingWish(selectedWish)}
-          onPromoteToSprout={()=>handlePromoteToSprout(selectedWish)}
           onEdit={w=>{setSelectedWish(null);setEditingWish(w);}}
         />
       )}
@@ -1881,10 +1927,53 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
   );
 };
 
+// ── Feedback Banner (Nursery rework) ──────────────────────────────────────────
+const FeedbackBanner = ({reviewComment, reviewedBy, reviewedAt}) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div style={{marginBottom:16, border:"1px solid "+C.mango300, borderRadius:DS.radius.lg, overflow:"hidden"}}>
+      <button onClick={()=>setExpanded(e=>!e)} style={{
+        width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center",
+        padding:"10px 14px", background:C.mango50, border:"none", cursor:"pointer",
+        fontFamily:FF, fontSize:12, fontWeight:700, color:C.mango700,
+      }}>
+        <span>Feedback available</span>
+        <span>{expanded ? "▲" : "▼"}</span>
+      </button>
+      {expanded && (
+        <div style={{padding:"10px 14px", background:C.white}}>
+          <p style={{fontFamily:FF,fontSize:12,color:C.mushroom700,lineHeight:1.5,margin:"0 0 6px"}}>{reviewComment}</p>
+          <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>
+            Feedback from {reviewedBy}{reviewedAt ? ` — ${new Date(reviewedAt).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}` : ""}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Detail Panel ──────────────────────────────────────────────────────────────
-const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,onEdit}) => {
+const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,onEdit,onSubmitToNursery,onWithdrawFromNursery,onApproveProject,onNeedsRework,onMarkNotificationsRead}) => {
   const [noteText,setNoteText] = useState("");
   const [interested,setInterested] = useState(false);
+  const [prototypeLink, setPrototypeLink]       = useState(project.prototypeLink || "");
+  const [deckLink, setDeckLink]                 = useState(project.deckLink || "");
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showReworkInput, setShowReworkInput]   = useState(false);
+  const [reworkComment, setReworkComment]       = useState("");
+
+  // URL validation helper
+  const isValidUrl = (str) => {
+    try { new URL(str); return true; } catch { return false; }
+  };
+
+  // Mark notifications read when ExCom opens a Nursery card
+  useEffect(() => {
+    if (project.stage === 'nursery' && authUser?.isExcom) {
+      onMarkNotificationsRead?.(project.id);
+    }
+  }, [project.id]);
+
   const related = findRelated(project,allProjects);
   const dc = DEPT_COLORS[project.builtBy]||C.kangkong500;
 
@@ -1899,7 +1988,8 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
           <StageBadge stage={project.stage}/>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {(authUser?.email===project.builderEmail||authUser?.isGardener)&&(
+            {(authUser?.email===project.builderEmail||authUser?.isGardener) &&
+              !(project.reviewStatus==='pending' && !authUser?.isGardener) && (
               <button onClick={()=>onEdit(project)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
             )}
             <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,borderRadius:DS.radius.sm}}>
@@ -1946,6 +2036,133 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
           <a href={project.demoLink} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,color:C.kangkong600,textDecoration:"none",marginBottom:16}}>
             <IcoLink size={14} color={C.kangkong600}/> View Demo
           </a>
+        )}
+
+        {/* ── Seedling: Submission Requirements ──────────────────────────────── */}
+        {project.stage==="seedling" && (authUser?.email===project.builderEmail||authUser?.isGardener) && (
+          <div style={{marginBottom:16,padding:"12px 14px",background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg}}>
+            <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mushroom500,marginBottom:10}}>
+              Nursery Submission Requirements
+            </div>
+            <div style={{marginBottom:8}}>
+              <label style={{fontFamily:FF,fontSize:11,color:C.mushroom500,display:"block",marginBottom:3}}>Prototype Link *</label>
+              <input value={prototypeLink} onChange={e=>setPrototypeLink(e.target.value)}
+                placeholder="https://your-deployed-prototype.com"
+                style={{width:"100%",padding:"7px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mushroom300,fontFamily:FF,fontSize:12,color:C.mushroom800,background:C.white,outline:"none",boxSizing:"border-box"}}
+                onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                onBlur={e=>e.target.style.borderColor=C.mushroom300}
+              />
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={{fontFamily:FF,fontSize:11,color:C.mushroom500,display:"block",marginBottom:3}}>Deck Link *</label>
+              <input value={deckLink} onChange={e=>setDeckLink(e.target.value)}
+                placeholder="https://docs.google.com/presentation/..."
+                style={{width:"100%",padding:"7px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mushroom300,fontFamily:FF,fontSize:12,color:C.mushroom800,background:C.white,outline:"none",boxSizing:"border-box"}}
+                onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                onBlur={e=>e.target.style.borderColor=C.mushroom300}
+              />
+            </div>
+            {!showSubmitConfirm ? (
+              <button onClick={()=>setShowSubmitConfirm(true)}
+                disabled={!isValidUrl(prototypeLink)||!isValidUrl(deckLink)}
+                style={{
+                  width:"100%",padding:"9px",
+                  background:isValidUrl(prototypeLink)&&isValidUrl(deckLink)?C.kangkong500:C.mushroom200,
+                  color:isValidUrl(prototypeLink)&&isValidUrl(deckLink)?C.white:C.mushroom400,
+                  border:"none",borderRadius:DS.radius.lg,
+                  cursor:isValidUrl(prototypeLink)&&isValidUrl(deckLink)?"pointer":"not-allowed",
+                  fontFamily:FF,fontSize:12,fontWeight:600,transition:"all 0.15s",
+                }}
+              >Submit for Nursery Review &#x2192;</button>
+            ) : (
+              <div style={{background:C.mango50,border:"1px solid "+C.mango300,borderRadius:DS.radius.lg,padding:"12px"}}>
+                <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mango700,marginBottom:8}}>Confirm Submission</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600,marginBottom:8,wordBreak:"break-all"}}>
+                  <div><strong>Prototype:</strong> <a href={prototypeLink} target="_blank" rel="noreferrer" style={{color:C.kangkong600}}>{prototypeLink}</a></div>
+                  <div><strong>Deck:</strong> <a href={deckLink} target="_blank" rel="noreferrer" style={{color:C.kangkong600}}>{deckLink}</a></div>
+                </div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mango600,marginBottom:10,padding:"6px 8px",background:C.mango100,borderRadius:DS.radius.sm}}>
+                  Once submitted, you won't be able to edit this plant until ExCom makes a decision.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setShowSubmitConfirm(false)} style={{flex:1,padding:"7px",background:C.white,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,cursor:"pointer",color:C.mushroom600}}>Cancel</button>
+                  <button onClick={()=>{onSubmitToNursery(project.id,prototypeLink,deckLink);setShowSubmitConfirm(false);}}
+                    style={{flex:1,padding:"7px",background:C.mango500,color:C.white,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}
+                  >Confirm Submission</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Seedling: Needs Rework feedback banner (builder only) ───────────── */}
+        {project.stage==="seedling" && project.reviewStatus==="needs_rework" && authUser?.email===project.builderEmail && (
+          <FeedbackBanner reviewComment={project.reviewComment} reviewedBy={project.reviewedBy} reviewedAt={project.reviewedAt}/>
+        )}
+
+        {/* ── Nursery: Locked state + ExCom decision zone ────────────────────── */}
+        {project.stage==="nursery" && (
+          <div style={{marginBottom:16,padding:"12px 14px",background:C.mango50,border:"1px solid "+C.mango300,borderRadius:DS.radius.lg}}>
+            <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mango600,marginBottom:10}}>Under Review</div>
+            {project.prototypeLink&&(
+              <a href={project.prototypeLink} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,color:C.kangkong600,textDecoration:"none",marginBottom:6}}>
+                View Prototype
+              </a>
+            )}
+            {project.deckLink&&(
+              <a href={project.deckLink} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,color:C.kangkong600,textDecoration:"none",marginBottom:8}}>
+                View Deck
+              </a>
+            )}
+            <div style={{fontFamily:FF,fontSize:12,color:C.mango700,marginBottom:2}}>
+              Submitted for review{project.submittedAt ? ` — ${new Date(project.submittedAt).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}` : ""}
+            </div>
+            {!authUser?.isExcom && (
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,fontStyle:"italic",marginTop:4}}>Under review by ExCom.</div>
+            )}
+
+            {/* ExCom decision zone */}
+            {authUser?.isExcom && (
+              <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+C.mango200}}>
+                <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>ExCom Decision</div>
+                {!showReworkInput ? (
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>onApproveProject?.(project.id)} style={{flex:1,padding:"8px",background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                      &#x2713; Approve
+                    </button>
+                    <button onClick={()=>setShowReworkInput(true)} style={{flex:1,padding:"8px",background:C.white,color:C.mango600,border:"1.5px solid "+C.mango400,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                      &#x21A9; Needs Rework
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <textarea value={reworkComment} onChange={e=>setReworkComment(e.target.value)}
+                      placeholder="What needs to be reworked? (required)"
+                      rows={3}
+                      style={{width:"100%",padding:"8px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mango300,fontFamily:FF,fontSize:12,color:C.mushroom800,background:C.white,outline:"none",resize:"vertical",marginBottom:8,boxSizing:"border-box"}}
+                    />
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>{setShowReworkInput(false);setReworkComment("");}} style={{flex:1,padding:"7px",background:C.white,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,cursor:"pointer",color:C.mushroom600}}>Cancel</button>
+                      <button disabled={!reworkComment.trim()}
+                        onClick={()=>{onNeedsRework?.(project.id,reworkComment);setShowReworkInput(false);setReworkComment("");}}
+                        style={{flex:1,padding:"7px",background:reworkComment.trim()?C.mango500:C.mushroom200,color:reworkComment.trim()?C.white:C.mushroom400,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:reworkComment.trim()?"pointer":"not-allowed"}}
+                      >Send Feedback</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Withdraw button — builder or Gardener */}
+            {(authUser?.email===project.builderEmail||authUser?.isGardener)&&(
+              <button onClick={()=>onWithdrawFromNursery?.(project.id)} style={{
+                width:"100%",padding:"7px",marginTop:12,
+                background:"transparent",border:"1px solid "+C.mushroom300,
+                borderRadius:DS.radius.md,fontFamily:FF,fontSize:11,
+                color:C.mushroom500,cursor:"pointer",transition:"all 0.15s",
+              }}>Withdraw Submission</button>
+            )}
+          </div>
         )}
 
         {project.lastUpdated>30&&(
@@ -2047,7 +2264,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
 // ── Add Project Modal ─────────────────────────────────────────────────────────
 
 // ── Wishlist View ─────────────────────────────────────────────────────────────
-function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish, onWishClaim, onUpdateWish, showAddWish, setShowAddWish}) {
+function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishClaim, onUnclaimSeed, onUpdateWish, showAddWish, setShowAddWish}) {
   const [deptFilter, setDeptFilter] = useState("All");
   const [sort, setSort] = useState("upvotes");
   const [claimingWish, setClaimingWish] = useState(null);
@@ -2074,7 +2291,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
               <WishSeed size={32} color={C.mushroom600}/>
               <div>
-                <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,lineHeight:1.1}}>Wishlist</div>
+                <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,lineHeight:1.1}}>Seeds</div>
                 <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,marginTop:1}}>Seeds waiting to grow — ideas without a builder yet</div>
               </div>
             </div>
@@ -2238,10 +2455,26 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
                     }}>
                       {hasUpvoted?"✓ I need this":"+ I need this"}
                     </button>
-                    {wish.claimedBy
-                      ? <div style={{flex:1,padding:"7px 12px",borderRadius:DS.radius.md,background:C.wintermelon100,border:"1px solid "+C.wintermelon400,fontFamily:FF,fontSize:12,fontWeight:600,color:C.wintermelon500,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                          🔨 {wish.claimedBy === currentUser ? "You're building this" : `${wish.claimedBy.split(" ")[0]} is building this`}
+                    {wish.readyForReview
+                      ? <span style={{flex:1,fontFamily:FF,fontSize:12,fontWeight:700,color:C.mango600,padding:"7px 12px",background:C.mango100,borderRadius:DS.radius.md,display:"flex",alignItems:"center",justifyContent:"center"}}>⏳ Review</span>
+                      : wish.claimedBy
+                      ? (
+                        <div style={{flex:1,display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:DS.radius.md,background:C.wintermelon100,border:"1px solid "+C.wintermelon400}}>
+                          {(() => {
+                            const builderCount = projects.filter(p => p.id === wish.fulfilledBy).length;
+                            return builderCount > 1 ? <span style={{fontFamily:FF,fontSize:9,color:C.mushroom500,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 5px"}}>{builderCount} builders</span> : null;
+                          })()}
+                          <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.wintermelon500,flex:1}}>
+                            🔨 {wish.claimedBy === currentUser ? "You're building this" : `${wish.claimedBy.split(" ")[0]} is building this`}
+                          </span>
+                          {wish.claimedBy === currentUser && projects.find(p=>p.id===wish.fulfilledBy)?.stage==="seedling" && (
+                            <button onClick={e=>{e.stopPropagation();onUnclaimSeed(wish.id);}} style={{
+                              fontFamily:FF,fontSize:10,color:C.mushroom500,background:"none",
+                              border:"1px solid "+C.mushroom300,borderRadius:DS.radius.sm,padding:"2px 7px",cursor:"pointer",
+                            }}>Release</button>
+                          )}
                         </div>
+                      )
                       : <button onClick={()=>setClaimingWish(wish)} style={{
                           flex:1,padding:"7px 12px",borderRadius:DS.radius.md,cursor:"pointer",
                           fontFamily:FF,fontSize:12,fontWeight:700,
@@ -2764,7 +2997,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Starting Stage</label>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-            {STAGES.map(s=>{
+            {STAGES.filter(s => s !== 'nursery').map(s=>{
               const sc = STAGE_COLORS[s];
               const active = form.stage===s;
               return (
@@ -3485,13 +3718,13 @@ function LoginScreen({onLogin, onSignUp, onReset, onUpdatePassword, initialMode=
 export default function SproutAIGarden() {
   const [projects, setProjects] = useState([]);
   const [wishes, setWishes]     = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [welcomeSeen, setWelcomeSeen] = useState(false);
   const [view, setView]         = useState("dashboard");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showAddWish, setShowAddWish] = useState(false);
-  const [prefilledWish, setPrefilledWish] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [gardenNav, setGardenNav] = useState({key:0, viewMode:"directory", stageFilter:"All"});
   const [profileOpen, setProfileOpen] = useState(false);
@@ -3525,7 +3758,7 @@ export default function SproutAIGarden() {
       const domain      = session.user.email.split("@")[1];
       const country     = COUNTRY_MAP[domain] || "PH";
       const displayName = session.user.email.split("@")[0];
-      const fallback    = { email: session.user.email, displayName, country, isGardener: false };
+      const fallback    = { email: session.user.email, displayName, country, isGardener: false, isExcom: false };
       setAuthUser(fallback);
       setAuthLoading(false);
 
@@ -3533,7 +3766,7 @@ export default function SproutAIGarden() {
       supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
         .then(({ data: existing }) => {
           if (existing) {
-            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener, hasDismissedWelcome: existing.has_dismissed_welcome || false });
+            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener, isExcom: existing.is_execom || false, hasDismissedWelcome: existing.has_dismissed_welcome || false });
           } else {
             supabase.from("profiles").insert({
               id: session.user.id, email: session.user.email,
@@ -3610,6 +3843,12 @@ export default function SproutAIGarden() {
     });
   }, [authUser?.email]);
 
+  // ── Load notifications ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) return;
+    loadNotifications().then(data => setNotifications(data));
+  }, [authUser?.email]);
+
   // Close profile dropdown on outside click
   useEffect(() => {
     const handler = e => { if (profileDropRef.current && !profileDropRef.current.contains(e.target)) setProfileOpen(false); };
@@ -3641,11 +3880,6 @@ export default function SproutAIGarden() {
     const saved = toProject(data);
     setProjects(prev => [...prev, saved]);
     if (!authUser?.hasDismissedWelcome) handleDismissWelcomePermanently();
-    if (prefilledWish) {
-      await supabase.from("wishes").update({ fulfilled_by: saved.name }).eq("id", prefilledWish.id);
-      setWishes(prev => prev.map(w => w.id === prefilledWish.id ? {...w, fulfilledBy: saved.name} : w));
-      setPrefilledWish(null);
-    }
   };
 
   const handleUpdateProject = async (updated) => {
@@ -3665,6 +3899,9 @@ export default function SproutAIGarden() {
   };
 
   const handleMoveStage = (project, dirOrStage) => {
+    // Permission: must be builder or Gardener
+    if (!authUser || (authUser.email !== project.builderEmail && !authUser.isGardener)) return;
+
     let next;
     if (typeof dirOrStage === "string") {
       next = dirOrStage;
@@ -3673,6 +3910,20 @@ export default function SproutAIGarden() {
       next = STAGES[cur + dirOrStage];
     }
     if (!next || next === project.stage) return;
+
+    // Nursery entry is form-only — never via drag or direct move
+    if (next === 'nursery') return;
+
+    // Nursery exit is ExCom-only (handled by approveProject/needsRework handlers)
+    if (project.stage === 'nursery' && !authUser.isGardener) return;
+
+    // Non-Gardeners: adjacent stages only
+    if (!authUser.isGardener) {
+      const curOrder = STAGE_ORDER[project.stage];
+      const nextOrder = STAGE_ORDER[next];
+      if (Math.abs(nextOrder - curOrder) > 1) return;
+    }
+
     const newMilestones = [...project.milestones, STAGE_LABELS[next] + " — " + new Date().toLocaleDateString("en-PH", {month:"short", year:"numeric"})];
     setProjects(prev => prev.map(p => p.id === project.id
       ? {...p, stage: next, lastUpdated: 0, milestones: newMilestones}
@@ -3680,6 +3931,114 @@ export default function SproutAIGarden() {
     ));
     supabase.from("projects").update({ stage: next, milestones: newMilestones, last_updated: new Date().toISOString() }).eq("id", project.id)
       .then(({ error }) => { if (error) console.error("handleMoveStage:", error); });
+  };
+
+  // ── Nursery flow mutations ─────────────────────────────────────────────────
+
+  const sendNotification = async (type, payload) => {
+    try {
+      await supabase.functions.invoke("send-notification", { body: { type, payload } });
+    } catch (e) {
+      console.warn("sendNotification failed:", e);
+      // Non-blocking — notification failure should not fail the main action
+    }
+  };
+
+  const handleMarkNotificationsRead = (projectId) => {
+    const toMark = notifications.filter(n => !n.read && n.payload?.project_id === projectId);
+    if (toMark.length === 0) return;
+    const ids = toMark.map(n => n.id);
+    setNotifications(prev => prev.map(n => ids.includes(n.id) ? {...n, read:true} : n));
+    supabase.from("notifications").update({ read:true }).in("id", ids)
+      .then(({ error }) => { if (error) console.error("markNotificationsRead:", error); });
+  };
+
+  const submitToNursery = async (projectId, prototypeLink, deckLink) => {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("projects").update({
+      stage: "nursery",
+      review_status: "pending",
+      prototype_link: prototypeLink,
+      deck_link: deckLink,
+      submitted_at: now,
+      last_updated: now,
+    }).eq("id", projectId);
+    if (error) { console.error("submitToNursery:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"nursery", reviewStatus:"pending", prototypeLink, deckLink, submittedAt:now, lastUpdated:0}
+      : p
+    ));
+    setSelected(null);
+    // Fire notification (non-blocking)
+    sendNotification("nursery-submitted", {
+      project_id: projectId,
+      project_name: projects.find(p=>p.id===projectId)?.name || "",
+      builder_email: authUser.email,
+      submitted_at: now,
+    });
+  };
+
+  const withdrawFromNursery = async (projectId) => {
+    const { error } = await supabase.rpc("withdraw_from_nursery", { p_id: projectId });
+    if (error) { console.error("withdrawFromNursery:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"seedling", reviewStatus:null}
+      : p
+    ));
+    setSelected(null);
+  };
+
+  const approveProject = async (projectId) => {
+    const now = new Date().toISOString();
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    const newMilestones = [...(project.milestones || []), "Approved by ExCom — " + new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})];
+    const { error } = await supabase.from("projects").update({
+      stage: "sprout",
+      review_status: "approved",
+      reviewed_by: authUser.email,
+      reviewed_at: now,
+      milestones: newMilestones,
+      last_updated: now,
+    }).eq("id", projectId);
+    if (error) { console.error("approveProject:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"sprout", reviewStatus:"approved", reviewedBy:authUser.email, reviewedAt:now, milestones:newMilestones, lastUpdated:0}
+      : p
+    ));
+    setSelected(null);
+    sendNotification("plant-approved", {
+      project_id: projectId,
+      project_name: project.name,
+      builder_email: project.builderEmail,
+    });
+  };
+
+  const needsRework = async (projectId, comment) => {
+    if (!comment?.trim()) return;
+    const now = new Date().toISOString();
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    const { error } = await supabase.from("projects").update({
+      stage: "seedling",
+      review_status: "needs_rework",
+      review_comment: comment.trim(),
+      reviewed_by: authUser.email,
+      reviewed_at: now,
+      last_updated: now,
+    }).eq("id", projectId);
+    if (error) { console.error("needsRework:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"seedling", reviewStatus:"needs_rework", reviewComment:comment.trim(), reviewedBy:authUser.email, reviewedAt:now, lastUpdated:0}
+      : p
+    ));
+    setSelected(null);
+    sendNotification("plant-needs-rework", {
+      project_id: projectId,
+      project_name: project.name,
+      builder_email: project.builderEmail,
+      review_comment: comment.trim(),
+    });
   };
 
   // ── Wish mutations ────────────────────────────────────────────────────────
@@ -3704,16 +4063,97 @@ export default function SproutAIGarden() {
     }));
   };
 
-  const handleClaimWish = (wishId) => {
+  const handleClaimWish = async (wishId) => {
+    const wish = wishes.find(w => w.id === wishId);
+    if (!wish) return;
     const claimedAt = new Date().toLocaleDateString("en-PH", {month:"short", day:"numeric", year:"numeric"});
-    setWishes(prev => prev.map(w => w.id !== wishId ? w : {
-      ...w, claimedBy: authUser.displayName, claimedByEmail: authUser.email, claimedAt,
-    }));
-    supabase.from("wishes").update({ claimed_by: authUser.displayName, claimed_by_email: authUser.email, claimed_at: claimedAt }).eq("id", wishId)
-      .then(({ error }) => { if (error) console.error("handleClaimWish:", error); });
+
+    // Update the wish
+    const { error: wishError } = await supabase.from("wishes").update({
+      claimed_by: authUser.displayName,
+      claimed_by_email: authUser.email,
+      claimed_at: claimedAt,
+    }).eq("id", wishId);
+    if (wishError) { console.error("handleClaimWish wish:", wishError); return; }
+
+    // Create a new Plant at seedling stage
+    const newPlant = {
+      country: authUser.country,
+      name: wish.title,
+      builtBy: authUser.displayName,
+      builtFor: wish.builtFor,
+      stage: "seedling",
+      builder: authUser.displayName,
+      builderEmail: authUser.email,
+      notes: [],
+      milestones: ["Seed claimed — " + claimedAt],
+      description: wish.why || "",
+      impact: "TBD", impactNum: "TBD",
+      toolUsed: [],
+      zx: 40, zy: 50,
+    };
+    const row = fromProject(newPlant);
+    const { data: plantData, error: plantError } = await supabase
+      .from("projects").insert(row).select().single();
+    if (plantError) { console.error("handleClaimWish plant:", plantError); return; }
+
+    const savedPlant = toProject(plantData);
+
+    // Link the wish to the plant
+    await supabase.from("wishes").update({
+      fulfilled_by: savedPlant.id,
+    }).eq("id", wishId);
+
+    setWishes(prev => prev.map(w => w.id === wishId
+      ? {...w, claimedBy:authUser.displayName, claimedByEmail:authUser.email, claimedAt, fulfilledBy:savedPlant.id}
+      : w
+    ));
+    setProjects(prev => [...prev, savedPlant]);
   };
+
+  const handleUnclaimSeed = async (wishId) => {
+    const wish = wishes.find(w => w.id === wishId);
+    if (!wish || !wish.fulfilledBy) return;
+    // Only builder or Gardener can un-claim
+    if (authUser.email !== wish.claimedByEmail && !authUser.isGardener) return;
+    // Cannot un-claim if the Plant is in Nursery
+    const plant = projects.find(p => p.id === wish.fulfilledBy);
+    if (plant?.stage === "nursery") return;
+
+    // Step 1: Delete the Plant (RLS policy: builder-delete-own-seedling)
+    const { error: deleteError } = await supabase
+      .from("projects").delete().eq("id", wish.fulfilledBy);
+    if (deleteError) { console.error("handleUnclaimSeed delete:", deleteError); return; }
+    setProjects(prev => prev.filter(p => p.id !== wish.fulfilledBy));
+
+    // Step 2: Clear the Wish claim fields
+    const { error: wishError } = await supabase.from("wishes").update({
+      claimed_by: null,
+      claimed_by_email: null,
+      claimed_at: null,
+      fulfilled_by: null,
+    }).eq("id", wishId);
+    if (wishError) {
+      console.error("handleUnclaimSeed wish clear:", wishError);
+      alert("Plant removed, but there was an error releasing the Seed. A Gardener can fix this.");
+      return;
+    }
+    setWishes(prev => prev.map(w => w.id === wishId
+      ? {...w, claimedBy:null, claimedByEmail:null, claimedAt:null, fulfilledBy:null}
+      : w
+    ));
+
+    // Notify original Seed submitter (in-app only)
+    if (wish.wisherEmail !== authUser.email) {
+      sendNotification("seed-unclaimed", {
+        wish_id: wishId,
+        wish_title: wish.title,
+        wisher_email: wish.wisherEmail,
+      });
+    }
+  };
+
   const handleSelectProject = p => { setSelected(p); if(view==="dashboard") setView("garden"); };
-  const handlePromoteWish = w => { setPrefilledWish(w); setShowForm(true); };
 
   // Auth gate — after all hooks
   if (authLoading) {
@@ -3744,10 +4184,12 @@ export default function SproutAIGarden() {
     );
   }
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const NAV_TABS = [
     {id:"dashboard", label:"Overview",  Icon:IcoOverview},
     {id:"garden",    label:"Garden",    Icon:IcoGarden},
-    {id:"wishlist",  label:"Wishlist",  Icon:IcoWishlist},
+    {id:"wishlist",  label:"Seeds",     Icon:IcoWishlist},
   ];
 
   return (
@@ -3780,6 +4222,18 @@ export default function SproutAIGarden() {
           })}
         </div>
 
+        {/* Notifications badge */}
+        {unreadCount > 0 && (
+          <div style={{
+            position:"relative",marginLeft:-8,
+            width:18,height:18,borderRadius:"50%",background:C.tomato500,
+            border:"2px solid "+C.white,display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:9,fontWeight:700,color:C.white,fontFamily:FF,flexShrink:0,
+          }}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </div>
+        )}
+
         {/* Right side: add + user */}
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <button onClick={()=>setShowForm(true)} style={{
@@ -3806,6 +4260,7 @@ export default function SproutAIGarden() {
               {authUser.country&&<CountryBadge country={authUser.country}/>}
               <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700,maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{authUser.displayName||authUser.email.split("@")[0]}</span>
               {authUser.isGardener&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Gardener</span>}
+              {authUser.isExcom&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>ExCom</span>}
               <svg width={12} height={12} viewBox="0 0 12 12" fill="none" style={{flexShrink:0,transition:"transform 0.2s",transform:profileOpen?"rotate(180deg)":"rotate(0deg)"}}>
                 <path d="M3 4.5 L6 7.5 L9 4.5" stroke={C.mushroom500} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -3849,8 +4304,8 @@ export default function SproutAIGarden() {
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
           {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
-          {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish}/>}
-          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
+          {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish}/>}
+          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
 
         {selected && (
@@ -3858,14 +4313,19 @@ export default function SproutAIGarden() {
             project={selected} allProjects={projects}
             onClose={()=>setSelected(null)} onNote={addNote} setSelected={setSelected}
             authUser={authUser} onEdit={p=>{setEditingProject(p);setSelected(null);}}
+            onSubmitToNursery={submitToNursery}
+            onWithdrawFromNursery={withdrawFromNursery}
+            onApproveProject={approveProject}
+            onNeedsRework={needsRework}
+            onMarkNotificationsRead={handleMarkNotificationsRead}
           />
         )}
       </div>
 
       {showForm && (
         <AddProjectModal
-          onClose={()=>{setShowForm(false);setPrefilledWish(null);}}
-          onAdd={addProject} projects={projects} prefill={prefilledWish}
+          onClose={()=>setShowForm(false)}
+          onAdd={addProject} projects={projects}
           authUser={authUser}
         />
       )}
