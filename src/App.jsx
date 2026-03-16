@@ -141,17 +141,35 @@ const CAP_COLORS = {
 };
 
 const DEPT_COLORS = {
-  Engineering:C.blueberry500, Marketing:C.mango500, Operations:C.kangkong500,
-  Finance:C.wintermelon500, "Customer Experience":C.carrot500, HR:C.ubas500,
+  Marketing:C.mango500, "Product Marketing":C.mango500,
+  LDU:C.blueberry500, SolCon:C.blueberry500,
+  Sales:C.carrot500, RevOps:C.carrot500,
+  Implementation:C.kangkong500, MPS:C.kangkong500,
+  "Customer Advocacy":C.ubas500, "Customer Success Management":C.ubas500,
+  Alliance:C.wintermelon500,
+  Aurora:C.blueberry500, Prometheus:C.tomato500,
+  Legal:C.mushroom600, "People Ops":C.ubas500,
+  Finance:C.wintermelon500, Execom:C.mushroom700,
 };
 
 const DEPT_ZONES = {
-  Finance:             {x:1, y:12,w:30,h:40},
-  Marketing:           {x:34,y:8, w:30,h:38},
-  HR:                  {x:67,y:12,w:31,h:40},
-  Engineering:         {x:1, y:55,w:30,h:42},
-  Operations:          {x:34,y:50,w:30,h:47},
-  "Customer Experience":{x:67,y:55,w:31,h:42},
+  Marketing:                    {x:1,  y:1,  w:23, h:17},
+  "Product Marketing":          {x:26, y:1,  w:23, h:17},
+  LDU:                          {x:51, y:1,  w:23, h:17},
+  SolCon:                       {x:76, y:1,  w:23, h:17},
+  Sales:                        {x:1,  y:21, w:23, h:17},
+  RevOps:                       {x:26, y:21, w:23, h:17},
+  Implementation:               {x:51, y:21, w:23, h:17},
+  MPS:                          {x:76, y:21, w:23, h:17},
+  "Customer Advocacy":          {x:1,  y:41, w:23, h:17},
+  "Customer Success Management":{x:26, y:41, w:23, h:17},
+  Alliance:                     {x:51, y:41, w:23, h:17},
+  Aurora:                       {x:76, y:41, w:23, h:17},
+  Prometheus:                   {x:1,  y:61, w:23, h:17},
+  Legal:                        {x:26, y:61, w:23, h:17},
+  "People Ops":                 {x:51, y:61, w:23, h:17},
+  Finance:                      {x:76, y:61, w:23, h:17},
+  Execom:                       {x:26, y:81, w:47, h:17},
 };
 
 const CAPABILITIES = ["All","LLM","Computer Vision","Automation","Prediction","NLP"];
@@ -181,12 +199,23 @@ const INITIAL_PROJECTS = [
 const ORIGINS = ["Hackathon","Side Project","Leadership Directive","Customer Request","Team Initiative"];
 
 const DEPT_PROBLEM_SPACES = {
-  Engineering:          ["Code Quality","Developer Productivity","Infrastructure Automation","Testing & QA","Security","Documentation"],
-  Marketing:            ["Content Creation","Ad Optimization","Brand Consistency","Customer Insights","Campaign Analytics","SEO"],
-  Operations:           ["Process Automation","Inventory Management","Supply Chain","Vendor Management","Reporting","Forecasting"],
-  Finance:              ["Invoice Processing","Budget Analysis","Expense Management","Compliance & Risk","Financial Reporting","Fraud Detection"],
-  "Customer Experience":["Customer Support","Sentiment Analysis","Ticket Routing","Self-Service","Onboarding","Retention"],
-  HR:                   ["Recruitment","Onboarding","Performance Management","Employee Engagement","Learning & Development","Compliance"],
+  Marketing:                    ["Content Creation","Campaign Analytics","Brand Consistency","Customer Insights","SEO","Ad Optimization"],
+  "Product Marketing":          ["Go-to-Market","Competitive Analysis","Product Launch","Customer Research","Positioning","Messaging"],
+  LDU:                          ["Lead Generation","Lead Scoring","Pipeline Management","Outreach Automation","Account Research","Conversion"],
+  SolCon:                       ["Solution Design","Proposal Generation","Bid Management","Technical Scoping","RFP Responses","Pricing"],
+  Sales:                        ["Sales Automation","CRM Management","Deal Forecasting","Customer Outreach","Pipeline Tracking","Quota Analysis"],
+  RevOps:                       ["Revenue Analytics","Process Automation","Data Integration","Reporting","Sales Ops","Forecasting"],
+  Implementation:               ["Project Management","Client Onboarding","Configuration","Training","Documentation","Delivery Tracking"],
+  MPS:                          ["Service Delivery","SLA Monitoring","Incident Management","Reporting","Optimization","Client Health"],
+  "Customer Advocacy":          ["NPS Tracking","Case Studies","Reference Management","Community","Testimonials","Loyalty"],
+  "Customer Success Management":["Churn Prevention","Health Scoring","QBR Automation","Adoption Tracking","Upsell","Renewal"],
+  Alliance:                     ["Partner Management","Co-Marketing","Integration Tracking","Partner Onboarding","Deal Registration","MDF"],
+  Aurora:                       ["Innovation","Prototyping","R&D","Technology Scouting","AI Research","Internal Tools"],
+  Prometheus:                   ["Engineering","Code Quality","Infrastructure","Security","Developer Productivity","Platform"],
+  Legal:                        ["Contract Review","Compliance","Risk Assessment","Document Management","Policy","IP Management"],
+  "People Ops":                 ["Recruitment","Onboarding","Performance Management","Employee Engagement","Learning & Development","Compliance"],
+  Finance:                      ["Invoice Processing","Budget Analysis","Expense Management","Financial Reporting","Forecasting","Fraud Detection"],
+  Execom:                       ["Strategic Planning","Business Intelligence","Executive Reporting","Decision Support","KPI Tracking","Governance"],
 };
 
 // Helper: get dept color
@@ -1936,7 +1965,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
 
   const toggleUpvote = (wishId) => onUpvote(wishId);
 
-  const DEPTS = ["All","Engineering","Marketing","Operations","Finance","Customer Experience","HR"];
+  const DEPTS = ["All","Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","Customer Advocacy","Customer Success Management","Alliance","Aurora","Prometheus","Legal","People Ops","Finance","Execom"];
 
   return (
     <div style={{flex:1,overflow:"auto",padding:"28px 32px",background:C.mushroom50}}>
@@ -2165,8 +2194,8 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
 
 // ── Add Wish Modal ────────────────────────────────────────────────────────────
 function AddWishModal({onClose, onAdd, authUser}) {
-  const DEPTS = ["Engineering","Marketing","Operations","Finance","Customer Experience","HR"];
-  const [form,setForm] = useState({title:"",why:"",builtFor:"Engineering",wisherName:"",wisherEmail:""});
+  const DEPTS = ["Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","Customer Advocacy","Customer Success Management","Alliance","Aurora","Prometheus","Legal","People Ops","Finance","Execom"];
+  const [form,setForm] = useState({title:"",why:"",builtFor:"Marketing",wisherName:"",wisherEmail:""});
   const set = (k,v) => setForm(p=>({...p,[k]:v}));
   const canSubmit = form.title.trim() && form.wisherName.trim() && form.builtFor;
 
@@ -2362,8 +2391,8 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   const [form, setForm] = useState({
     name: prefill?.title||"",
     description: prefill?.why||"",
-    builtBy:"Engineering",
-    builtFor: prefill?.builtFor||"Engineering",
+    builtBy:"Marketing",
+    builtFor: prefill?.builtFor||"Marketing",
     capability:"LLM",
     builder:"",impact:"",
     stage:STAGES[0],
@@ -2926,12 +2955,15 @@ function FirstTimeCountryModal({onSelect}) {
   );
 }
 
-function LoginScreen({onLogin, onSignUp, onReset, error, loading}) {
+function LoginScreen({onLogin, onSignUp, onReset, onUpdatePassword, initialMode="login", error, loading}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [mode, setMode] = useState("login"); // "login" | "signup" | "reset"
+  const [mode, setMode] = useState(initialMode); // "login" | "signup" | "reset" | "newpassword"
   const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [updateError, setUpdateError] = useState("");
+  const [updateDone, setUpdateDone] = useState(false);
 
   const isDomainValid = isAllowedEmail(email);
 
@@ -3116,6 +3148,61 @@ function LoginScreen({onLogin, onSignUp, onReset, error, loading}) {
               </button>
             </div>
           </>
+        ) : mode==="newpassword" ? (
+          <>
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Set new password</div>
+              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Choose a new password for your Sprout account</div>
+            </div>
+
+            {updateDone ? (
+              <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,padding:"14px",marginBottom:16,textAlign:"center",fontFamily:FF,fontSize:13,color:C.kangkong700}}>
+                <IcoCheck size={18} color={C.kangkong500}/><br/>
+                Password updated! <button onClick={()=>setMode("login")} style={{background:"none",border:"none",cursor:"pointer",color:C.kangkong600,fontWeight:700,fontFamily:FF,fontSize:13}}>Sign in</button>
+              </div>
+            ) : (
+              <>
+                <div style={{marginBottom:14}}>
+                  <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>New Password</label>
+                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
+                    onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                    onBlur={e=>e.target.style.borderColor=C.mushroom300}
+                  />
+                </div>
+                <div style={{marginBottom:16}}>
+                  <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Confirm Password</label>
+                  <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
+                    onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                    onBlur={e=>e.target.style.borderColor=confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300}
+                  />
+                  {confirmPassword&&confirmPassword!==password&&(
+                    <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Passwords do not match</div>
+                  )}
+                </div>
+                {updateError&&(
+                  <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
+                    <IcoWarning size={14} color={C.tomato500}/> {updateError}
+                  </div>
+                )}
+                <button
+                  onClick={async()=>{
+                    setUpdateError("");
+                    const err = await onUpdatePassword(password);
+                    if (err) setUpdateError(err);
+                    else setUpdateDone(true);
+                  }}
+                  disabled={!password||password!==confirmPassword}
+                  style={{width:"100%",padding:"11px",background:password&&password===confirmPassword?C.kangkong600:C.mushroom300,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:password&&password===confirmPassword?"pointer":"not-allowed",fontFamily:FF,fontSize:13,fontWeight:700,marginBottom:0}}
+                >
+                  Update Password
+                </button>
+              </>
+            )}
+          </>
         ) : (
           <>
             <div style={{marginBottom:20}}>
@@ -3141,13 +3228,18 @@ function LoginScreen({onLogin, onSignUp, onReset, error, loading}) {
               </div>
             )}
 
+            {resetError&&(
+              <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:12,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
+                <IcoWarning size={14} color={C.tomato500}/> {resetError}
+              </div>
+            )}
             <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setMode("login");setResetSent(false);}} style={{
+              <button onClick={()=>{setMode("login");setResetSent(false);setResetError("");}} style={{
                 flex:1,padding:"10px",background:C.mushroom100,border:"1px solid "+C.mushroom200,
                 borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom600,fontWeight:600,
               }}>Back</button>
               {!resetSent&&(
-                <button onClick={async()=>{await onReset(email);setResetSent(true);}} disabled={!isDomainValid} style={{
+                <button onClick={async()=>{setResetError("");const err=await onReset(email);if(err){setResetError(err);}else{setResetSent(true);}}} disabled={!isDomainValid} style={{
                   flex:2,padding:"10px",background:isDomainValid?C.kangkong600:C.mushroom300,
                   border:"none",borderRadius:DS.radius.lg,cursor:isDomainValid?"pointer":"not-allowed",
                   fontFamily:FF,fontSize:13,color:C.white,fontWeight:700,
@@ -3185,9 +3277,19 @@ export default function SproutAIGarden() {
   const [authUser, setAuthUser]     = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError]   = useState("");
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
+    // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock the UI after 5s
+    const timeout = setTimeout(() => setAuthLoading(false), 5000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      clearTimeout(timeout);
+      if (event === "PASSWORD_RECOVERY") {
+        setPasswordRecovery(true);
+        setAuthLoading(false);
+        return;
+      }
       if (!session) {
         setAuthUser(null);
         setAuthLoading(false);
@@ -3248,7 +3350,16 @@ export default function SproutAIGarden() {
   };
 
   const handleReset = async (email) => {
-    await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    const redirectTo = import.meta.env.VITE_APP_URL || window.location.origin;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    return error ? error.message : null;
+  };
+
+  const handleUpdatePassword = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return error.message;
+    setPasswordRecovery(false);
+    return null;
   };
 
   const handleLogout = async () => {
@@ -3374,7 +3485,7 @@ export default function SproutAIGarden() {
   if (!authUser) {
     return (
       <>
-        <LoginScreen onLogin={handleLogin} onSignUp={handleSignUp} onReset={handleReset} error={authError} loading={authLoading}/>
+        <LoginScreen onLogin={handleLogin} onSignUp={handleSignUp} onReset={handleReset} onUpdatePassword={handleUpdatePassword} initialMode={passwordRecovery ? "newpassword" : "login"} error={authError} loading={authLoading}/>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
           @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
