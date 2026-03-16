@@ -14,7 +14,7 @@ const DS = {
     mushroom600:"#736f5e",mushroom700:"#565244",mushroom800:"#3a372e",
     mushroom900:"#201e18",mushroom950:"#111009",
     tomato500:"#e53e3e",tomato100:"#fed7d7",tomato600:"#c53030",
-    mango500:"#d69e2e",mango100:"#fefcbf",mango600:"#b7791f",
+    mango50:"#fffff0",mango100:"#fefcbf",mango300:"#f6e05e",mango500:"#d69e2e",mango600:"#b7791f",
     carrot500:"#dd6b20",carrot100:"#feebc8",
     wintermelon500:"#2c7a7b",wintermelon100:"#e6fffa",wintermelon400:"#38b2ac",
     blueberry500:"#3182ce",blueberry100:"#ebf8ff",blueberry400:"#63b3ed",
@@ -1674,6 +1674,11 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                     <StageIcon stage={stage} size={15}/>
                     <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:sc.text}}>{STAGE_LABELS[stage]}</span>
                     <span style={{marginLeft:"auto",fontFamily:FF,fontSize:11,fontWeight:700,background:sc.border,color:sc.text,borderRadius:DS.radius.full,padding:"1px 8px"}}>{col.length}</span>
+                    {stage==="seedling"&&col.filter(p=>p.prototypeLink&&p.deckLink).length>0&&(
+                      <span style={{fontFamily:FF,fontSize:10,color:C.mango600,marginLeft:4,fontWeight:600}}>
+                        ({col.filter(p=>p.prototypeLink&&p.deckLink).length} ready)
+                      </span>
+                    )}
                   </div>
                   <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.7}}>{STAGE_FLORA[stage]}</div>
                 </div>
@@ -1691,9 +1696,11 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                         onDragEnd={()=>{setDragProjectId(null);setDragOverStage(null);}}
                         onClick={()=>setSelected(p)}
                         style={{
-                          background:dragProjectId===p.id?sc.bg:C.mushroom50,
+                          background:dragProjectId===p.id ? sc.bg
+                            : (stage==="seedling"&&p.prototypeLink&&p.deckLink) ? C.mango50
+                            : C.mushroom50,
                           borderRadius:DS.radius.lg,padding:"11px 13px",marginBottom:8,
-                          border:"1px solid "+C.mushroom200,borderLeft:"3px solid "+dc,
+                          border:"1px solid "+((stage==="seedling"&&p.prototypeLink&&p.deckLink)?C.mango300:C.mushroom200),borderLeft:"3px solid "+dc,
                           cursor:"grab",transition:"all 0.15s",boxShadow:DS.shadow.sm,
                           opacity:dragProjectId===p.id?0.5:1,
                         }}
@@ -1721,8 +1728,23 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                             <IcoImpact size={11} color={C.kangkong600}/> {p.impact}
                           </div>
                         )}
+                        {stage==="seedling"&&(
+                          <div style={{display:"flex",gap:4,marginBottom:4,flexWrap:"wrap"}}>
+                            {!p.prototypeLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Prototype needed</span>}
+                            {!p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Deck needed</span>}
+                            {p.prototypeLink&&p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mango600,fontWeight:600,border:"1px solid "+C.mango300,background:C.mango50,borderRadius:DS.radius.full,padding:"1px 7px"}}>Ready for Nursery →</span>}
+                          </div>
+                        )}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>{p.lastUpdated===0?"Today":p.lastUpdated+"d ago"}</span>
+                          {stage==="nursery"&&p.submittedAt&&(()=>{
+                            const daysAgoVal = daysAgo(p.submittedAt);
+                            return (
+                              <span style={{fontFamily:FF,fontSize:10,color:daysAgoVal>7?C.mango600:C.mushroom400,fontWeight:daysAgoVal>7?600:400}}>
+                                {daysAgoVal===0?"Submitted today":`Submitted ${daysAgoVal}d ago`}
+                              </span>
+                            );
+                          })()}
                           <span style={{fontSize:10,color:C.mushroom300,userSelect:"none"}}>⠿ drag</span>
                         </div>
                       </div>
