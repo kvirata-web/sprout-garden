@@ -1975,10 +1975,9 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
 // ── Add Project Modal ─────────────────────────────────────────────────────────
 
 // ── Wishlist View ─────────────────────────────────────────────────────────────
-function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish, onWishClaim}) {
+function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish, onWishClaim, showAddWish, setShowAddWish}) {
   const [deptFilter, setDeptFilter] = useState("All");
   const [sort, setSort] = useState("upvotes");
-  const [showAddWish, setShowAddWish] = useState(false);
   const [claimingWish, setClaimingWish] = useState(null);
   const currentUser = authUser?.displayName || "You";
 
@@ -2341,7 +2340,7 @@ function AddWishModal({onClose, onAdd, authUser}) {
 
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
-function WelcomeModal({onExplore, onDismissPermanently}) {
+function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGarden}) {
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.6)",backdropFilter:"blur(8px)"}}>
       <div style={{background:C.white,borderRadius:DS.radius.xl,padding:36,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
@@ -2355,22 +2354,28 @@ function WelcomeModal({onExplore, onDismissPermanently}) {
           </div>
         </div>
 
-        {/* Contribution cards */}
+        {/* Contribution cards — clickable */}
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
-          <div style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start"}}>
+          <button onClick={onPlantSeed} style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
+            onMouseOver={e=>{e.currentTarget.style.background=C.kangkong100;e.currentTarget.style.borderColor=C.kangkong400;}}
+            onMouseOut={e=>{e.currentTarget.style.background=C.kangkong50;e.currentTarget.style.borderColor=C.kangkong200;}}
+          >
             <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌱</span>
             <div>
               <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong700,marginBottom:3}}>Plant a Seed</div>
               <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Got an idea for an AI tool but haven't built it yet? Add it to the Wishlist. Your team can upvote it, claim it, and bring it to life.</div>
             </div>
-          </div>
-          <div style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start"}}>
+          </button>
+          <button onClick={onAddToGarden} style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
+            onMouseOver={e=>{e.currentTarget.style.background=C.mushroom100;e.currentTarget.style.borderColor=C.mushroom300;}}
+            onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom200;}}
+          >
             <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌾</span>
             <div>
               <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to Garden</div>
               <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Already building or shipped something? Add it to the Garden so the whole company can see what you've made and follow its progress.</div>
             </div>
-          </div>
+          </button>
         </div>
 
         <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center",marginBottom:20}}>
@@ -3364,6 +3369,7 @@ export default function SproutAIGarden() {
   const [view, setView]         = useState("dashboard");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [showAddWish, setShowAddWish] = useState(false);
   const [prefilledWish, setPrefilledWish] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileModal, setProfileModal] = useState(null); // null | "profile" | "about"
@@ -3705,7 +3711,7 @@ export default function SproutAIGarden() {
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
           {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject}/>}
           {view==="garden"    && <GardenHub projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish}/>}
-          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish}/>}
+          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
 
         {selected && (
@@ -3730,6 +3736,8 @@ export default function SproutAIGarden() {
         <WelcomeModal
           onExplore={() => setWelcomeSeen(true)}
           onDismissPermanently={handleDismissWelcomePermanently}
+          onPlantSeed={() => { setWelcomeSeen(true); setView("wishlist"); setShowAddWish(true); }}
+          onAddToGarden={() => { setWelcomeSeen(true); setView("garden"); setShowForm(true); }}
         />
       )}
 
