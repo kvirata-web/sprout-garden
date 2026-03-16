@@ -1215,7 +1215,7 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, aut
 
 
 // ── Unified Garden Hub (Directory + Garden + Board) ───────────────────────────
-const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWish, onMoveStage, onWishClaim, initialViewMode="directory", initialStageFilter="All"}) => {
+const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWish, onMoveStage, onWishClaim, onUpdateWish, initialViewMode="directory", initialStageFilter="All"}) => {
   const [viewMode, setViewMode] = useState(initialViewMode);
   const [deptFilter, setDeptFilter] = useState("All");
   const [capFilter, setCapFilter] = useState("All");
@@ -1225,6 +1225,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedWish, setSelectedWish] = useState(null);
+  const [editingWish, setEditingWish] = useState(null);
   const [claimingWish, setClaimingWish] = useState(null);
   const [dragProjectId, setDragProjectId] = useState(null);
   const [dragOverStage, setDragOverStage] = useState(null);
@@ -1676,6 +1677,9 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
           onPromoteToSprout={()=>handlePromoteToSprout(selectedWish)}
           onEdit={w=>{setSelectedWish(null);setEditingWish(w);}}
         />
+      )}
+      {editingWish&&(
+        <AddWishModal authUser={authUser} existing={editingWish} onClose={()=>setEditingWish(null)} onSave={w=>{onUpdateWish?.(w);setEditingWish(null);}}/>
       )}
       {claimingWish&&(
         <ClaimModal wish={claimingWish} authUser={authUser} onClose={()=>setClaimingWish(null)} onClaim={handleConfirmClaim}/>
@@ -3770,7 +3774,7 @@ export default function SproutAIGarden() {
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
           {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
-          {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish}/>}
+          {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish}/>}
           {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
 
@@ -3778,7 +3782,7 @@ export default function SproutAIGarden() {
           <DetailPanel
             project={selected} allProjects={projects}
             onClose={()=>setSelected(null)} onNote={addNote} setSelected={setSelected}
-            authUser={authUser} onEdit={setEditingProject}
+            authUser={authUser} onEdit={p=>{setEditingProject(p);setSelected(null);}}
           />
         )}
       </div>
