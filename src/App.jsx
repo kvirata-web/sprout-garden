@@ -1654,6 +1654,8 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                 onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDragOverStage(null);}}
                 onDrop={e=>{
                   e.preventDefault();
+                  // Nursery is not a valid drag-drop target
+                  if (stage === 'nursery') { setDragProjectId(null); setDragOverStage(null); return; }
                   if(dragProjectId&&dragProjectId!==stage){
                     const p=projects.find(pr=>pr.id===dragProjectId);
                     if(p&&p.stage!==stage) moveStage(p, stage);
@@ -3705,6 +3707,9 @@ export default function SproutAIGarden() {
   };
 
   const handleMoveStage = (project, dirOrStage) => {
+    // Permission: must be builder or Gardener
+    if (!authUser || (authUser.email !== project.builderEmail && !authUser.isGardener)) return;
+
     let next;
     if (typeof dirOrStage === "string") {
       next = dirOrStage;
@@ -3713,6 +3718,20 @@ export default function SproutAIGarden() {
       next = STAGES[cur + dirOrStage];
     }
     if (!next || next === project.stage) return;
+
+    // Nursery entry is form-only — never via drag or direct move
+    if (next === 'nursery') return;
+
+    // Nursery exit is ExCom-only (handled by approveProject/needsRework handlers)
+    if (project.stage === 'nursery' && !authUser.isGardener) return;
+
+    // Non-Gardeners: adjacent stages only
+    if (!authUser.isGardener) {
+      const curOrder = STAGE_ORDER[project.stage];
+      const nextOrder = STAGE_ORDER[next];
+      if (Math.abs(nextOrder - curOrder) > 1) return;
+    }
+
     const newMilestones = [...project.milestones, STAGE_LABELS[next] + " — " + new Date().toLocaleDateString("en-PH", {month:"short", year:"numeric"})];
     setProjects(prev => prev.map(p => p.id === project.id
       ? {...p, stage: next, lastUpdated: 0, milestones: newMilestones}
