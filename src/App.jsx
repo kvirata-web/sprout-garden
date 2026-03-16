@@ -1584,7 +1584,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
           {/* Seed column — from wishes */}
           {(()=>{
             const seedCol = wishes.filter(w=>!w.fulfilledBy);
-            const sc = STAGE_COLORS["seed"];
+            const sc = {bg:C.mushroom100, text:C.mushroom600, border:C.mushroom300, dot:C.mushroom400};
             return (
               <div style={{
                 minWidth:220,maxWidth:240,flex:1,marginRight:12,
