@@ -1591,7 +1591,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                     <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:sc.text}}>Seed</span>
                     <span style={{marginLeft:"auto",fontFamily:FF,fontSize:11,fontWeight:700,background:sc.border,color:sc.text,borderRadius:DS.radius.full,padding:"1px 8px"}}>{seedCol.length}</span>
                   </div>
-                  <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.7}}>{STAGE_FLORA["seed"]}</div>
+                  <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.7}}>Community ideas awaiting adoption</div>
                 </div>
                 <div style={{overflowY:"auto",flex:1,padding:"10px"}}>
                   {seedCol.length===0&&(
