@@ -3958,6 +3958,59 @@ export default function SproutAIGarden() {
     setSelected(null);
   };
 
+  const approveProject = async (projectId) => {
+    const now = new Date().toISOString();
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    const newMilestones = [...(project.milestones || []), "Approved by ExCom — " + new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})];
+    const { error } = await supabase.from("projects").update({
+      stage: "sprout",
+      review_status: "approved",
+      reviewed_by: authUser.email,
+      reviewed_at: now,
+      milestones: newMilestones,
+      last_updated: now,
+    }).eq("id", projectId);
+    if (error) { console.error("approveProject:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"sprout", reviewStatus:"approved", reviewedBy:authUser.email, reviewedAt:now, milestones:newMilestones, lastUpdated:0}
+      : p
+    ));
+    setSelected(null);
+    sendNotification("plant-approved", {
+      project_id: projectId,
+      project_name: project.name,
+      builder_email: project.builderEmail,
+    });
+  };
+
+  const needsRework = async (projectId, comment) => {
+    if (!comment?.trim()) return;
+    const now = new Date().toISOString();
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    const { error } = await supabase.from("projects").update({
+      stage: "seedling",
+      review_status: "needs_rework",
+      review_comment: comment.trim(),
+      reviewed_by: authUser.email,
+      reviewed_at: now,
+      last_updated: now,
+    }).eq("id", projectId);
+    if (error) { console.error("needsRework:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"seedling", reviewStatus:"needs_rework", reviewComment:comment.trim(), reviewedBy:authUser.email, reviewedAt:now, lastUpdated:0}
+      : p
+    ));
+    setSelected(null);
+    sendNotification("plant-needs-rework", {
+      project_id: projectId,
+      project_name: project.name,
+      builder_email: project.builderEmail,
+      review_comment: comment.trim(),
+    });
+  };
+
   // ── Wish mutations ────────────────────────────────────────────────────────
 
   const handleAddWish = async (wish) => {
