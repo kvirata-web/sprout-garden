@@ -114,7 +114,7 @@ const STAGE_LABELS = {
 };
 const STAGE_DESC = {
   seedling: "Being built",
-  nursery:  "Awaiting ExCom review",
+  nursery:  "Awaiting Approver review",
   sprout:   "Approved, in development",
   bloom:    "In user testing",
   thriving: "Live and delivering value",
@@ -2082,7 +2082,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
                   <div><strong>Deck:</strong> <a href={deckLink} target="_blank" rel="noreferrer" style={{color:C.kangkong600}}>{deckLink}</a></div>
                 </div>
                 <div style={{fontFamily:FF,fontSize:11,color:C.mango600,marginBottom:10,padding:"6px 8px",background:C.mango100,borderRadius:DS.radius.sm}}>
-                  Once submitted, you won't be able to edit this plant until ExCom makes a decision.
+                  Once submitted, you won't be able to edit this plant until an Approver makes a decision.
                 </div>
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setShowSubmitConfirm(false)} style={{flex:1,padding:"7px",background:C.white,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,cursor:"pointer",color:C.mushroom600}}>Cancel</button>
@@ -2118,13 +2118,13 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
               Submitted for review{project.submittedAt ? ` — ${new Date(project.submittedAt).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}` : ""}
             </div>
             {!authUser?.isExcom && (
-              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,fontStyle:"italic",marginTop:4}}>Under review by ExCom.</div>
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,fontStyle:"italic",marginTop:4}}>Under review by Approver.</div>
             )}
 
             {/* ExCom decision zone */}
             {authUser?.isExcom && (
               <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+C.mango200}}>
-                <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>ExCom Decision</div>
+                <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>Approver Decision</div>
                 {!showReworkInput ? (
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>onApproveProject?.(project.id)} style={{flex:1,padding:"8px",background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}>
@@ -3992,7 +3992,7 @@ export default function SproutAIGarden() {
     const now = new Date().toISOString();
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
-    const newMilestones = [...(project.milestones || []), "Approved by ExCom — " + new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})];
+    const newMilestones = [...(project.milestones || []), "Approved by Approver — " + new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})];
     const { error } = await supabase.from("projects").update({
       stage: "sprout",
       review_status: "approved",
@@ -4135,7 +4135,7 @@ export default function SproutAIGarden() {
     }).eq("id", wishId);
     if (wishError) {
       console.error("handleUnclaimSeed wish clear:", wishError);
-      alert("Plant removed, but there was an error releasing the Seed. A Gardener can fix this.");
+      alert("Plant removed, but there was an error releasing the Seed. An Admin can fix this.");
       return;
     }
     setWishes(prev => prev.map(w => w.id === wishId
@@ -4259,8 +4259,8 @@ export default function SproutAIGarden() {
               <UserAvatar user={authUser} size={26}/>
               {authUser.country&&<CountryBadge country={authUser.country}/>}
               <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700,maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{authUser.displayName||authUser.email.split("@")[0]}</span>
-              {authUser.isGardener&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Gardener</span>}
-              {authUser.isExcom&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>ExCom</span>}
+              {authUser.isGardener&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Admin</span>}
+              {authUser.isExcom&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Approver</span>}
               <svg width={12} height={12} viewBox="0 0 12 12" fill="none" style={{flexShrink:0,transition:"transform 0.2s",transform:profileOpen?"rotate(180deg)":"rotate(0deg)"}}>
                 <path d="M3 4.5 L6 7.5 L9 4.5" stroke={C.mushroom500} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
