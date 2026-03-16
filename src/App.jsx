@@ -113,11 +113,11 @@ const STAGE_LABELS = {
   seed:"Seed", sprout:"Sprout", growing:"Growing", blooming:"Blooming", thriving:"Thriving",
 };
 const STAGE_DESC = {
-  seed:     "An idea waiting to be built",
-  sprout:   "Prototype testing internally",
-  growing:  "Intended users testing",
-  blooming: "Live in production",
-  thriving: "Measurable impact",
+  seed:     "Ideas the team wants built",
+  sprout:   "In development, testing internally",
+  growing:  "Testing with real users",
+  blooming: "Shipped and running",
+  thriving: "Delivering measurable results",
 };
 const STAGE_FLORA = {
   seed:"Seed", sprout:"Sprout", growing:"Growing", blooming:"Blooming", thriving:"Thriving",
@@ -826,7 +826,7 @@ const findRelated = (project, allProjects) => {
 };
 
 // ── Executive Dashboard ───────────────────────────────────────────────────────
-const ExecutiveDashboard = ({projects, wishes, onSelectProject}) => {
+const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden, onNavigateWishlist}) => {
   const [rankMode, setRankMode] = useState("builtBy"); // "builtBy" | "builtFor"
 
   const launched   = projects.filter(p=>p.stage==="blooming"||p.stage==="thriving");
@@ -865,14 +865,21 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject}) => {
           {label:"Growing",    value:projects.filter(p=>p.stage==="growing").length,      sub:STAGE_DESC.growing,    tone:"plain",   plant:<PlantGrowing size={36}/>},
           {label:"Blooming", value:projects.filter(p=>p.stage==="blooming").length,   sub:STAGE_DESC.blooming, tone:"success", plant:<PlantBlooming size={36}/>},
           {label:"Thriving",      value:projects.filter(p=>p.stage==="thriving").length,        sub:STAGE_DESC.thriving,      tone:"info",    plant:<PlantTree size={36}/>},
-        ].map((s,i) => (
-          <Card key={i} tone={s.tone} style={{textAlign:"center",padding:"16px 12px"}}>
-            <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>{s.plant}</div>
-            <div style={{fontFamily:FF,fontSize:30,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
-            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
-            <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
-          </Card>
-        ))}
+        ].map((s,i) => {
+          const isWishlist = s.label === "Seed";
+          const onClick = isWishlist
+            ? () => onNavigateWishlist?.()
+            : () => onNavigateGarden?.("board", s.label.toLowerCase());
+          return (
+            <Card key={i} tone={s.tone} hoverable onClick={onClick} style={{textAlign:"center",padding:"16px 12px",cursor:"pointer"}}>
+              <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>{s.plant}</div>
+              <div style={{fontFamily:FF,fontSize:30,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
+              <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
+              <div style={{fontFamily:FF,fontSize:10,color:C.kangkong500,marginTop:6,fontWeight:600}}>View all →</div>
+            </Card>
+          );
+        })}
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
@@ -1208,11 +1215,11 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, aut
 
 
 // ── Unified Garden Hub (Directory + Garden + Board) ───────────────────────────
-const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWish, onMoveStage, onWishClaim}) => {
-  const [viewMode, setViewMode] = useState("directory");
+const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWish, onMoveStage, onWishClaim, initialViewMode="directory", initialStageFilter="All"}) => {
+  const [viewMode, setViewMode] = useState(initialViewMode);
   const [deptFilter, setDeptFilter] = useState("All");
   const [capFilter, setCapFilter] = useState("All");
-  const [stageFilter, setStageFilter] = useState("All");
+  const [stageFilter, setStageFilter] = useState(initialStageFilter);
   const [builderFilter, setBuilderFilter] = useState("All");
   const [countryFilter, setCountryFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -3407,6 +3414,7 @@ export default function SproutAIGarden() {
   const [showAddWish, setShowAddWish] = useState(false);
   const [prefilledWish, setPrefilledWish] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
+  const [gardenNav, setGardenNav] = useState({key:0, viewMode:"directory", stageFilter:"All"});
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileModal, setProfileModal] = useState(null); // null | "profile" | "about"
   const profileDropRef = useRef(null);
@@ -3761,8 +3769,8 @@ export default function SproutAIGarden() {
       {/* ── Main content + Detail Panel ── */}
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-          {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject}/>}
-          {view==="garden"    && <GardenHub projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish}/>}
+          {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
+          {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish}/>}
           {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
 
