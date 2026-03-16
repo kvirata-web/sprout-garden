@@ -30,6 +30,13 @@ export const toProject = (row) => ({
   interestedUsers: row.interested_users || [],
   imageUrl:        row.image_url      || '',
   toolUsed:        row.tool_used      || [],
+  prototypeLink:   row.prototype_link  || null,
+  deckLink:        row.deck_link       || null,
+  reviewStatus:    row.review_status   || null,
+  reviewComment:   row.review_comment  || null,
+  reviewedBy:      row.reviewed_by     || null,
+  reviewedAt:      row.reviewed_at     || null,
+  submittedAt:     row.submitted_at    || null,
   lastUpdated:     daysAgo(row.last_updated),
 })
 
@@ -54,6 +61,8 @@ export const fromProject = (proj) => ({
   interested_users: proj.interestedUsers || [],
   image_url:        proj.imageUrl        || '',
   tool_used:        proj.toolUsed        || [],
+  prototype_link:   proj.prototypeLink  ?? null,
+  deck_link:        proj.deckLink       ?? null,
   last_updated:     new Date().toISOString(),
 })
 
@@ -108,4 +117,13 @@ export const loadWishes = async () => {
     .from('wishes').select('*').order('created_at', { ascending: false })
   if (error) { console.error('loadWishes:', error); return [] }
   return data.map(toWish)
+}
+
+export const loadNotifications = async () => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) { console.error('loadNotifications:', error); return [] }
+  return data
 }
