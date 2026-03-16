@@ -1128,7 +1128,7 @@ function ActiveFilterChip({label, onRemove, color, icon}) {
 }
 
 // ── Wish Detail Panel ──────────────────────────────────────────────────────────
-function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, authUser}) {
+function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, authUser}) {
   const deptColor = DEPT_COLORS[wish.builtFor]||C.mushroom500;
   const isBuilder  = wish.claimedByEmail === authUser?.email;
   const isGardener = authUser?.isGardener;
@@ -1142,7 +1142,12 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, authUser}) 
               <StageBadge stage="seed"/>
               {isClaimed&&!wish.fulfilledBy&&<span style={{fontFamily:FF,fontSize:10,fontWeight:700,background:C.wintermelon100,color:C.wintermelon500,border:"1px solid "+C.wintermelon400,borderRadius:DS.radius.full,padding:"2px 8px"}}>🔨 Being built</span>}
             </div>
-            <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {(authUser?.email===wish.wisherEmail||isGardener)&&!wish.fulfilledBy&&(
+                <button onClick={()=>onEdit(wish)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
+              )}
+              <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
+            </div>
           </div>
           <div style={{fontFamily:FF,fontSize:18,fontWeight:700,color:C.mushroom900,marginBottom:6,lineHeight:1.3,display:"flex",alignItems:"flex-start",gap:8}}>{wish.title}{wish.country&&<>&nbsp;<CountryBadge country={wish.country} size="lg"/></>}</div>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
@@ -1662,6 +1667,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
           onClose={()=>setSelectedWish(null)}
           onClaim={()=>setClaimingWish(selectedWish)}
           onPromoteToSprout={()=>handlePromoteToSprout(selectedWish)}
+          onEdit={w=>{setSelectedWish(null);setEditingWish(w);}}
         />
       )}
       {claimingWish&&(
@@ -1815,7 +1821,7 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
 };
 
 // ── Detail Panel ──────────────────────────────────────────────────────────────
-const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
+const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,onEdit}) => {
   const [noteText,setNoteText] = useState("");
   const [interested,setInterested] = useState(false);
   const related = findRelated(project,allProjects);
@@ -1831,9 +1837,14 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
       <div style={{padding:"16px 20px",borderBottom:"1px solid "+C.mushroom100,background:STAGE_COLORS[project.stage].bg}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
           <StageBadge stage={project.stage}/>
-          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,borderRadius:DS.radius.sm}}>
-            <IcoClose size={18} color={C.mushroom500}/>
-          </button>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            {(authUser?.email===project.builderEmail||authUser?.isGardener)&&(
+              <button onClick={()=>onEdit(project)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
+            )}
+            <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,borderRadius:DS.radius.sm}}>
+              <IcoClose size={18} color={C.mushroom500}/>
+            </button>
+          </div>
         </div>
         <div style={{fontFamily:FF,fontSize:20,fontWeight:700,color:C.mushroom900,marginBottom:6,display:"flex",alignItems:"center",gap:8}}>
           {project.name}
@@ -1975,10 +1986,11 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
 // ── Add Project Modal ─────────────────────────────────────────────────────────
 
 // ── Wishlist View ─────────────────────────────────────────────────────────────
-function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish, onWishClaim, showAddWish, setShowAddWish}) {
+function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish, onWishClaim, onUpdateWish, showAddWish, setShowAddWish}) {
   const [deptFilter, setDeptFilter] = useState("All");
   const [sort, setSort] = useState("upvotes");
   const [claimingWish, setClaimingWish] = useState(null);
+  const [editingWish, setEditingWish] = useState(null);
   const currentUser = authUser?.displayName || "You";
 
   const filtered = wishes
@@ -2013,7 +2025,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
             fontFamily:FF,fontSize:13,fontWeight:700,
             boxShadow:"0 4px 16px "+C.kangkong700+"40",
           }}>
-            <WishSeed size={16} color={C.white}/> Add a Wish
+            <WishSeed size={16} color={C.white}/> Plant a Seed
           </button>
         </div>
 
@@ -2203,6 +2215,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
 
       {/* Add Wish Modal */}
       {showAddWish&&<AddWishModal authUser={authUser} onClose={()=>setShowAddWish(false)} onAdd={w=>{onAddWish(w);setShowAddWish(false);}}/>}
+      {editingWish&&<AddWishModal authUser={authUser} existing={editingWish} onClose={()=>setEditingWish(null)} onSave={w=>{onUpdateWish(w);setEditingWish(null);}}/>}
       {claimingWish&&(
         <ClaimModal
           wish={claimingWish} authUser={authUser}
@@ -2218,16 +2231,27 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
 }
 
 // ── Add Wish Modal ────────────────────────────────────────────────────────────
-function AddWishModal({onClose, onAdd, authUser}) {
+function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
+  const isEditing = !!existing;
   const DEPTS = ["Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","Customer Advocacy","Customer Success Management","Alliance","Aurora","Prometheus","Legal","People Ops","Finance","Execom"];
-  const [form,setForm] = useState({title:"",why:"",builtFor:"Marketing",wisherName:"",wisherEmail:""});
+  const [form,setForm] = useState({
+    title: existing?.title||"",
+    why: existing?.why||"",
+    builtFor: existing?.builtFor||"Marketing",
+    wisherName: existing?.wisherName||authUser?.displayName||"",
+    wisherEmail: existing?.wisherEmail||authUser?.email||"",
+  });
   const set = (k,v) => setForm(p=>({...p,[k]:v}));
   const canSubmit = form.title.trim() && form.wisherName.trim() && form.builtFor;
 
   const submit = () => {
     if(!canSubmit) return;
+    if (isEditing) {
+      onSave({...existing, title:form.title.trim(), why:form.why.trim(), builtFor:form.builtFor});
+      return;
+    }
     onAdd({
-      id:"w"+Date.now(),  // temp id; replaced by DB-returned id in handleAddWish
+      id:"w"+Date.now(),
       title:form.title.trim(),
       why:form.why.trim(),
       builtFor:form.builtFor,
@@ -2264,7 +2288,7 @@ function AddWishModal({onClose, onAdd, authUser}) {
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <WishSeed size={24} color={C.mushroom600}/>
             <div>
-              <div style={{fontFamily:FF,fontSize:16,fontWeight:800,color:C.mushroom900}}>Add a Wish</div>
+              <div style={{fontFamily:FF,fontSize:16,fontWeight:800,color:C.mushroom900}}>{existing?"Edit Seed":"Plant a Seed"}</div>
               <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>A seed waiting for a builder</div>
             </div>
           </div>
@@ -2330,7 +2354,7 @@ function AddWishModal({onClose, onAdd, authUser}) {
             boxShadow:canSubmit?"0 4px 16px "+C.kangkong700+"40":"none",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6,
           }}>
-            <WishSeed size={14} color={C.white}/> Plant this Wish
+            <WishSeed size={14} color={C.white}/> {isEditing?"Save changes":"Plant this Seed"}
           </button>
         </div>
       </div>
@@ -2462,19 +2486,22 @@ function StoryQ({k, label, hint, form, onChange, ph}) {
 }
 
 // ── Add Project Modal (with AI Summarizer + Duplicate Detector) ───────────────
-const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
+const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existing=null, authUser=null}) => {
+  const isEditing = !!existing;
   const DEPTS = Object.keys(DEPT_ZONES);
   const [form, setForm] = useState({
-    name: prefill?.title||"",
-    description: prefill?.why||"",
-    builtBy:"Marketing",
-    builtFor: prefill?.builtFor||"Marketing",
-    area:"",
+    name:        existing?.name        || prefill?.title   || "",
+    description: existing?.description || prefill?.why     || "",
+    builtBy:     existing?.builtBy     || "Marketing",
+    builtFor:    existing?.builtFor    || prefill?.builtFor || "Marketing",
+    area:        existing?.area        || existing?.problemSpace || "",
     problem:"", built:"", betterNow:"",
-    builder:"", impact:"",
-    stage:STAGES[0],
-    dataSource:"", demoLink:"",
-    imageUrl:"",
+    builder:     existing?.builder     || authUser?.displayName || "",
+    impact:      existing?.impact      || "",
+    stage:       existing?.stage       || STAGES[0],
+    dataSource:  existing?.dataSource  || "",
+    demoLink:    existing?.demoLink    || "",
+    imageUrl:    existing?.imageUrl    || "",
   });
 
   // AI states
@@ -2530,8 +2557,14 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
     onClose();
   };
 
+  const doSave = () => {
+    onSave({...existing, ...form, problemSpace: form.area, capability: ""});
+    onClose();
+  };
+
   const submit = async () => {
     if (!form.name.trim() || submitting) return;
+    if (isEditing) { doSave(); return; }
     if (aiOverlapChecked && aiOverlaps?.length > 0) { doAdd(); return; }
     setSubmitting(true);
     setAiChecking(true);
@@ -2557,9 +2590,9 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
           <div>
             <div style={{fontFamily:FF,fontSize:18,fontWeight:700,color:C.mushroom900,display:"flex",alignItems:"center",gap:8}}>
-              <IcoGarden size={24} color={C.kangkong600}/> Add to Garden
+              <IcoGarden size={24} color={C.kangkong600}/> {isEditing?"Edit Project":"Add to Garden"}
             </div>
-            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:2}}>Plant a new AI project in the ecosystem</div>
+            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:2}}>{isEditing?"Update your project details":"Plant a new AI project in the ecosystem"}</div>
           </div>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
         </div>
@@ -2732,6 +2765,8 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
                 ? <><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Checking for duplicates…</>
                 : hasOverlaps
                 ? <><IcoWarning size={16} color={C.white}/> Save anyway</>
+                : isEditing
+                ? <><IcoCheck size={16} color={C.white}/> Save changes</>
                 : <><IcoAdd size={16} color={C.white}/> Add to Garden</>
               }
             </button>
@@ -3371,6 +3406,7 @@ export default function SproutAIGarden() {
   const [showForm, setShowForm] = useState(false);
   const [showAddWish, setShowAddWish] = useState(false);
   const [prefilledWish, setPrefilledWish] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileModal, setProfileModal] = useState(null); // null | "profile" | "about"
   const profileDropRef = useRef(null);
@@ -3523,6 +3559,22 @@ export default function SproutAIGarden() {
       setWishes(prev => prev.map(w => w.id === prefilledWish.id ? {...w, fulfilledBy: saved.name} : w));
       setPrefilledWish(null);
     }
+  };
+
+  const handleUpdateProject = async (updated) => {
+    const row = fromProject(updated);
+    const { error } = await supabase.from("projects").update(row).eq("id", updated.id);
+    if (error) { console.error("handleUpdateProject:", error); return; }
+    setProjects(prev => prev.map(p => p.id === updated.id ? {...p, ...updated} : p));
+    setEditingProject(null);
+  };
+
+  const handleUpdateWish = async (updated) => {
+    const { error } = await supabase.from("wishes").update({
+      title: updated.title, why: updated.why, built_for: updated.builtFor,
+    }).eq("id", updated.id);
+    if (error) { console.error("handleUpdateWish:", error); return; }
+    setWishes(prev => prev.map(w => w.id === updated.id ? {...w, ...updated} : w));
   };
 
   const handleMoveStage = (project, dirOrStage) => {
@@ -3711,13 +3763,14 @@ export default function SproutAIGarden() {
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
           {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject}/>}
           {view==="garden"    && <GardenHub projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish}/>}
-          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
+          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
 
         {selected && (
           <DetailPanel
             project={selected} allProjects={projects}
             onClose={()=>setSelected(null)} onNote={addNote} setSelected={setSelected}
+            authUser={authUser} onEdit={setEditingProject}
           />
         )}
       </div>
@@ -3726,6 +3779,14 @@ export default function SproutAIGarden() {
         <AddProjectModal
           onClose={()=>{setShowForm(false);setPrefilledWish(null);}}
           onAdd={addProject} projects={projects} prefill={prefilledWish}
+          authUser={authUser}
+        />
+      )}
+      {editingProject && (
+        <AddProjectModal
+          onClose={()=>setEditingProject(null)}
+          onSave={handleUpdateProject} projects={projects}
+          existing={editingProject} authUser={authUser}
         />
       )}
 
