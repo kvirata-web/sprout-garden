@@ -2350,7 +2350,7 @@ function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGard
           <div style={{fontSize:36,marginBottom:12,lineHeight:1}}>🌿</div>
           <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>Welcome to Grove</div>
           <div style={{fontFamily:FF,fontSize:14,color:C.mushroom600,lineHeight:1.6}}>
-            Sprout's living map of AI in the making. Every idea, prototype, and breakthrough from Manila to Bangkok, in one place.
+            AI tools are being built across Sprout — but no one knows what exists. Grove fixes that.
           </div>
         </div>
 
@@ -2363,7 +2363,7 @@ function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGard
             <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌱</span>
             <div>
               <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong700,marginBottom:3}}>Plant a Seed</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Got an idea for an AI tool but haven't built it yet? Add it to the Wishlist. Your team can upvote it, claim it, and bring it to life.</div>
+              <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Submit an AI idea you think Sprout needs. The team can vote on it, someone can claim it, and it might get built.</div>
             </div>
           </button>
           <button onClick={onAddToGarden} style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
@@ -2373,7 +2373,7 @@ function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGard
             <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌾</span>
             <div>
               <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to Garden</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Already building or shipped something? Add it to the Garden so the whole company can see what you've made and follow its progress.</div>
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Log an AI tool you're building or already shipped. Don't let good work go unseen.</div>
             </div>
           </button>
         </div>
