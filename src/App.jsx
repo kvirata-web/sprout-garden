@@ -3548,7 +3548,7 @@ export default function SproutAIGarden() {
       const domain      = session.user.email.split("@")[1];
       const country     = COUNTRY_MAP[domain] || "PH";
       const displayName = session.user.email.split("@")[0];
-      const fallback    = { email: session.user.email, displayName, country, isGardener: false };
+      const fallback    = { email: session.user.email, displayName, country, isGardener: false, isExcom: false };
       setAuthUser(fallback);
       setAuthLoading(false);
 
@@ -3556,7 +3556,7 @@ export default function SproutAIGarden() {
       supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
         .then(({ data: existing }) => {
           if (existing) {
-            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener, hasDismissedWelcome: existing.has_dismissed_welcome || false });
+            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener, isExcom: existing.is_execom || false, hasDismissedWelcome: existing.has_dismissed_welcome || false });
           } else {
             supabase.from("profiles").insert({
               id: session.user.id, email: session.user.email,
@@ -3829,6 +3829,7 @@ export default function SproutAIGarden() {
               {authUser.country&&<CountryBadge country={authUser.country}/>}
               <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700,maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{authUser.displayName||authUser.email.split("@")[0]}</span>
               {authUser.isGardener&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Gardener</span>}
+              {authUser.isExcom&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>ExCom</span>}
               <svg width={12} height={12} viewBox="0 0 12 12" fill="none" style={{flexShrink:0,transition:"transform 0.2s",transform:profileOpen?"rotate(180deg)":"rotate(0deg)"}}>
                 <path d="M3 4.5 L6 7.5 L9 4.5" stroke={C.mushroom500} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
