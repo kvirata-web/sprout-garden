@@ -14,7 +14,7 @@ const DS = {
     mushroom600:"#736f5e",mushroom700:"#565244",mushroom800:"#3a372e",
     mushroom900:"#201e18",mushroom950:"#111009",
     tomato500:"#e53e3e",tomato100:"#fed7d7",tomato600:"#c53030",
-    mango50:"#fffff0",mango100:"#fefcbf",mango300:"#f6e05e",mango500:"#d69e2e",mango600:"#b7791f",
+    mango50:"#fffff0",mango100:"#fefcbf",mango200:"#faf089",mango300:"#f6e05e",mango400:"#ecc94b",mango500:"#d69e2e",mango600:"#b7791f",mango700:"#975a16",
     carrot500:"#dd6b20",carrot100:"#feebc8",
     wintermelon500:"#2c7a7b",wintermelon100:"#e6fffa",wintermelon400:"#38b2ac",
     blueberry500:"#3182ce",blueberry100:"#ebf8ff",blueberry400:"#63b3ed",
@@ -1923,10 +1923,53 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
   );
 };
 
+// ── Feedback Banner (Nursery rework) ──────────────────────────────────────────
+const FeedbackBanner = ({reviewComment, reviewedBy, reviewedAt}) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div style={{marginBottom:16, border:"1px solid "+C.mango300, borderRadius:DS.radius.lg, overflow:"hidden"}}>
+      <button onClick={()=>setExpanded(e=>!e)} style={{
+        width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center",
+        padding:"10px 14px", background:C.mango50, border:"none", cursor:"pointer",
+        fontFamily:FF, fontSize:12, fontWeight:700, color:C.mango700,
+      }}>
+        <span>Feedback available</span>
+        <span>{expanded ? "▲" : "▼"}</span>
+      </button>
+      {expanded && (
+        <div style={{padding:"10px 14px", background:C.white}}>
+          <p style={{fontFamily:FF,fontSize:12,color:C.mushroom700,lineHeight:1.5,margin:"0 0 6px"}}>{reviewComment}</p>
+          <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>
+            Feedback from {reviewedBy}{reviewedAt ? ` — ${new Date(reviewedAt).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}` : ""}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Detail Panel ──────────────────────────────────────────────────────────────
-const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,onEdit}) => {
+const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,onEdit,onSubmitToNursery,onWithdrawFromNursery,onApproveProject,onNeedsRework,onMarkNotificationsRead}) => {
   const [noteText,setNoteText] = useState("");
   const [interested,setInterested] = useState(false);
+  const [prototypeLink, setPrototypeLink]       = useState(project.prototypeLink || "");
+  const [deckLink, setDeckLink]                 = useState(project.deckLink || "");
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showReworkInput, setShowReworkInput]   = useState(false);
+  const [reworkComment, setReworkComment]       = useState("");
+
+  // URL validation helper
+  const isValidUrl = (str) => {
+    try { new URL(str); return true; } catch { return false; }
+  };
+
+  // Mark notifications read when ExCom opens a Nursery card
+  useEffect(() => {
+    if (project.stage === 'nursery' && authUser?.isExcom) {
+      onMarkNotificationsRead?.(project.id);
+    }
+  }, [project.id]);
+
   const related = findRelated(project,allProjects);
   const dc = DEPT_COLORS[project.builtBy]||C.kangkong500;
 
@@ -1941,7 +1984,8 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
           <StageBadge stage={project.stage}/>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {(authUser?.email===project.builderEmail||authUser?.isGardener)&&(
+            {(authUser?.email===project.builderEmail||authUser?.isGardener) &&
+              !(project.reviewStatus==='pending' && !authUser?.isGardener) && (
               <button onClick={()=>onEdit(project)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
             )}
             <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,borderRadius:DS.radius.sm}}>
@@ -1988,6 +2032,133 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
           <a href={project.demoLink} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,color:C.kangkong600,textDecoration:"none",marginBottom:16}}>
             <IcoLink size={14} color={C.kangkong600}/> View Demo
           </a>
+        )}
+
+        {/* ── Seedling: Submission Requirements ──────────────────────────────── */}
+        {project.stage==="seedling" && (authUser?.email===project.builderEmail||authUser?.isGardener) && (
+          <div style={{marginBottom:16,padding:"12px 14px",background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg}}>
+            <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mushroom500,marginBottom:10}}>
+              Nursery Submission Requirements
+            </div>
+            <div style={{marginBottom:8}}>
+              <label style={{fontFamily:FF,fontSize:11,color:C.mushroom500,display:"block",marginBottom:3}}>Prototype Link *</label>
+              <input value={prototypeLink} onChange={e=>setPrototypeLink(e.target.value)}
+                placeholder="https://your-deployed-prototype.com"
+                style={{width:"100%",padding:"7px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mushroom300,fontFamily:FF,fontSize:12,color:C.mushroom800,background:C.white,outline:"none",boxSizing:"border-box"}}
+                onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                onBlur={e=>e.target.style.borderColor=C.mushroom300}
+              />
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={{fontFamily:FF,fontSize:11,color:C.mushroom500,display:"block",marginBottom:3}}>Deck Link *</label>
+              <input value={deckLink} onChange={e=>setDeckLink(e.target.value)}
+                placeholder="https://docs.google.com/presentation/..."
+                style={{width:"100%",padding:"7px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mushroom300,fontFamily:FF,fontSize:12,color:C.mushroom800,background:C.white,outline:"none",boxSizing:"border-box"}}
+                onFocus={e=>e.target.style.borderColor=C.kangkong500}
+                onBlur={e=>e.target.style.borderColor=C.mushroom300}
+              />
+            </div>
+            {!showSubmitConfirm ? (
+              <button onClick={()=>setShowSubmitConfirm(true)}
+                disabled={!isValidUrl(prototypeLink)||!isValidUrl(deckLink)}
+                style={{
+                  width:"100%",padding:"9px",
+                  background:isValidUrl(prototypeLink)&&isValidUrl(deckLink)?C.kangkong500:C.mushroom200,
+                  color:isValidUrl(prototypeLink)&&isValidUrl(deckLink)?C.white:C.mushroom400,
+                  border:"none",borderRadius:DS.radius.lg,
+                  cursor:isValidUrl(prototypeLink)&&isValidUrl(deckLink)?"pointer":"not-allowed",
+                  fontFamily:FF,fontSize:12,fontWeight:600,transition:"all 0.15s",
+                }}
+              >Submit for Nursery Review &#x2192;</button>
+            ) : (
+              <div style={{background:C.mango50,border:"1px solid "+C.mango300,borderRadius:DS.radius.lg,padding:"12px"}}>
+                <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mango700,marginBottom:8}}>Confirm Submission</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600,marginBottom:8,wordBreak:"break-all"}}>
+                  <div><strong>Prototype:</strong> <a href={prototypeLink} target="_blank" rel="noreferrer" style={{color:C.kangkong600}}>{prototypeLink}</a></div>
+                  <div><strong>Deck:</strong> <a href={deckLink} target="_blank" rel="noreferrer" style={{color:C.kangkong600}}>{deckLink}</a></div>
+                </div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mango600,marginBottom:10,padding:"6px 8px",background:C.mango100,borderRadius:DS.radius.sm}}>
+                  Once submitted, you won't be able to edit this plant until ExCom makes a decision.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setShowSubmitConfirm(false)} style={{flex:1,padding:"7px",background:C.white,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,cursor:"pointer",color:C.mushroom600}}>Cancel</button>
+                  <button onClick={()=>{onSubmitToNursery(project.id,prototypeLink,deckLink);setShowSubmitConfirm(false);}}
+                    style={{flex:1,padding:"7px",background:C.mango500,color:C.white,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}
+                  >Confirm Submission</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Seedling: Needs Rework feedback banner (builder only) ───────────── */}
+        {project.stage==="seedling" && project.reviewStatus==="needs_rework" && authUser?.email===project.builderEmail && (
+          <FeedbackBanner reviewComment={project.reviewComment} reviewedBy={project.reviewedBy} reviewedAt={project.reviewedAt}/>
+        )}
+
+        {/* ── Nursery: Locked state + ExCom decision zone ────────────────────── */}
+        {project.stage==="nursery" && (
+          <div style={{marginBottom:16,padding:"12px 14px",background:C.mango50,border:"1px solid "+C.mango300,borderRadius:DS.radius.lg}}>
+            <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mango600,marginBottom:10}}>Under Review</div>
+            {project.prototypeLink&&(
+              <a href={project.prototypeLink} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,color:C.kangkong600,textDecoration:"none",marginBottom:6}}>
+                View Prototype
+              </a>
+            )}
+            {project.deckLink&&(
+              <a href={project.deckLink} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,color:C.kangkong600,textDecoration:"none",marginBottom:8}}>
+                View Deck
+              </a>
+            )}
+            <div style={{fontFamily:FF,fontSize:12,color:C.mango700,marginBottom:2}}>
+              Submitted for review{project.submittedAt ? ` — ${new Date(project.submittedAt).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}` : ""}
+            </div>
+            {!authUser?.isExcom && (
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,fontStyle:"italic",marginTop:4}}>Under review by ExCom.</div>
+            )}
+
+            {/* ExCom decision zone */}
+            {authUser?.isExcom && (
+              <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+C.mango200}}>
+                <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>ExCom Decision</div>
+                {!showReworkInput ? (
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>onApproveProject?.(project.id)} style={{flex:1,padding:"8px",background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                      &#x2713; Approve
+                    </button>
+                    <button onClick={()=>setShowReworkInput(true)} style={{flex:1,padding:"8px",background:C.white,color:C.mango600,border:"1.5px solid "+C.mango400,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                      &#x21A9; Needs Rework
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <textarea value={reworkComment} onChange={e=>setReworkComment(e.target.value)}
+                      placeholder="What needs to be reworked? (required)"
+                      rows={3}
+                      style={{width:"100%",padding:"8px 10px",borderRadius:DS.radius.md,border:"1.5px solid "+C.mango300,fontFamily:FF,fontSize:12,color:C.mushroom800,background:C.white,outline:"none",resize:"vertical",marginBottom:8,boxSizing:"border-box"}}
+                    />
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>{setShowReworkInput(false);setReworkComment("");}} style={{flex:1,padding:"7px",background:C.white,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,cursor:"pointer",color:C.mushroom600}}>Cancel</button>
+                      <button disabled={!reworkComment.trim()}
+                        onClick={()=>{onNeedsRework?.(project.id,reworkComment);setShowReworkInput(false);setReworkComment("");}}
+                        style={{flex:1,padding:"7px",background:reworkComment.trim()?C.mango500:C.mushroom200,color:reworkComment.trim()?C.white:C.mushroom400,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:reworkComment.trim()?"pointer":"not-allowed"}}
+                      >Send Feedback</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Withdraw button — builder or Gardener */}
+            {(authUser?.email===project.builderEmail||authUser?.isGardener)&&(
+              <button onClick={()=>onWithdrawFromNursery?.(project.id)} style={{
+                width:"100%",padding:"7px",marginTop:12,
+                background:"transparent",border:"1px solid "+C.mushroom300,
+                borderRadius:DS.radius.md,fontFamily:FF,fontSize:11,
+                color:C.mushroom500,cursor:"pointer",transition:"all 0.15s",
+              }}>Withdraw Submission</button>
+            )}
+          </div>
         )}
 
         {project.lastUpdated>30&&(
@@ -3741,6 +3912,52 @@ export default function SproutAIGarden() {
       .then(({ error }) => { if (error) console.error("handleMoveStage:", error); });
   };
 
+  // ── Nursery flow mutations ─────────────────────────────────────────────────
+
+  const sendNotification = async (type, payload) => {
+    try {
+      await supabase.functions.invoke("send-notification", { body: { type, payload } });
+    } catch (e) {
+      console.warn("sendNotification failed:", e);
+      // Non-blocking — notification failure should not fail the main action
+    }
+  };
+
+  const submitToNursery = async (projectId, prototypeLink, deckLink) => {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("projects").update({
+      stage: "nursery",
+      review_status: "pending",
+      prototype_link: prototypeLink,
+      deck_link: deckLink,
+      submitted_at: now,
+      last_updated: now,
+    }).eq("id", projectId);
+    if (error) { console.error("submitToNursery:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"nursery", reviewStatus:"pending", prototypeLink, deckLink, submittedAt:now, lastUpdated:0}
+      : p
+    ));
+    setSelected(null);
+    // Fire notification (non-blocking)
+    sendNotification("nursery-submitted", {
+      project_id: projectId,
+      project_name: projects.find(p=>p.id===projectId)?.name || "",
+      builder_email: authUser.email,
+      submitted_at: now,
+    });
+  };
+
+  const withdrawFromNursery = async (projectId) => {
+    const { error } = await supabase.rpc("withdraw_from_nursery", { p_id: projectId });
+    if (error) { console.error("withdrawFromNursery:", error); return; }
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? {...p, stage:"seedling", reviewStatus:null}
+      : p
+    ));
+    setSelected(null);
+  };
+
   // ── Wish mutations ────────────────────────────────────────────────────────
 
   const handleAddWish = async (wish) => {
@@ -3918,6 +4135,11 @@ export default function SproutAIGarden() {
             project={selected} allProjects={projects}
             onClose={()=>setSelected(null)} onNote={addNote} setSelected={setSelected}
             authUser={authUser} onEdit={p=>{setEditingProject(p);setSelected(null);}}
+            onSubmitToNursery={submitToNursery}
+            onWithdrawFromNursery={withdrawFromNursery}
+            onApproveProject={approveProject}
+            onNeedsRework={needsRework}
+            onMarkNotificationsRead={handleMarkNotificationsRead}
           />
         )}
       </div>
