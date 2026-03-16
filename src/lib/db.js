@@ -29,6 +29,7 @@ export const toProject = (row) => ({
   demoLink:        row.demo_link      || '',
   interestedUsers: row.interested_users || [],
   imageUrl:        row.image_url      || '',
+  toolUsed:        row.tool_used      || [],
   lastUpdated:     daysAgo(row.last_updated),
 })
 
@@ -52,6 +53,7 @@ export const fromProject = (proj) => ({
   demo_link:        proj.demoLink        || '',
   interested_users: proj.interestedUsers || [],
   image_url:        proj.imageUrl        || '',
+  tool_used:        proj.toolUsed        || [],
   last_updated:     new Date().toISOString(),
 })
 

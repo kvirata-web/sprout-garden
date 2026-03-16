@@ -179,6 +179,7 @@ const AREAS = [
   "Employee Experience","Customer & Client Work","Internal Operations",
   "Product & Engineering","Other"
 ];
+const TOOLS = ["Claude Chat","Claude Code","Cowork","ChatGPT","Copilot","Cursor","Zapier / Make","Other"];
 
 const INITIAL_PROJECTS = [
   // 🇵🇭 Philippines
@@ -715,6 +716,15 @@ const CapBadge = ({cap}) => {
   );
 };
 
+const ToolChip = ({tool}) => (
+  <span style={{
+    fontFamily:FF,fontSize:9,fontWeight:600,
+    padding:"2px 7px",borderRadius:DS.radius.full,
+    background:C.kangkong50,border:"1px solid "+C.kangkong200,
+    color:C.kangkong700,whiteSpace:"nowrap",
+  }}>{tool}</span>
+);
+
 const ProgressBar = ({value,color,height=8}) => (
   <div style={{background:C.mushroom200,borderRadius:DS.radius.full,overflow:"hidden",height}}>
     <div style={{
@@ -1014,6 +1024,36 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
           })}
         </Card>
       </div>
+
+      {/* Tools in Use */}
+      {(() => {
+        const counts = TOOLS
+          .map(t => ({tool:t, count:projects.filter(p=>p.toolUsed?.includes(t)).length}))
+          .filter(x=>x.count>0)
+          .sort((a,b)=>b.count-a.count);
+        const max = counts[0]?.count||1;
+        if(!counts.length) return null;
+        return (
+          <Card tone="plain">
+            <div style={{fontFamily:FF,fontWeight:700,fontSize:14,color:C.mushroom800,marginBottom:16,display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:15}}>⚒</span> Tools in Use
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:"10px 24px"}}>
+              {counts.map(({tool,count})=>(
+                <div key={tool}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700}}>{tool}</span>
+                    <span style={{fontFamily:FF,fontSize:11,color:C.mushroom400}}>{count} project{count!==1?"s":""}</span>
+                  </div>
+                  <div style={{height:6,background:C.mushroom100,borderRadius:DS.radius.full,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:(count/max*100)+"%",background:C.kangkong400,borderRadius:DS.radius.full}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
 
     </div>
   );
@@ -1464,10 +1504,15 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                         {hasOverlap&&<IcoWarning size={14} color={C.carrot500}/>}
                       </div>
                     </div>
-                    <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+                    <div style={{display:"flex",gap:4,marginBottom:4,flexWrap:"wrap"}}>
                       <StageBadge stage={p.stage}/>
-                      <CapBadge cap={p.capability}/>
                     </div>
+                    {p.toolUsed?.length>0&&(
+                      <div style={{display:"flex",gap:4,marginBottom:6,flexWrap:"wrap"}}>
+                        {p.toolUsed.slice(0,3).map(t=><ToolChip key={t} tool={t}/>)}
+                        {p.toolUsed.length>3&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,alignSelf:"center"}}>+{p.toolUsed.length-3}</span>}
+                      </div>
+                    )}
                     <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,lineHeight:1.5,marginBottom:10,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{p.description}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{fontFamily:FF,fontSize:11,fontWeight:600,color:dc}}>{p.builtBy}</span>
@@ -1644,10 +1689,15 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                           </div>
                           {wilting&&<IcoStale size={13} color={C.mango500}/>}
                         </div>
-                        <div style={{display:"flex",gap:4,marginBottom:7,flexWrap:"wrap"}}>
-                          <CapBadge cap={p.capability}/>
+                        <div style={{display:"flex",gap:4,marginBottom:4,flexWrap:"wrap"}}>
                           <span style={{fontFamily:FF,fontSize:10,color:dc,fontWeight:600,padding:"2px 6px",background:dc+"15",borderRadius:DS.radius.full}}>{p.builtBy}</span>
                         </div>
+                        {p.toolUsed?.length>0&&(
+                          <div style={{display:"flex",gap:3,marginBottom:5,flexWrap:"wrap"}}>
+                            {p.toolUsed.slice(0,2).map(t=><ToolChip key={t} tool={t}/>)}
+                            {p.toolUsed.length>2&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,alignSelf:"center"}}>+{p.toolUsed.length-2}</span>}
+                          </div>
+                        )}
                         {p.impact!=="TBD"&&(
                           <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,fontWeight:600,marginBottom:6,display:"flex",alignItems:"center",gap:3}}>
                             <IcoImpact size={11} color={C.kangkong600}/> {p.impact}
@@ -2513,6 +2563,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     dataSource:  existing?.dataSource  || "",
     demoLink:    existing?.demoLink    || "",
     imageUrl:    existing?.imageUrl    || "",
+    toolUsed:    existing?.toolUsed    || [],
   });
 
   // AI states
@@ -2625,8 +2676,32 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
           <ModalField label="Built For (beneficiary)" k="builtFor" type="select" opts={DEPTS} form={form} onChange={setField}/>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <ModalField label="Area" k="area" type="select" opts={["", ...AREAS]} form={form} onChange={setField}/>
-          <ModalField label="Builder (Farmer)" k="builder" ph="e.g. Priya Mehta" form={form} onChange={setField}/>
+          <ModalField label="Area (Optional)" k="area" type="select" opts={["", ...AREAS]} form={form} onChange={setField}/>
+          <ModalField label="Builder" k="builder" ph="e.g. Priya Mehta" form={form} onChange={setField}/>
+        </div>
+
+        {/* Tool Used */}
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
+            Tool Used <span style={{color:C.tomato500,fontWeight:400}}>*</span>
+          </label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {TOOLS.map(t=>{
+              const active = form.toolUsed.includes(t);
+              return (
+                <button key={t} onClick={()=>setField("toolUsed", active ? form.toolUsed.filter(x=>x!==t) : [...form.toolUsed,t])} style={{
+                  padding:"5px 12px",borderRadius:DS.radius.full,cursor:"pointer",
+                  fontFamily:FF,fontSize:11,fontWeight:600,
+                  border:"1.5px solid "+(active?C.kangkong400:C.mushroom300),
+                  background:active?C.kangkong50:C.white,
+                  color:active?C.kangkong700:C.mushroom600,
+                  transition:"all 0.15s",
+                }}>
+                  {active&&<span style={{marginRight:3}}>✓</span>}{t}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* ── Section 2: Tell the Story ── */}
