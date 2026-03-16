@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
-import { loadProjects, loadWishes, fromProject, fromWish, toProject, toWish } from "./lib/db";
+import { loadProjects, loadWishes, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo } from "./lib/db";
 
 // ── Sprout Design System Tokens ───────────────────────────────────────────────
 const DS = {
@@ -108,27 +108,27 @@ const getCountry   = (email="") => {
 };
 
 // ── Stage constants ────────────────────────────────────────────────────────────
-const STAGES      = ["sprout","growing","blooming","thriving"];
+const STAGES      = ["seedling","nursery","sprout","bloom","thriving"];
 const STAGE_LABELS = {
-  seed:"Seed", sprout:"Sprout", growing:"Growing", blooming:"Blooming", thriving:"Thriving",
+  seedling:"Seedling", nursery:"Nursery", sprout:"Sprout", bloom:"Bloom", thriving:"Thriving",
 };
 const STAGE_DESC = {
-  seed:     "Ideas the team wants built",
-  sprout:   "In development, testing internally",
-  growing:  "Testing with real users",
-  blooming: "Shipped and running",
-  thriving: "Delivering measurable results",
+  seedling: "Being built",
+  nursery:  "Awaiting ExCom review",
+  sprout:   "Approved, in development",
+  bloom:    "In user testing",
+  thriving: "Live and delivering value",
 };
 const STAGE_FLORA = {
-  seed:"Seed", sprout:"Sprout", growing:"Growing", blooming:"Blooming", thriving:"Thriving",
+  seedling:"Seedling", nursery:"Nursery", sprout:"Sprout", bloom:"Bloom", thriving:"Thriving",
 };
-const STAGE_ORDER = {seed:-1,sprout:0,growing:1,blooming:2,thriving:3};
+const STAGE_ORDER = {seedling:0,nursery:1,sprout:2,bloom:3,thriving:4};
 
 const STAGE_COLORS = {
-  seed:     {bg:C.mushroom100,     text:C.mushroom600,      border:C.mushroom300,    dot:C.mushroom400},
-  sprout:   {bg:C.mango100,        text:C.mango600,         border:C.mango500,       dot:C.mango500},
-  growing:  {bg:C.wintermelon100,  text:C.wintermelon500,   border:C.wintermelon400, dot:C.wintermelon400},
-  blooming: {bg:C.kangkong100,     text:C.kangkong600,      border:C.kangkong200,    dot:C.kangkong500},
+  seedling: {bg:C.mushroom100,     text:C.mushroom600,      border:C.mushroom300,    dot:C.mushroom400},
+  nursery:  {bg:C.mango100,        text:C.mango600,         border:C.mango500,       dot:C.mango500},
+  sprout:   {bg:C.wintermelon100,  text:C.wintermelon500,   border:C.wintermelon400, dot:C.wintermelon400},
+  bloom:    {bg:C.kangkong100,     text:C.kangkong600,      border:C.kangkong200,    dot:C.kangkong500},
   thriving: {bg:C.blueberry100,    text:C.blueberry500,     border:C.blueberry400,   dot:C.blueberry500},
 };
 
@@ -183,20 +183,20 @@ const TOOLS = ["Claude Chat","Claude Code","Cowork","ChatGPT","Copilot","Cursor"
 
 const INITIAL_PROJECTS = [
   // 🇵🇭 Philippines
-  {id:1, country:"PH", name:"SmartReply",    builtBy:"Engineering",       builtFor:"Customer Experience",capability:"LLM",            stage:"blooming", lastUpdated:5, impact:"Saves 3 hrs/agent/day",   impactNum:"3 hrs",  builder:"Maya Santos",   builderEmail:"maya@sprout.ph",    zx:30,zy:40,notes:["Great progress! — Lena"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024","Launched — Apr 2024"],description:"AI-powered email response suggestions for customer support agents, cutting response time by 40%.",problemSpace:"Customer Support",  dataSource:"Customer emails",       demoLink:"#",interestedUsers:["rob@sprout.ph"],   imageUrl:"https://picsum.photos/id/1/400/200"},
+  {id:1, country:"PH", name:"SmartReply",    builtBy:"Engineering",       builtFor:"Customer Experience",capability:"LLM",            stage:"bloom",    lastUpdated:5, impact:"Saves 3 hrs/agent/day",   impactNum:"3 hrs",  builder:"Maya Santos",   builderEmail:"maya@sprout.ph",    zx:30,zy:40,notes:["Great progress! — Lena"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024","Launched — Apr 2024"],description:"AI-powered email response suggestions for customer support agents, cutting response time by 40%.",problemSpace:"Customer Support",  dataSource:"Customer emails",       demoLink:"#",interestedUsers:["rob@sprout.ph"],   imageUrl:"https://picsum.photos/id/1/400/200"},
   {id:2, country:"PH", name:"ForecastIQ",    builtBy:"Operations",        builtFor:"Operations",          capability:"Prediction",     stage:"thriving",  lastUpdated:12,impact:"20% waste reduction",      impactNum:"20%",    builder:"James Reyes",   builderEmail:"james@sprout.ph",   zx:40,zy:55,notes:["Saved us big last Q"],   milestones:["Ideation — Sep 2023","Model training — Nov 2023","Beta — Jan 2024","Launched — Feb 2024","Scaled — May 2024"],description:"Predictive inventory model that reduces overstock by anticipating demand shifts two weeks ahead.",problemSpace:"Data Analysis",      dataSource:"Inventory & sales data",  demoLink:"#",interestedUsers:["sofia@sprout.ph"],imageUrl:"https://picsum.photos/id/20/400/200"},
-  {id:3, country:"PH", name:"DocScan AI",    builtBy:"Engineering",       builtFor:"Finance",             capability:"Computer Vision",stage:"growing",   lastUpdated:8, impact:"800 docs/week processed",  impactNum:"800",    builder:"Lena Park",     builderEmail:"lena@sprout.ph",    zx:55,zy:55,notes:[],milestones:["Ideation — Feb 2024","Dataset — Mar 2024","Building — Apr 2024"],description:"Computer vision tool that auto-reads and categorizes incoming vendor invoices with 94% accuracy.",problemSpace:"Finance & Budgeting",dataSource:"Vendor invoices",         demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/40/400/200"},
-  {id:4, country:"PH", name:"ToneGuard",     builtBy:"Marketing",         builtFor:"Marketing",           capability:"NLP",            stage:"sprout",    lastUpdated:3, impact:"Est. 15% fewer revisions",  impactNum:"15%",    builder:"Carlos Ruiz",   builderEmail:"carlos@sprout.ph",  zx:30,zy:40,notes:[],milestones:["Ideation — Mar 2024","In development — Apr 2024"],description:"NLP tool that reviews outbound comms for brand tone consistency before they're sent.",problemSpace:"Content Creation",   dataSource:"Marketing copy",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/60/400/200"},
-  {id:5, country:"PH", name:"OnboardBot",    builtBy:"Engineering",       builtFor:"HR",                  capability:"Automation",     stage:"blooming",  lastUpdated:21,impact:"NPS +28 pts for new hires", impactNum:"+28 NPS",builder:"Dana Osei",     builderEmail:"dana@sprout.ph",    zx:50,zy:45,notes:["New hires love this"],   milestones:["Ideation — Nov 2023","Journey mapping — Jan 2024","Pilot — Feb 2024","Launched — Mar 2024"],description:"Automated onboarding assistant that guides new employees through their first 30 days.",problemSpace:"HR & Onboarding",    dataSource:"HR records & docs",       demoLink:"#",interestedUsers:["priya@sprout.ph"],imageUrl:"https://picsum.photos/id/80/400/200"},
+  {id:3, country:"PH", name:"DocScan AI",    builtBy:"Engineering",       builtFor:"Finance",             capability:"Computer Vision",stage:"sprout",    lastUpdated:8, impact:"800 docs/week processed",  impactNum:"800",    builder:"Lena Park",     builderEmail:"lena@sprout.ph",    zx:55,zy:55,notes:[],milestones:["Ideation — Feb 2024","Dataset — Mar 2024","Building — Apr 2024"],description:"Computer vision tool that auto-reads and categorizes incoming vendor invoices with 94% accuracy.",problemSpace:"Finance & Budgeting",dataSource:"Vendor invoices",         demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/40/400/200"},
+  {id:4, country:"PH", name:"ToneGuard",     builtBy:"Marketing",         builtFor:"Marketing",           capability:"NLP",            stage:"seedling",  lastUpdated:3, impact:"Est. 15% fewer revisions",  impactNum:"15%",    builder:"Carlos Ruiz",   builderEmail:"carlos@sprout.ph",  zx:30,zy:40,notes:[],milestones:["Ideation — Mar 2024","In development — Apr 2024"],description:"NLP tool that reviews outbound comms for brand tone consistency before they're sent.",problemSpace:"Content Creation",   dataSource:"Marketing copy",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/60/400/200"},
+  {id:5, country:"PH", name:"OnboardBot",    builtBy:"Engineering",       builtFor:"HR",                  capability:"Automation",     stage:"bloom",     lastUpdated:21,impact:"NPS +28 pts for new hires", impactNum:"+28 NPS",builder:"Dana Osei",     builderEmail:"dana@sprout.ph",    zx:50,zy:45,notes:["New hires love this"],   milestones:["Ideation — Nov 2023","Journey mapping — Jan 2024","Pilot — Feb 2024","Launched — Mar 2024"],description:"Automated onboarding assistant that guides new employees through their first 30 days.",problemSpace:"HR & Onboarding",    dataSource:"HR records & docs",       demoLink:"#",interestedUsers:["priya@sprout.ph"],imageUrl:"https://picsum.photos/id/80/400/200"},
   {id:6, country:"PH", name:"CodeReview AI", builtBy:"Engineering",       builtFor:"Engineering",         capability:"LLM",            stage:"thriving",  lastUpdated:2, impact:"30% faster PR cycles",      impactNum:"30%",    builder:"Kai Nakamura",  builderEmail:"kai@sprout.ph",     zx:60,zy:50,notes:["Team loves it"],        milestones:["Ideation — Aug 2023","Prototype — Oct 2023","Beta — Dec 2023","Launched — Jan 2024","Scaled — Mar 2024"],description:"Automated pull request review tool that catches bugs and style issues before human review.",problemSpace:"Process Automation", dataSource:"Git repositories",        demoLink:"#",interestedUsers:[],                  imageUrl:"https://picsum.photos/id/100/400/200"},
-  {id:7, country:"PH", name:"SentimentPulse",builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"NLP",           stage:"sprout",    lastUpdated:1, impact:"TBD",                        impactNum:"TBD",    builder:"Priya Mehta",   builderEmail:"priya@sprout.ph",   zx:70,zy:70,notes:[],milestones:["Ideation — Apr 2024"],description:"Real-time sentiment analysis of customer feedback across all channels.",problemSpace:"Customer Support",  dataSource:"Customer feedback",       demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/120/400/200"},
-  {id:8, country:"PH", name:"BudgetBot",     builtBy:"Finance",           builtFor:"Finance",             capability:"LLM",            stage:"sprout",    lastUpdated:45,impact:"Est. 2 hrs saved/week",     impactNum:"2 hrs",  builder:"Tom Eriksen",   builderEmail:"tom@sprout.ph",     zx:20,zy:65,notes:["Needs update"],          milestones:["Ideation — Jan 2024","In development — Feb 2024 (stalled)"],description:"Conversational AI for querying budget reports in plain language.",problemSpace:"Finance & Budgeting",dataSource:"Budget reports",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/140/400/200"},
-  {id:9, country:"PH", name:"AdOptimizer",   builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"growing",   lastUpdated:6, impact:"12% lower CAC",              impactNum:"12%",    builder:"Sofia Ali",     builderEmail:"sofia@sprout.ph",   zx:70,zy:50,notes:[],milestones:["Ideation — Jan 2024","Data pipeline — Feb 2024","Tuning — Apr 2024"],description:"ML model that auto-adjusts ad spend across channels based on live performance data.",problemSpace:"Sales & Marketing",  dataSource:"Ad performance data",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/160/400/200"},
-  {id:10,country:"PH", name:"MeetingSumAI",  builtBy:"Engineering",       builtFor:"Engineering",         capability:"LLM",            stage:"sprout",    lastUpdated:2, impact:"TBD",                        impactNum:"TBD",    builder:"Rob Chen",      builderEmail:"rob@sprout.ph",     zx:25,zy:75,notes:[],milestones:["Ideation — Apr 2024"],description:"Auto-generates structured meeting summaries and action items from transcripts.",problemSpace:"Process Automation", dataSource:"Meeting transcripts",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/180/400/200"},
+  {id:7, country:"PH", name:"SentimentPulse",builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"NLP",           stage:"seedling",  lastUpdated:1, impact:"TBD",                        impactNum:"TBD",    builder:"Priya Mehta",   builderEmail:"priya@sprout.ph",   zx:70,zy:70,notes:[],milestones:["Ideation — Apr 2024"],description:"Real-time sentiment analysis of customer feedback across all channels.",problemSpace:"Customer Support",  dataSource:"Customer feedback",       demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/120/400/200"},
+  {id:8, country:"PH", name:"BudgetBot",     builtBy:"Finance",           builtFor:"Finance",             capability:"LLM",            stage:"seedling",  lastUpdated:45,impact:"Est. 2 hrs saved/week",     impactNum:"2 hrs",  builder:"Tom Eriksen",   builderEmail:"tom@sprout.ph",     zx:20,zy:65,notes:["Needs update"],          milestones:["Ideation — Jan 2024","In development — Feb 2024 (stalled)"],description:"Conversational AI for querying budget reports in plain language.",problemSpace:"Finance & Budgeting",dataSource:"Budget reports",          demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/140/400/200"},
+  {id:9, country:"PH", name:"AdOptimizer",   builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"sprout",    lastUpdated:6, impact:"12% lower CAC",              impactNum:"12%",    builder:"Sofia Ali",     builderEmail:"sofia@sprout.ph",   zx:70,zy:50,notes:[],milestones:["Ideation — Jan 2024","Data pipeline — Feb 2024","Tuning — Apr 2024"],description:"ML model that auto-adjusts ad spend across channels based on live performance data.",problemSpace:"Sales & Marketing",  dataSource:"Ad performance data",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/160/400/200"},
+  {id:10,country:"PH", name:"MeetingSumAI",  builtBy:"Engineering",       builtFor:"Engineering",         capability:"LLM",            stage:"seedling",  lastUpdated:2, impact:"TBD",                        impactNum:"TBD",    builder:"Rob Chen",      builderEmail:"rob@sprout.ph",     zx:25,zy:75,notes:[],milestones:["Ideation — Apr 2024"],description:"Auto-generates structured meeting summaries and action items from transcripts.",problemSpace:"Process Automation", dataSource:"Meeting transcripts",     demoLink:"", interestedUsers:[],                  imageUrl:"https://picsum.photos/id/180/400/200"},
   // 🇹🇭 Thailand
-  {id:11,country:"TH", name:"LeadScore TH",  builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"blooming",  lastUpdated:4, impact:"18% higher conversion",      impactNum:"18%",    builder:"Niran Kositchai",builderEmail:"niran@sproutsolutions.io", zx:45,zy:35,notes:["Converting well"],  milestones:["Ideation — Oct 2023","Model training — Dec 2023","Pilot — Feb 2024","Launched — Mar 2024"],description:"ML model that scores inbound leads by likelihood to convert, helping the sales team prioritize outreach.",problemSpace:"Sales & Marketing",  dataSource:"CRM & web analytics",     demoLink:"#",interestedUsers:[],                  imageUrl:"https://picsum.photos/id/200/400/200"},
-  {id:12,country:"TH", name:"ChatAssist TH", builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"LLM",           stage:"growing",   lastUpdated:7, impact:"40% faster first response",  impactNum:"40%",    builder:"Ploy Siriwat",  builderEmail:"ploy@sproutsolutions.io",  zx:60,zy:60,notes:["Users love the speed"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024"],description:"AI chat assistant that handles first-line customer queries in Thai and English, escalating complex issues to human agents.",problemSpace:"Customer Support",  dataSource:"Support ticket history",  demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/220/400/200"},
-  {id:13,country:"TH", name:"InventoryAI TH",builtBy:"Operations",        builtFor:"Operations",          capability:"Prediction",     stage:"sprout",    lastUpdated:3, impact:"TBD",                        impactNum:"TBD",    builder:"Tanawat Burin", builderEmail:"tanawat@sproutsolutions.io",zx:35,zy:60,notes:[],milestones:["Ideation — Feb 2024","In development — Mar 2024"],description:"Demand forecasting tool built for Thailand's seasonal sales patterns, reducing overstock during low-demand months.",problemSpace:"Data Analysis",      dataSource:"Sales & inventory records",demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/240/400/200"},
+  {id:11,country:"TH", name:"LeadScore TH",  builtBy:"Marketing",         builtFor:"Marketing",           capability:"Prediction",     stage:"bloom",     lastUpdated:4, impact:"18% higher conversion",      impactNum:"18%",    builder:"Niran Kositchai",builderEmail:"niran@sproutsolutions.io", zx:45,zy:35,notes:["Converting well"],  milestones:["Ideation — Oct 2023","Model training — Dec 2023","Pilot — Feb 2024","Launched — Mar 2024"],description:"ML model that scores inbound leads by likelihood to convert, helping the sales team prioritize outreach.",problemSpace:"Sales & Marketing",  dataSource:"CRM & web analytics",     demoLink:"#",interestedUsers:[],                  imageUrl:"https://picsum.photos/id/200/400/200"},
+  {id:12,country:"TH", name:"ChatAssist TH", builtBy:"Customer Experience",builtFor:"Customer Experience",capability:"LLM",           stage:"sprout",    lastUpdated:7, impact:"40% faster first response",  impactNum:"40%",    builder:"Ploy Siriwat",  builderEmail:"ploy@sproutsolutions.io",  zx:60,zy:60,notes:["Users love the speed"],milestones:["Ideation — Jan 2024","Prototype — Feb 2024","Pilot — Mar 2024"],description:"AI chat assistant that handles first-line customer queries in Thai and English, escalating complex issues to human agents.",problemSpace:"Customer Support",  dataSource:"Support ticket history",  demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/220/400/200"},
+  {id:13,country:"TH", name:"InventoryAI TH",builtBy:"Operations",        builtFor:"Operations",          capability:"Prediction",     stage:"seedling",  lastUpdated:3, impact:"TBD",                        impactNum:"TBD",    builder:"Tanawat Burin", builderEmail:"tanawat@sproutsolutions.io",zx:35,zy:60,notes:[],milestones:["Ideation — Feb 2024","In development — Mar 2024"],description:"Demand forecasting tool built for Thailand's seasonal sales patterns, reducing overstock during low-demand months.",problemSpace:"Data Analysis",      dataSource:"Sales & inventory records",demoLink:"",interestedUsers:[],                   imageUrl:"https://picsum.photos/id/240/400/200"},
 ];
 
 const ORIGINS = ["Hackathon","Side Project","Leadership Directive","Customer Request","Team Initiative"];
@@ -553,8 +553,8 @@ function PlantTree({size=88, wilting=false}) {
   );
 }
 
-const PlantMap = {sprout:PlantSprout,growing:PlantGrowing,blooming:PlantBlooming,thriving:PlantTree};
-const GardenSizes = {sprout:{w:60,h:72},growing:{w:74,h:84},blooming:{w:78,h:88},thriving:{w:90,h:102}};
+const PlantMap = {seedling:PlantSprout,nursery:PlantSprout,sprout:PlantGrowing,bloom:PlantBlooming,thriving:PlantTree};
+const GardenSizes = {seedling:{w:60,h:72},nursery:{w:60,h:72},sprout:{w:74,h:84},bloom:{w:78,h:88},thriving:{w:90,h:102}};
 
 // Stage icon (small, inline) — named components to avoid JSX-in-object errors
 // SIcoSprout — tiny sprouting bean icon for stage badges
@@ -611,10 +611,11 @@ function StageIcon({stage, size=16}) {
   const c = STAGE_COLORS[stage];
   if (!c) return null;
   const col = c.text;
-  if (stage==="sprout")   return <SIcoSprout size={size} col={col}/>;
-  if (stage==="growing")  return <SIcoGrowing size={size} col={col}/>;
-  if (stage==="blooming") return <SIcoBlooming size={size} col={col}/>;
-  if (stage==="thriving")     return <SIcoTree size={size} col={col}/>;
+  if (stage==="seedling") return <SIcoSprout size={size} col={col}/>;
+  if (stage==="nursery")  return <SIcoSprout size={size} col={col}/>;
+  if (stage==="sprout")   return <SIcoGrowing size={size} col={col}/>;
+  if (stage==="bloom")    return <SIcoBlooming size={size} col={col}/>;
+  if (stage==="thriving") return <SIcoTree size={size} col={col}/>;
   return null;
 }
 
@@ -839,8 +840,8 @@ const findRelated = (project, allProjects) => {
 const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden, onNavigateWishlist}) => {
   const [rankMode, setRankMode] = useState("builtBy"); // "builtBy" | "builtFor"
 
-  const launched   = projects.filter(p=>p.stage==="blooming"||p.stage==="thriving");
-  const inProgress = projects.filter(p=>p.stage==="growing"||p.stage==="sprout");
+  const launched   = projects.filter(p=>p.stage==="bloom"||p.stage==="thriving");
+  const inProgress = projects.filter(p=>p.stage==="sprout"||p.stage==="seedling");
   const wilting    = projects.filter(p=>p.lastUpdated>30);
   const totalImpacts = launched.filter(p=>p.impact!=="TBD");
   const spotlight  = launched.sort((a,b)=>a.lastUpdated-b.lastUpdated)[0];
@@ -854,7 +855,7 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
       ? projects.filter(p=>p.builtBy===dept)
       : projects.filter(p=>p.builtFor===dept);
     const sc = ps.reduce((s,p)=>s+STAGE_ORDER[p.stage],0);
-    const la = ps.filter(p=>p.stage==="blooming"||p.stage==="thriving").length;
+    const la = ps.filter(p=>p.stage==="bloom"||p.stage==="thriving").length;
     return {dept,total:ps.length,launched:la,score:sc};
   }).sort((a,b)=>b.score-a.score);
 
@@ -870,11 +871,11 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
       {/* Key metrics — Seeds now = wishes */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:16,marginBottom:24}}>
         {[
-          {label:"Seed",       value:seedCount,                                           sub:STAGE_DESC.seed,       tone:"neutral", plant:<WishSeed size={32} color={C.mushroom500}/>},
-          {label:"Sprout",     value:projects.filter(p=>p.stage==="sprout").length,       sub:STAGE_DESC.sprout,     tone:"pending", plant:<PlantSprout size={36}/>},
-          {label:"Growing",    value:projects.filter(p=>p.stage==="growing").length,      sub:STAGE_DESC.growing,    tone:"plain",   plant:<PlantGrowing size={36}/>},
-          {label:"Blooming", value:projects.filter(p=>p.stage==="blooming").length,   sub:STAGE_DESC.blooming, tone:"success", plant:<PlantBlooming size={36}/>},
-          {label:"Thriving",      value:projects.filter(p=>p.stage==="thriving").length,        sub:STAGE_DESC.thriving,      tone:"info",    plant:<PlantTree size={36}/>},
+          {label:"Seed",       value:seedCount,                                             sub:STAGE_DESC.seedling,   tone:"neutral", plant:<WishSeed size={32} color={C.mushroom500}/>},
+          {label:"Seedling",   value:projects.filter(p=>p.stage==="seedling").length,     sub:STAGE_DESC.seedling,   tone:"pending", plant:<PlantSprout size={36}/>},
+          {label:"Sprout",     value:projects.filter(p=>p.stage==="sprout").length,       sub:STAGE_DESC.sprout,     tone:"plain",   plant:<PlantGrowing size={36}/>},
+          {label:"Bloom",      value:projects.filter(p=>p.stage==="bloom").length,        sub:STAGE_DESC.bloom,      tone:"success", plant:<PlantBlooming size={36}/>},
+          {label:"Thriving",   value:projects.filter(p=>p.stage==="thriving").length,     sub:STAGE_DESC.thriving,   tone:"info",    plant:<PlantTree size={36}/>},
         ].map((s,i) => {
           const isWishlist = s.label === "Seed";
           const onClick = isWishlist
@@ -950,7 +951,7 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
               if (!p.builder) return;
               if (!builderMap[p.builder]) builderMap[p.builder] = {name:p.builder, total:0, launched:0, team:p.builtBy, country:p.country};
               builderMap[p.builder].total++;
-              if (p.stage==="blooming"||p.stage==="thriving") builderMap[p.builder].launched++;
+              if (p.stage==="bloom"||p.stage==="thriving") builderMap[p.builder].launched++;
             });
             const builders = Object.values(builderMap).sort((a,b)=>b.total-a.total);
             const maxTotal = builders[0]?.total||1;
@@ -2764,7 +2765,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Starting Stage</label>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-            {STAGES.map(s=>{
+            {STAGES.filter(s => s !== 'nursery').map(s=>{
               const sc = STAGE_COLORS[s];
               const active = form.stage===s;
               return (
