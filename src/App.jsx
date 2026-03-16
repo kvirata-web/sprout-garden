@@ -3718,6 +3718,7 @@ function LoginScreen({onLogin, onSignUp, onReset, onUpdatePassword, initialMode=
 export default function SproutAIGarden() {
   const [projects, setProjects] = useState([]);
   const [wishes, setWishes]     = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [welcomeSeen, setWelcomeSeen] = useState(false);
   const [view, setView]         = useState("dashboard");
@@ -3842,6 +3843,12 @@ export default function SproutAIGarden() {
     });
   }, [authUser?.email]);
 
+  // ── Load notifications ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) return;
+    loadNotifications().then(data => setNotifications(data));
+  }, [authUser?.email]);
+
   // Close profile dropdown on outside click
   useEffect(() => {
     const handler = e => { if (profileDropRef.current && !profileDropRef.current.contains(e.target)) setProfileOpen(false); };
@@ -3935,6 +3942,15 @@ export default function SproutAIGarden() {
       console.warn("sendNotification failed:", e);
       // Non-blocking — notification failure should not fail the main action
     }
+  };
+
+  const handleMarkNotificationsRead = (projectId) => {
+    const toMark = notifications.filter(n => !n.read && n.payload?.project_id === projectId);
+    if (toMark.length === 0) return;
+    const ids = toMark.map(n => n.id);
+    setNotifications(prev => prev.map(n => ids.includes(n.id) ? {...n, read:true} : n));
+    supabase.from("notifications").update({ read:true }).in("id", ids)
+      .then(({ error }) => { if (error) console.error("markNotificationsRead:", error); });
   };
 
   const submitToNursery = async (projectId, prototypeLink, deckLink) => {
@@ -4168,6 +4184,8 @@ export default function SproutAIGarden() {
     );
   }
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const NAV_TABS = [
     {id:"dashboard", label:"Overview",  Icon:IcoOverview},
     {id:"garden",    label:"Garden",    Icon:IcoGarden},
@@ -4203,6 +4221,18 @@ export default function SproutAIGarden() {
             );
           })}
         </div>
+
+        {/* Notifications badge */}
+        {unreadCount > 0 && (
+          <div style={{
+            position:"relative",marginLeft:-8,
+            width:18,height:18,borderRadius:"50%",background:C.tomato500,
+            border:"2px solid "+C.white,display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:9,fontWeight:700,color:C.white,fontFamily:FF,flexShrink:0,
+          }}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </div>
+        )}
 
         {/* Right side: add + user */}
         <div style={{display:"flex",alignItems:"center",gap:10}}>
