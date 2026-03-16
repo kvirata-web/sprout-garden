@@ -1193,7 +1193,7 @@ function ActiveFilterChip({label, onRemove, color, icon}) {
 }
 
 // ── Wish Detail Panel ──────────────────────────────────────────────────────────
-function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, authUser}) {
+function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
   const deptColor = DEPT_COLORS[wish.builtFor]||C.mushroom500;
   const isBuilder  = wish.claimedByEmail === authUser?.email;
   const isGardener = authUser?.isGardener;
@@ -1248,11 +1248,6 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, aut
                 <IcoCheck size={16} color={C.kangkong500}/> Built as <strong>{wish.fulfilledBy}</strong>
               </div>
             : <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {(isBuilder||isGardener)&&(
-                  <button onClick={onPromoteToSprout} style={{width:"100%",padding:"11px",background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 16px "+C.kangkong500+"40"}}>
-                    🌿 I have a prototype — Add to Garden as Sprout
-                  </button>
-                )}
                 {!isClaimed&&(
                   <button onClick={onClaim} style={{width:"100%",padding:"11px",background:C.kangkong700,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
                     <IcoAdd size={16} color={C.white}/> I'll build this
@@ -1273,7 +1268,7 @@ function WishDetailPanel({wish, onClose, onClaim, onPromoteToSprout, onEdit, aut
 
 
 // ── Unified Garden Hub (Directory + Garden + Board) ───────────────────────────
-const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWish, onMoveStage, onWishClaim, onUpdateWish, initialViewMode="directory", initialStageFilter="All"}) => {
+const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveStage, onWishClaim, onUnclaimSeed, onUpdateWish, initialViewMode="directory", initialStageFilter="All"}) => {
   const [viewMode, setViewMode] = useState(initialViewMode);
   const [deptFilter, setDeptFilter] = useState("All");
   const [capFilter, setCapFilter] = useState("All");
@@ -1328,10 +1323,6 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
     setClaimingWish(null);
   };
 
-  const handlePromoteToSprout = (wish) => {
-    setSelectedWish(null);
-    onClaimWish(wish); // opens AddProjectModal pre-filled at Sprout
-  };
 
   const VIEW_MODES = [
     {id:"directory", label:"Directory", Icon:IcoViewGrid},
@@ -1629,7 +1620,21 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
                           {w.readyForReview
                             ? <span style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mango600,padding:"2px 6px",background:C.mango100,borderRadius:DS.radius.full}}>⏳ Review</span>
                             : w.claimedBy
-                            ? <span style={{fontFamily:FF,fontSize:10,fontWeight:600,color:C.wintermelon500}}>🔨 {w.claimedBy.split(" ")[0]}</span>
+                            ? (
+                              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                                {(() => {
+                                  const builderCount = projects.filter(p => p.id === w.fulfilledBy).length;
+                                  return builderCount > 1 ? <span style={{fontFamily:FF,fontSize:9,color:C.mushroom500,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 5px"}}>{builderCount} builders</span> : null;
+                                })()}
+                                <span style={{fontFamily:FF,fontSize:10,fontWeight:600,color:C.wintermelon500}}>🔨 {w.claimedBy.split(" ")[0]}</span>
+                                {w.claimedByEmail===authUser?.email && projects.find(p=>p.id===w.fulfilledBy)?.stage==="seedling" && (
+                                  <button onClick={e=>{e.stopPropagation();onUnclaimSeed(w.id);}} style={{
+                                    fontFamily:FF,fontSize:9,color:C.mushroom500,background:"none",
+                                    border:"1px solid "+C.mushroom300,borderRadius:DS.radius.sm,padding:"1px 5px",cursor:"pointer",
+                                  }}>Release</button>
+                                )}
+                              </div>
+                            )
                             : <button onClick={e=>{e.stopPropagation();setClaimingWish(w);}} style={{
                                 background:C.kangkong50,border:"1px solid "+C.kangkong300,
                                 borderRadius:DS.radius.sm,padding:"2px 8px",cursor:"pointer",
@@ -1766,7 +1771,6 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
           authUser={authUser}
           onClose={()=>setSelectedWish(null)}
           onClaim={()=>setClaimingWish(selectedWish)}
-          onPromoteToSprout={()=>handlePromoteToSprout(selectedWish)}
           onEdit={w=>{setSelectedWish(null);setEditingWish(w);}}
         />
       )}
@@ -2260,7 +2264,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
 // ── Add Project Modal ─────────────────────────────────────────────────────────
 
 // ── Wishlist View ─────────────────────────────────────────────────────────────
-function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish, onWishClaim, onUpdateWish, showAddWish, setShowAddWish}) {
+function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishClaim, onUnclaimSeed, onUpdateWish, showAddWish, setShowAddWish}) {
   const [deptFilter, setDeptFilter] = useState("All");
   const [sort, setSort] = useState("upvotes");
   const [claimingWish, setClaimingWish] = useState(null);
@@ -2287,7 +2291,7 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
               <WishSeed size={32} color={C.mushroom600}/>
               <div>
-                <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,lineHeight:1.1}}>Wishlist</div>
+                <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,lineHeight:1.1}}>Seeds</div>
                 <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,marginTop:1}}>Seeds waiting to grow — ideas without a builder yet</div>
               </div>
             </div>
@@ -2451,10 +2455,26 @@ function WishlistView({wishes, projects, onClaim, authUser, onUpvote, onAddWish,
                     }}>
                       {hasUpvoted?"✓ I need this":"+ I need this"}
                     </button>
-                    {wish.claimedBy
-                      ? <div style={{flex:1,padding:"7px 12px",borderRadius:DS.radius.md,background:C.wintermelon100,border:"1px solid "+C.wintermelon400,fontFamily:FF,fontSize:12,fontWeight:600,color:C.wintermelon500,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                          🔨 {wish.claimedBy === currentUser ? "You're building this" : `${wish.claimedBy.split(" ")[0]} is building this`}
+                    {wish.readyForReview
+                      ? <span style={{flex:1,fontFamily:FF,fontSize:12,fontWeight:700,color:C.mango600,padding:"7px 12px",background:C.mango100,borderRadius:DS.radius.md,display:"flex",alignItems:"center",justifyContent:"center"}}>⏳ Review</span>
+                      : wish.claimedBy
+                      ? (
+                        <div style={{flex:1,display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:DS.radius.md,background:C.wintermelon100,border:"1px solid "+C.wintermelon400}}>
+                          {(() => {
+                            const builderCount = projects.filter(p => p.id === wish.fulfilledBy).length;
+                            return builderCount > 1 ? <span style={{fontFamily:FF,fontSize:9,color:C.mushroom500,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 5px"}}>{builderCount} builders</span> : null;
+                          })()}
+                          <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.wintermelon500,flex:1}}>
+                            🔨 {wish.claimedBy === currentUser ? "You're building this" : `${wish.claimedBy.split(" ")[0]} is building this`}
+                          </span>
+                          {wish.claimedBy === currentUser && projects.find(p=>p.id===wish.fulfilledBy)?.stage==="seedling" && (
+                            <button onClick={e=>{e.stopPropagation();onUnclaimSeed(wish.id);}} style={{
+                              fontFamily:FF,fontSize:10,color:C.mushroom500,background:"none",
+                              border:"1px solid "+C.mushroom300,borderRadius:DS.radius.sm,padding:"2px 7px",cursor:"pointer",
+                            }}>Release</button>
+                          )}
                         </div>
+                      )
                       : <button onClick={()=>setClaimingWish(wish)} style={{
                           flex:1,padding:"7px 12px",borderRadius:DS.radius.md,cursor:"pointer",
                           fontFamily:FF,fontSize:12,fontWeight:700,
@@ -3704,7 +3724,6 @@ export default function SproutAIGarden() {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showAddWish, setShowAddWish] = useState(false);
-  const [prefilledWish, setPrefilledWish] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [gardenNav, setGardenNav] = useState({key:0, viewMode:"directory", stageFilter:"All"});
   const [profileOpen, setProfileOpen] = useState(false);
@@ -3854,11 +3873,6 @@ export default function SproutAIGarden() {
     const saved = toProject(data);
     setProjects(prev => [...prev, saved]);
     if (!authUser?.hasDismissedWelcome) handleDismissWelcomePermanently();
-    if (prefilledWish) {
-      await supabase.from("wishes").update({ fulfilled_by: saved.name }).eq("id", prefilledWish.id);
-      setWishes(prev => prev.map(w => w.id === prefilledWish.id ? {...w, fulfilledBy: saved.name} : w));
-      setPrefilledWish(null);
-    }
   };
 
   const handleUpdateProject = async (updated) => {
@@ -4033,16 +4047,97 @@ export default function SproutAIGarden() {
     }));
   };
 
-  const handleClaimWish = (wishId) => {
+  const handleClaimWish = async (wishId) => {
+    const wish = wishes.find(w => w.id === wishId);
+    if (!wish) return;
     const claimedAt = new Date().toLocaleDateString("en-PH", {month:"short", day:"numeric", year:"numeric"});
-    setWishes(prev => prev.map(w => w.id !== wishId ? w : {
-      ...w, claimedBy: authUser.displayName, claimedByEmail: authUser.email, claimedAt,
-    }));
-    supabase.from("wishes").update({ claimed_by: authUser.displayName, claimed_by_email: authUser.email, claimed_at: claimedAt }).eq("id", wishId)
-      .then(({ error }) => { if (error) console.error("handleClaimWish:", error); });
+
+    // Update the wish
+    const { error: wishError } = await supabase.from("wishes").update({
+      claimed_by: authUser.displayName,
+      claimed_by_email: authUser.email,
+      claimed_at: claimedAt,
+    }).eq("id", wishId);
+    if (wishError) { console.error("handleClaimWish wish:", wishError); return; }
+
+    // Create a new Plant at seedling stage
+    const newPlant = {
+      country: authUser.country,
+      name: wish.title,
+      builtBy: authUser.displayName,
+      builtFor: wish.builtFor,
+      stage: "seedling",
+      builder: authUser.displayName,
+      builderEmail: authUser.email,
+      notes: [],
+      milestones: ["Seed claimed — " + claimedAt],
+      description: wish.why || "",
+      impact: "TBD", impactNum: "TBD",
+      toolUsed: [],
+      zx: 40, zy: 50,
+    };
+    const row = fromProject(newPlant);
+    const { data: plantData, error: plantError } = await supabase
+      .from("projects").insert(row).select().single();
+    if (plantError) { console.error("handleClaimWish plant:", plantError); return; }
+
+    const savedPlant = toProject(plantData);
+
+    // Link the wish to the plant
+    await supabase.from("wishes").update({
+      fulfilled_by: savedPlant.id,
+    }).eq("id", wishId);
+
+    setWishes(prev => prev.map(w => w.id === wishId
+      ? {...w, claimedBy:authUser.displayName, claimedByEmail:authUser.email, claimedAt, fulfilledBy:savedPlant.id}
+      : w
+    ));
+    setProjects(prev => [...prev, savedPlant]);
   };
+
+  const handleUnclaimSeed = async (wishId) => {
+    const wish = wishes.find(w => w.id === wishId);
+    if (!wish || !wish.fulfilledBy) return;
+    // Only builder or Gardener can un-claim
+    if (authUser.email !== wish.claimedByEmail && !authUser.isGardener) return;
+    // Cannot un-claim if the Plant is in Nursery
+    const plant = projects.find(p => p.id === wish.fulfilledBy);
+    if (plant?.stage === "nursery") return;
+
+    // Step 1: Delete the Plant (RLS policy: builder-delete-own-seedling)
+    const { error: deleteError } = await supabase
+      .from("projects").delete().eq("id", wish.fulfilledBy);
+    if (deleteError) { console.error("handleUnclaimSeed delete:", deleteError); return; }
+    setProjects(prev => prev.filter(p => p.id !== wish.fulfilledBy));
+
+    // Step 2: Clear the Wish claim fields
+    const { error: wishError } = await supabase.from("wishes").update({
+      claimed_by: null,
+      claimed_by_email: null,
+      claimed_at: null,
+      fulfilled_by: null,
+    }).eq("id", wishId);
+    if (wishError) {
+      console.error("handleUnclaimSeed wish clear:", wishError);
+      alert("Plant removed, but there was an error releasing the Seed. A Gardener can fix this.");
+      return;
+    }
+    setWishes(prev => prev.map(w => w.id === wishId
+      ? {...w, claimedBy:null, claimedByEmail:null, claimedAt:null, fulfilledBy:null}
+      : w
+    ));
+
+    // Notify original Seed submitter (in-app only)
+    if (wish.wisherEmail !== authUser.email) {
+      sendNotification("seed-unclaimed", {
+        wish_id: wishId,
+        wish_title: wish.title,
+        wisher_email: wish.wisherEmail,
+      });
+    }
+  };
+
   const handleSelectProject = p => { setSelected(p); if(view==="dashboard") setView("garden"); };
-  const handlePromoteWish = w => { setPrefilledWish(w); setShowForm(true); };
 
   // Auth gate — after all hooks
   if (authLoading) {
@@ -4076,7 +4171,7 @@ export default function SproutAIGarden() {
   const NAV_TABS = [
     {id:"dashboard", label:"Overview",  Icon:IcoOverview},
     {id:"garden",    label:"Garden",    Icon:IcoGarden},
-    {id:"wishlist",  label:"Wishlist",  Icon:IcoWishlist},
+    {id:"wishlist",  label:"Seeds",     Icon:IcoWishlist},
   ];
 
   return (
@@ -4179,8 +4274,8 @@ export default function SproutAIGarden() {
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
           {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
-          {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onClaimWish={handlePromoteWish} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish}/>}
-          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} onClaim={handlePromoteWish} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
+          {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish}/>}
+          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
 
         {selected && (
@@ -4199,8 +4294,8 @@ export default function SproutAIGarden() {
 
       {showForm && (
         <AddProjectModal
-          onClose={()=>{setShowForm(false);setPrefilledWish(null);}}
-          onAdd={addProject} projects={projects} prefill={prefilledWish}
+          onClose={()=>setShowForm(false)}
+          onAdd={addProject} projects={projects}
           authUser={authUser}
         />
       )}
