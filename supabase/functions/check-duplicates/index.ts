@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  const projectList = candidates.map((p: { name: string; builtBy: string; builtFor: string; capability: string; problemSpace: string; description: string }) =>
-    `- "${p.name}" (${p.builtBy} → ${p.builtFor}, ${p.capability}, ${p.problemSpace}): ${p.description || "no description"}`
+  const projectList = candidates.map((p: { name: string; builtBy: string; builtFor: string; area: string; description: string }) =>
+    `- "${p.name}" (${p.builtBy} → ${p.builtFor}, ${p.area}): ${p.description || "no description"}`
   ).join("\n");
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -37,8 +37,7 @@ Deno.serve(async (req) => {
 A new project is being submitted:
 Name: "${newProject.name}"
 Description: "${newProject.description || "No description yet"}"
-AI Capability: ${newProject.capability}
-Problem Space: ${newProject.problemSpace}
+Area: ${newProject.area}
 Built for: ${newProject.builtFor}
 
 Existing projects in the system:

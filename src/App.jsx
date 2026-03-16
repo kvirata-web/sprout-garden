@@ -173,9 +173,11 @@ const DEPT_ZONES = {
 };
 
 const CAPABILITIES = ["All","LLM","Computer Vision","Automation","Prediction","NLP"];
-const PROBLEM_SPACES = [
-  "Customer Support","Process Automation","Data Analysis","Content Creation",
-  "Compliance & Risk","HR & Onboarding","Finance & Budgeting","Sales & Marketing"
+const AREAS = [
+  "Hiring & Recruitment","Onboarding","Learning & Development",
+  "Performance & Goals","Payroll & Compensation","People Operations",
+  "Employee Experience","Customer & Client Work","Internal Operations",
+  "Product & Engineering","Other"
 ];
 
 const INITIAL_PROJECTS = [
@@ -198,25 +200,6 @@ const INITIAL_PROJECTS = [
 
 const ORIGINS = ["Hackathon","Side Project","Leadership Directive","Customer Request","Team Initiative"];
 
-const DEPT_PROBLEM_SPACES = {
-  Marketing:                    ["Content Creation","Campaign Analytics","Brand Consistency","Customer Insights","SEO","Ad Optimization"],
-  "Product Marketing":          ["Go-to-Market","Competitive Analysis","Product Launch","Customer Research","Positioning","Messaging"],
-  LDU:                          ["Lead Generation","Lead Scoring","Pipeline Management","Outreach Automation","Account Research","Conversion"],
-  SolCon:                       ["Solution Design","Proposal Generation","Bid Management","Technical Scoping","RFP Responses","Pricing"],
-  Sales:                        ["Sales Automation","CRM Management","Deal Forecasting","Customer Outreach","Pipeline Tracking","Quota Analysis"],
-  RevOps:                       ["Revenue Analytics","Process Automation","Data Integration","Reporting","Sales Ops","Forecasting"],
-  Implementation:               ["Project Management","Client Onboarding","Configuration","Training","Documentation","Delivery Tracking"],
-  MPS:                          ["Service Delivery","SLA Monitoring","Incident Management","Reporting","Optimization","Client Health"],
-  "Customer Advocacy":          ["NPS Tracking","Case Studies","Reference Management","Community","Testimonials","Loyalty"],
-  "Customer Success Management":["Churn Prevention","Health Scoring","QBR Automation","Adoption Tracking","Upsell","Renewal"],
-  Alliance:                     ["Partner Management","Co-Marketing","Integration Tracking","Partner Onboarding","Deal Registration","MDF"],
-  Aurora:                       ["Innovation","Prototyping","R&D","Technology Scouting","AI Research","Internal Tools"],
-  Prometheus:                   ["Engineering","Code Quality","Infrastructure","Security","Developer Productivity","Platform"],
-  Legal:                        ["Contract Review","Compliance","Risk Assessment","Document Management","Policy","IP Management"],
-  "People Ops":                 ["Recruitment","Onboarding","Performance Management","Employee Engagement","Learning & Development","Compliance"],
-  Finance:                      ["Invoice Processing","Budget Analysis","Expense Management","Financial Reporting","Forecasting","Fraud Detection"],
-  Execom:                       ["Strategic Planning","Business Intelligence","Executive Reporting","Decision Support","KPI Tracking","Governance"],
-};
 
 // Helper: get dept color
 const getDeptColor = (dept) => DEPT_COLORS[dept] || C.kangkong500;
@@ -1006,8 +989,8 @@ async function callEdgeFunction(name, body) {
   return res.json();
 }
 
-async function generateProjectSummary({name, builtBy, builtFor, capability, problemSpace, dataSource, impact}) {
-  const data = await callEdgeFunction("summarize", { name, builtBy, builtFor, capability, problemSpace, dataSource, impact });
+async function generateProjectSummary({name, builtBy, builtFor, area, problem, built, betterNow, impact}) {
+  const data = await callEdgeFunction("summarize", { name, builtBy, builtFor, area, problem, built, betterNow, impact });
   if (!data?.text) throw new Error("No text returned from function");
   return data.text;
 }
@@ -2385,6 +2368,51 @@ function ModalField({label, k, type="text", ph, opts, form, onChange}) {
   );
 }
 
+// ── SectionHeader — numbered section label ────────────────────────────────────
+function SectionHeader({number, title, subtitle}) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:8,margin:"20px 0 14px"}}>
+      <div style={{
+        width:22, height:22, borderRadius:"50%",
+        background:C.kangkong600, color:C.white,
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontFamily:FF, fontSize:11, fontWeight:700, flexShrink:0,
+      }}>{number}</div>
+      <div>
+        <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900}}>{title}</div>
+        {subtitle&&<div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{subtitle}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── StoryQ — green card textarea for story questions ──────────────────────────
+// Must be defined outside AddProjectModal to prevent focus loss on re-render
+function StoryQ({k, label, hint, form, onChange, ph}) {
+  return (
+    <div style={{
+      background:C.kangkong50, border:"1.5px solid "+C.kangkong200,
+      borderRadius:DS.radius.md, padding:"10px 12px", marginBottom:10,
+    }}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <label style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.kangkong600,textTransform:"uppercase",letterSpacing:0.5}}>{label}</label>
+        <span style={{fontFamily:FF,fontSize:10,color:C.kangkong400}}>{hint}</span>
+      </div>
+      <textarea
+        rows={2}
+        value={form[k]}
+        onChange={e=>onChange(k,e.target.value)}
+        placeholder={ph}
+        style={{
+          width:"100%", background:"transparent", border:"none", outline:"none",
+          fontFamily:FF, fontSize:13, color:C.mushroom800,
+          resize:"vertical", lineHeight:1.6, boxSizing:"border-box", padding:0,
+        }}
+      />
+    </div>
+  );
+}
+
 // ── Add Project Modal (with AI Summarizer + Duplicate Detector) ───────────────
 const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   const DEPTS = Object.keys(DEPT_ZONES);
@@ -2393,10 +2421,11 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
     description: prefill?.why||"",
     builtBy:"Marketing",
     builtFor: prefill?.builtFor||"Marketing",
-    capability:"LLM",
-    builder:"",impact:"",
+    area:"",
+    problem:"", built:"", betterNow:"",
+    builder:"", impact:"",
     stage:STAGES[0],
-    problemSpace:"Process Automation",dataSource:"",
+    dataSource:"", demoLink:"",
     imageUrl:"",
   });
 
@@ -2405,25 +2434,31 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   const [aiSummaryDone, setAiSummaryDone] = useState(false);
   const [aiSummaryError, setAiSummaryError] = useState(null);
   const [aiChecking, setAiChecking] = useState(false);
-  const [aiOverlaps, setAiOverlaps] = useState(null); // null=unchecked, []=none found, [...]=overlaps
+  const [aiOverlaps, setAiOverlaps] = useState(null);
   const [aiOverlapChecked, setAiOverlapChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const setField = (k,v) => {
     setForm(p=>({...p,[k]:v}));
     setAiSummaryDone(false);
-    if (["name","description","capability","problemSpace","builtFor"].includes(k)) {
+    if (["name","description","area","problem","built","betterNow","builtFor"].includes(k)) {
       setAiOverlaps(null);
       setAiOverlapChecked(false);
     }
   };
 
+  const canSummarize = !!(form.name.trim() && (form.problem || form.built || form.betterNow));
+
   const handleSummarize = async () => {
-    if (!form.name.trim()) return;
+    if (!canSummarize || aiSummarizing) return;
     setAiSummarizing(true);
     setAiSummaryError(null);
     try {
-      const summary = await generateProjectSummary(form);
+      const summary = await generateProjectSummary({
+        name: form.name, builtBy: form.builtBy, builtFor: form.builtFor,
+        area: form.area, problem: form.problem, built: form.built,
+        betterNow: form.betterNow, impact: form.impact,
+      });
       setForm(p=>({...p, description:summary}));
       setAiSummaryDone(true);
     } catch(e) {
@@ -2436,10 +2471,12 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
   const doAdd = () => {
     onAdd({
       ...form,
+      problemSpace: form.area,
+      capability: "",
       id:Date.now(), lastUpdated:0, notes:[],
       zx:35+Math.random()*25, zy:35+Math.random()*25,
       milestones:[STAGE_LABELS[form.stage]+" — "+new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})],
-      impactNum:"TBD", demoLink:"", interestedUsers:[],
+      impactNum:"TBD", interestedUsers:[],
       imageUrl: form.imageUrl||"",
     });
     onClose();
@@ -2447,22 +2484,22 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
 
   const submit = async () => {
     if (!form.name.trim() || submitting) return;
-    // If overlaps already shown, user is confirming — save directly
     if (aiOverlapChecked && aiOverlaps?.length > 0) { doAdd(); return; }
     setSubmitting(true);
     setAiChecking(true);
     const candidates = projects.filter(p =>
-      p.capability === form.capability || p.problemSpace === form.problemSpace
+      p.area === form.area || p.problemSpace === form.area
     );
-    const overlaps = await detectDuplicates(form, candidates);
+    const overlaps = await detectDuplicates(
+      {...form, problemSpace: form.area, capability: ""},
+      candidates
+    );
     setAiOverlaps(overlaps);
     setAiOverlapChecked(true);
     setAiChecking(false);
     setSubmitting(false);
     if (overlaps.length === 0) { doAdd(); }
-    // else: overlaps shown in card — user reads and clicks "Save anyway"
   };
-
 
   return (
     <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.55)",backdropFilter:"blur(6px)"}} onClick={onClose}>
@@ -2486,6 +2523,9 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           </div>
         )}
 
+        {/* ── Section 1: About the Project ── */}
+        <SectionHeader number="1" title="About the project" subtitle="Who built it, and for whom?"/>
+
         <ModalField label="Project Name *" k="name" ph="e.g. SmartSort AI" form={form} onChange={setField}/>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -2493,40 +2533,46 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           <ModalField label="Built For (beneficiary)" k="builtFor" type="select" opts={DEPTS} form={form} onChange={setField}/>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <ModalField label="AI Type" k="capability" type="select" opts={CAPABILITIES.filter(c=>c!=="All")} form={form} onChange={setField}/>
-          <ModalField label="Problem Space" k="problemSpace" type="select" opts={PROBLEM_SPACES} form={form} onChange={setField}/>
+          <ModalField label="Area" k="area" type="select" opts={["", ...AREAS]} form={form} onChange={setField}/>
+          <ModalField label="Builder (Farmer)" k="builder" ph="e.g. Priya Mehta" form={form} onChange={setField}/>
         </div>
-        <ModalField label="Data Source" k="dataSource" ph="e.g. Customer emails" form={form} onChange={setField}/>
-        <ModalField label="Builder (Farmer)" k="builder" ph="e.g. Priya Mehta" form={form} onChange={setField}/>
-        <ModalField label="Expected Impact" k="impact" ph="e.g. Saves 2 hrs/week" form={form} onChange={setField}/>
 
-        {/* Description + AI Summarizer — placed after form fields so AI can read them */}
+        {/* ── Section 2: Tell the Story ── */}
+        <SectionHeader number="2" title="Tell the story" subtitle="Help your team understand the impact"/>
+
+        <StoryQ k="problem" label="What was the problem?" hint="1-2 sentences" form={form} onChange={setField} ph="What challenge or pain point existed before?"/>
+        <StoryQ k="built" label="What did you build?" hint="1-2 sentences" form={form} onChange={setField} ph="Describe what you created or automated."/>
+        <StoryQ k="betterNow" label="What's better now?" hint="1-2 sentences" form={form} onChange={setField} ph="What changed for the team or customers?"/>
+
+        {/* AI Summarize button */}
+        <button
+          onClick={handleSummarize}
+          disabled={!canSummarize||aiSummarizing}
+          style={{
+            display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
+            marginBottom:10,padding:"7px 12px",borderRadius:DS.radius.md,
+            border:"1.5px solid "+(aiSummaryDone?C.kangkong400:C.ubas400),
+            background:aiSummaryDone?C.kangkong50:C.ubas50,
+            color:aiSummaryDone?C.kangkong600:C.ubas600,
+            fontFamily:FF,fontSize:12,fontWeight:700,
+            cursor:canSummarize&&!aiSummarizing?"pointer":"not-allowed",
+            opacity:canSummarize?1:0.5,transition:"all 0.15s",
+          }}
+        >
+          {aiSummarizing
+            ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:12}}>⟳</span> Writing summary…</>
+            : aiSummaryDone
+            ? <><IcoCheck size={12} color={C.kangkong500}/> Regenerate summary from answers above</>
+            : <>✦ Craft my summary from these answers</>
+          }
+        </button>
+
+        {/* Description textarea */}
         <div style={{marginBottom:12}}>
           <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>Description</label>
           <textarea rows={3} value={form.description} onChange={e=>setField("description",e.target.value)}
-            placeholder="Describe what this project does, the problem it solves, and who benefits…"
+            placeholder="AI-generated summary will appear here — or write your own…"
             style={{...modalInputStyle,resize:"vertical",lineHeight:1.6}}/>
-          <button
-            onClick={handleSummarize}
-            disabled={!form.name.trim()||aiSummarizing}
-            style={{
-              display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
-              marginTop:6,padding:"7px 12px",borderRadius:DS.radius.md,
-              border:"1.5px solid "+(aiSummaryDone?C.kangkong400:C.ubas400),
-              background:aiSummaryDone?C.kangkong50:C.ubas50,
-              color:aiSummaryDone?C.kangkong600:C.ubas600,
-              fontFamily:FF,fontSize:12,fontWeight:700,
-              cursor:form.name.trim()&&!aiSummarizing?"pointer":"not-allowed",
-              opacity:form.name.trim()?1:0.5,transition:"all 0.15s",
-            }}
-          >
-            {aiSummarizing
-              ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:12}}>⟳</span> Writing description…</>
-              : aiSummaryDone
-              ? <><IcoCheck size={12} color={C.kangkong500}/> Regenerate description from fields above</>
-              : <>✦ Generate description from fields above</>
-            }
-          </button>
           {aiSummaryDone&&(
             <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
               <IcoCheck size={11} color={C.kangkong500}/> AI-generated — feel free to edit before saving
@@ -2539,26 +2585,34 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           )}
         </div>
 
-        {/* Stage selector */}
+        {/* ── Section 3: Impact & Link ── */}
+        <SectionHeader number="3" title="Impact & link"/>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <ModalField label="Expected Impact" k="impact" ph="e.g. Saves 2 hrs/week" form={form} onChange={setField}/>
+          <ModalField label="Demo Link" k="demoLink" ph="https://..." form={form} onChange={setField}/>
+        </div>
+
+        {/* Stage selector — 4 tiles */}
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Starting Stage</label>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
             {STAGES.map(s=>{
               const sc = STAGE_COLORS[s];
               const active = form.stage===s;
               return (
                 <button key={s} onClick={()=>setField("stage",s)} style={{
-                  padding:"10px 12px",borderRadius:DS.radius.lg,cursor:"pointer",textAlign:"left",
+                  padding:"10px 8px",borderRadius:DS.radius.lg,cursor:"pointer",textAlign:"left",
                   border:"2px solid "+(active?sc.dot:C.mushroom200),
                   background:active?sc.bg:C.white,
                   transition:"all 0.15s",
                 }}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                    <StageIcon stage={s} size={14}/>
-                    <span style={{fontFamily:FF,fontSize:12,fontWeight:700,color:active?sc.text:C.mushroom700}}>{STAGE_LABELS[s]}</span>
-                    {active&&<IcoCheck size={12} color={sc.dot}/>}
+                  <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+                    <StageIcon stage={s} size={13}/>
+                    <span style={{fontFamily:FF,fontSize:11,fontWeight:700,color:active?sc.text:C.mushroom700}}>{STAGE_LABELS[s]}</span>
+                    {active&&<IcoCheck size={11} color={sc.dot}/>}
                   </div>
-                  <div style={{fontFamily:FF,fontSize:10,color:active?sc.text:C.mushroom400,lineHeight:1.4,opacity:0.85}}>{STAGE_DESC[s]}</div>
+                  <div style={{fontFamily:FF,fontSize:9,color:active?sc.text:C.mushroom400,lineHeight:1.4,opacity:0.85}}>{STAGE_DESC[s]}</div>
                 </button>
               );
             })}
@@ -2574,8 +2628,7 @@ const AddProjectModal = ({onClose, onAdd, projects, prefill=null}) => {
           />
           {form.imageUrl&&(
             <div style={{marginTop:8,borderRadius:DS.radius.lg,overflow:"hidden",border:"1px solid "+C.mushroom200,height:120}}>
-              <img src={form.imageUrl} alt="Preview" onError={e=>{e.target.style.display="none"}} style={{width:"100%",height:"100%",objectFit:"cover"}}
-              />
+              <img src={form.imageUrl} alt="Preview" onError={e=>{e.target.style.display="none"}} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
             </div>
           )}
         </div>
