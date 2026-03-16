@@ -768,19 +768,62 @@ const SproutLogo = () => (
 );
 
 // ── Duplicate Detector ────────────────────────────────────────────────────────
-const findRelated = (project, allProjects) =>
-  allProjects.filter(p=>p.id!==project.id&&(
-    p.problemSpace===project.problemSpace||
-    p.dataSource===project.dataSource||
-    p.capability===project.capability
-  )).map(p=>({
-    ...p,
-    matchReason:p.problemSpace===project.problemSpace
-      ?"Same problem space: "+p.problemSpace
-      :p.dataSource===project.dataSource
-      ?"Same data source: "+p.dataSource
-      :"Same AI type: "+p.capability
-  }));
+// ── Related projects — score-based matching ───────────────────────────────────
+const STOP_WORDS = new Set([
+  "a","an","the","and","or","but","in","on","at","to","for","of","with",
+  "by","from","is","are","was","were","be","been","has","have","had",
+  "it","its","this","that","these","those","we","our","their","which",
+  "will","can","may","do","does","did","not","no","as","up","out","so",
+  "all","also","just","than","then","when","where","who","how","what",
+  "each","they","them","your","more","some","into","over","used","help",
+]);
+
+const extractKeywords = (text) => {
+  if (!text) return new Set();
+  return new Set(
+    text.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !STOP_WORDS.has(w))
+  );
+};
+
+const countOverlap = (a, b) => {
+  const ka = extractKeywords(a);
+  const kb = extractKeywords(b);
+  let n = 0;
+  for (const w of ka) { if (kb.has(w)) n++; }
+  return n;
+};
+
+const findRelated = (project, allProjects) => {
+  return allProjects
+    .filter(p => p.id !== project.id && p.country === project.country)
+    .map(p => {
+      let score = 0;
+      const reasons = [];
+      const projArea = project.area || project.problemSpace;
+      const pArea = p.area || p.problemSpace;
+
+      if (projArea && pArea && pArea === projArea) {
+        score += 2;
+        reasons.push("Same area");
+      }
+      if (countOverlap(project.description, p.description) >= 2) {
+        score += 2;
+        reasons.push("Similar description");
+      }
+      if (project.builtFor && p.builtFor === project.builtFor) {
+        score += 1;
+        reasons.push("Same team");
+      }
+
+      return {...p, score, matchReason: reasons.join(" · ")};
+    })
+    .filter(p => p.score >= 2)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+};
 
 // ── Executive Dashboard ───────────────────────────────────────────────────────
 const ExecutiveDashboard = ({projects, wishes, onSelectProject}) => {
@@ -1389,7 +1432,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onClaimWi
               const sc = STAGE_COLORS[p.stage];
               const wilting = p.lastUpdated > 30;
               const related = findRelated(p, projects);
-              const hasOverlap = related.filter(r=>r.problemSpace===p.problemSpace).length>0;
+              const hasOverlap = related.length > 0;
               return (
                 <div key={p.id} onClick={()=>setSelected(p)}
                   style={{background:C.white,borderRadius:DS.radius.xl,border:"1px solid "+C.mushroom200,overflow:"hidden",cursor:"pointer",transition:"all 0.18s",boxShadow:DS.shadow.sm}}
@@ -1757,13 +1800,13 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
           </>
         )}
       </div>
-      {selected&&findRelated(selected,projects).filter(p=>p.problemSpace===selected.problemSpace).length>0&&(
+      {selected&&findRelated(selected,projects).length>0&&(
         <div style={{position:"absolute",top:16,right:16,zIndex:20,background:C.white,border:"1.5px solid "+C.mango500,borderRadius:DS.radius.lg,padding:"10px 14px",maxWidth:220,boxShadow:DS.shadow.md}}>
           <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mango600,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
             <IcoWarning size={14} color={C.mango500}/> Possible Overlap
           </div>
           <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600,lineHeight:1.4}}>
-            {findRelated(selected,projects).filter(p=>p.problemSpace===selected.problemSpace).length} project(s) share the same problem space as <strong>{selected.name}</strong>
+            {findRelated(selected,projects).length} project(s) share the same area as <strong>{selected.name}</strong>
           </div>
         </div>
       )}
@@ -1846,13 +1889,13 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
               <IcoRelated size={13} color={C.mushroom400}/> Related Projects
             </div>
             {related.map(r=>{
-              const isSP=r.problemSpace===project.problemSpace;
+              const isHighMatch = r.score >= 3;
               return(
                 <div key={r.id} onClick={()=>setSelected(r)} style={{
                   display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
                   marginBottom:6,borderRadius:DS.radius.md,cursor:"pointer",
-                  background:isSP?C.carrot100:C.mushroom50,
-                  border:"1px solid "+(isSP?C.carrot500:C.mushroom200),
+                  background:isHighMatch?C.carrot100:C.mushroom50,
+                  border:"1px solid "+(isHighMatch?C.carrot500:C.mushroom200),
                   transition:"all 0.15s",
                 }}
                   onMouseOver={e=>e.currentTarget.style.boxShadow=DS.shadow.sm}
@@ -1863,7 +1906,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected}) => {
                     <div style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom900,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.name}</div>
                     <div style={{fontFamily:FF,fontSize:10,color:C.mushroom500}}>{r.matchReason}</div>
                   </div>
-                  {isSP&&<Badge label="Overlap" tone="pending"/>}
+                  {isHighMatch&&<Badge label="Overlap" tone="pending"/>}
                 </div>
               );
             })}
