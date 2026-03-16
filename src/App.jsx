@@ -890,29 +890,24 @@ const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden
         </div>
       </div>
 
-      {/* Key metrics — Seeds now = wishes */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:16,marginBottom:24}}>
+      {/* Key metrics — 6 tiles: Seeds + 5 pipeline stages */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>
         {[
-          {label:"Seed",       value:seedCount,                                             sub:STAGE_DESC.seedling,   tone:"neutral", plant:<WishSeed size={32} color={C.mushroom500}/>},
-          {label:"Seedling",   value:projects.filter(p=>p.stage==="seedling").length,     sub:STAGE_DESC.seedling,   tone:"pending", plant:<PlantSprout size={36}/>},
-          {label:"Sprout",     value:projects.filter(p=>p.stage==="sprout").length,       sub:STAGE_DESC.sprout,     tone:"plain",   plant:<PlantGrowing size={36}/>},
-          {label:"Bloom",      value:projects.filter(p=>p.stage==="bloom").length,        sub:STAGE_DESC.bloom,      tone:"success", plant:<PlantBlooming size={36}/>},
-          {label:"Thriving",   value:projects.filter(p=>p.stage==="thriving").length,     sub:STAGE_DESC.thriving,   tone:"info",    plant:<PlantTree size={36}/>},
-        ].map((s,i) => {
-          const isWishlist = s.label === "Seed";
-          const onClick = isWishlist
-            ? () => onNavigateWishlist?.()
-            : () => onNavigateGarden?.("board", s.label.toLowerCase());
-          return (
-            <Card key={i} tone={s.tone} hoverable onClick={onClick} style={{textAlign:"center",padding:"16px 12px",cursor:"pointer"}}>
-              <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>{s.plant}</div>
-              <div style={{fontFamily:FF,fontSize:30,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
-              <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
-              <div style={{fontFamily:FF,fontSize:10,color:C.kangkong500,marginTop:6,fontWeight:600}}>View all →</div>
-            </Card>
-          );
-        })}
+          {label:"Seeds",    value:seedCount,                                                 sub:"Ideas waiting to be built",  tone:"neutral",    plant:<WishSeed size={28} color={C.mushroom500}/>,  nav:()=>onNavigateWishlist?.()},
+          {label:"Seedling", value:projects.filter(p=>p.stage==="seedling").length,           sub:STAGE_DESC.seedling,  tone:"neutral",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","seedling")},
+          {label:"Nursery",  value:projects.filter(p=>p.stage==="nursery").length,            sub:STAGE_DESC.nursery,   tone:"pending",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","nursery")},
+          {label:"Sprout",   value:projects.filter(p=>p.stage==="sprout").length,             sub:STAGE_DESC.sprout,    tone:"plain",      plant:<PlantGrowing size={32}/>,                  nav:()=>onNavigateGarden?.("board","sprout")},
+          {label:"Bloom",    value:projects.filter(p=>p.stage==="bloom").length,              sub:STAGE_DESC.bloom,     tone:"success",    plant:<PlantBlooming size={32}/>,                 nav:()=>onNavigateGarden?.("board","bloom")},
+          {label:"Thriving", value:projects.filter(p=>p.stage==="thriving").length,           sub:STAGE_DESC.thriving,  tone:"info",       plant:<PlantTree size={32}/>,                     nav:()=>onNavigateGarden?.("board","thriving")},
+        ].map((s,i) => (
+          <Card key={i} tone={s.tone} hoverable onClick={s.nav} style={{textAlign:"center",padding:"14px 10px",cursor:"pointer"}}>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:6}}>{s.plant}</div>
+            <div style={{fontFamily:FF,fontSize:26,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
+            <div style={{fontFamily:FF,fontSize:11,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
+            <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
+            <div style={{fontFamily:FF,fontSize:10,color:C.kangkong500,marginTop:5,fontWeight:600}}>View all →</div>
+          </Card>
+        ))}
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
