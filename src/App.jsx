@@ -1196,7 +1196,7 @@ function ActiveFilterChip({label, onRemove, color, icon}) {
 function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
   const deptColor = DEPT_COLORS[wish.builtFor]||C.mushroom500;
   const isBuilder  = wish.claimedByEmail === authUser?.email;
-  const isGardener = authUser?.isGardener;
+  const isAdmin = authUser?.isAdmin;
   const isClaimed  = !!wish.claimedBy;
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.5)",backdropFilter:"blur(4px)"}} onClick={onClose}>
@@ -1208,7 +1208,7 @@ function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
               {isClaimed&&!wish.fulfilledBy&&<span style={{fontFamily:FF,fontSize:10,fontWeight:700,background:C.wintermelon100,color:C.wintermelon500,border:"1px solid "+C.wintermelon400,borderRadius:DS.radius.full,padding:"2px 8px"}}>🔨 Being built</span>}
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              {(authUser?.email===wish.wisherEmail||isGardener)&&!wish.fulfilledBy&&(
+              {(authUser?.email===wish.wisherEmail||isAdmin)&&!wish.fulfilledBy&&(
                 <button onClick={()=>onEdit(wish)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
               )}
               <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
@@ -1253,7 +1253,7 @@ function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
                     <IcoAdd size={16} color={C.white}/> I'll build this
                   </button>
                 )}
-                {isClaimed&&!isBuilder&&!isGardener&&(
+                {isClaimed&&!isBuilder&&!isAdmin&&(
                   <div style={{padding:"10px 14px",background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center"}}>
                     {wish.claimedBy} is already building this
                   </div>
@@ -1969,7 +1969,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
 
   // Mark notifications read when ExCom opens a Nursery card
   useEffect(() => {
-    if (project.stage === 'nursery' && authUser?.isExcom) {
+    if (project.stage === 'nursery' && authUser?.isApprover) {
       onMarkNotificationsRead?.(project.id);
     }
   }, [project.id]);
@@ -1988,8 +1988,8 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
           <StageBadge stage={project.stage}/>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {(authUser?.email===project.builderEmail||authUser?.isGardener) &&
-              !(project.reviewStatus==='pending' && !authUser?.isGardener) && (
+            {(authUser?.email===project.builderEmail||authUser?.isAdmin) &&
+              !(project.reviewStatus==='pending' && !authUser?.isAdmin) && (
               <button onClick={()=>onEdit(project)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
             )}
             <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,borderRadius:DS.radius.sm}}>
@@ -2039,7 +2039,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         )}
 
         {/* ── Seedling: Submission Requirements ──────────────────────────────── */}
-        {project.stage==="seedling" && (authUser?.email===project.builderEmail||authUser?.isGardener) && (
+        {project.stage==="seedling" && (authUser?.email===project.builderEmail||authUser?.isAdmin) && (
           <div style={{marginBottom:16,padding:"12px 14px",background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg}}>
             <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mushroom500,marginBottom:10}}>
               Nursery Submission Requirements
@@ -2117,12 +2117,12 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
             <div style={{fontFamily:FF,fontSize:12,color:C.mango700,marginBottom:2}}>
               Submitted for review{project.submittedAt ? ` — ${new Date(project.submittedAt).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}` : ""}
             </div>
-            {!authUser?.isExcom && (
+            {!authUser?.isApprover && (
               <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,fontStyle:"italic",marginTop:4}}>Under review by Approver.</div>
             )}
 
             {/* ExCom decision zone */}
-            {authUser?.isExcom && (
+            {authUser?.isApprover && (
               <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+C.mango200}}>
                 <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>Approver Decision</div>
                 {!showReworkInput ? (
@@ -2153,8 +2153,8 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
               </div>
             )}
 
-            {/* Withdraw button — builder or Gardener */}
-            {(authUser?.email===project.builderEmail||authUser?.isGardener)&&(
+            {/* Withdraw button — builder or Admin */}
+            {(authUser?.email===project.builderEmail||authUser?.isAdmin)&&(
               <button onClick={()=>onWithdrawFromNursery?.(project.id)} style={{
                 width:"100%",padding:"7px",marginTop:12,
                 background:"transparent",border:"1px solid "+C.mushroom300,
@@ -3200,8 +3200,8 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
               <div style={{fontFamily:FF,fontSize:13,color:C.kangkong200,marginTop:3}}>{authUser.email}</div>
               {/* Role badges */}
               <div style={{marginTop:8,display:"flex",gap:5,flexWrap:"wrap"}}>
-                {authUser.isGardener&&(
-                  <span title="Tends the Garden — promotes seeds, manages stages, oversees the ecosystem" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.kangkong900,background:C.kangkong100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌿 Gardener</span>
+                {authUser.isAdmin&&(
+                  <span title="Tends the Garden — promotes seeds, manages stages, oversees the ecosystem" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.kangkong900,background:C.kangkong100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌿 Admin</span>
                 )}
                 {claimedSeeds.length>0&&(
                   <span title="Claims seeds and builds AI projects in the Garden" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mango600,background:C.mango100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌾 Farmer</span>
@@ -3359,7 +3359,7 @@ const DEMO_USER = {
   email: "demo@sprout.ph",
   displayName: "Demo User",
   photoURL: `https://ui-avatars.com/api/?name=Demo+User&background=1f6e1f&color=fff&size=128`,
-  isGardener: false,
+  isAdmin: false,
   country: "PH",
 };
 
@@ -3367,7 +3367,7 @@ const DEMO_USER_TH = {
   email: "demo@sproutsolutions.io",
   displayName: "Demo User TH",
   photoURL: `https://ui-avatars.com/api/?name=Demo+TH&background=1a5276&color=fff&size=128`,
-  isGardener: false,
+  isAdmin: false,
   country: "TH",
 };
 
@@ -3375,7 +3375,7 @@ const ADMIN_USER = {
   email: "kvirata@sprout.ph",
   displayName: "VK Virata",
   photoURL: `https://ui-avatars.com/api/?name=VK+Virata&background=0e380e&color=d6f0d6&size=128`,
-  isGardener: true,
+  isAdmin: true,
   country: "PH",
 };
 
@@ -3758,7 +3758,7 @@ export default function SproutAIGarden() {
       const domain      = session.user.email.split("@")[1];
       const country     = COUNTRY_MAP[domain] || "PH";
       const displayName = session.user.email.split("@")[0];
-      const fallback    = { email: session.user.email, displayName, country, isGardener: false, isExcom: false };
+      const fallback    = { email: session.user.email, firstName: null, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false };
       setAuthUser(fallback);
       setAuthLoading(false);
 
@@ -3766,11 +3766,11 @@ export default function SproutAIGarden() {
       supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
         .then(({ data: existing }) => {
           if (existing) {
-            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener, isExcom: existing.is_execom || false, hasDismissedWelcome: existing.has_dismissed_welcome || false });
+            setAuthUser({ email: existing.email, firstName: existing.first_name || null, displayName: existing.display_name, country: existing.country, isAdmin: existing.is_admin || false, isApprover: existing.is_approver || false, hasDismissedWelcome: existing.has_dismissed_welcome || false });
           } else {
             supabase.from("profiles").insert({
               id: session.user.id, email: session.user.email,
-              display_name: displayName, country, is_gardener: false,
+              display_name: displayName, first_name: null, country, is_admin: false, is_approver: false,
             }).catch(e => console.warn("Profile insert error:", e));
           }
         })
@@ -3900,7 +3900,7 @@ export default function SproutAIGarden() {
 
   const handleMoveStage = (project, dirOrStage) => {
     // Permission: must be builder or Gardener
-    if (!authUser || (authUser.email !== project.builderEmail && !authUser.isGardener)) return;
+    if (!authUser || (authUser.email !== project.builderEmail && !authUser.isAdmin)) return;
 
     let next;
     if (typeof dirOrStage === "string") {
@@ -3915,10 +3915,10 @@ export default function SproutAIGarden() {
     if (next === 'nursery') return;
 
     // Nursery exit is ExCom-only (handled by approveProject/needsRework handlers)
-    if (project.stage === 'nursery' && !authUser.isGardener) return;
+    if (project.stage === 'nursery' && !authUser.isAdmin) return;
 
     // Non-Gardeners: adjacent stages only
-    if (!authUser.isGardener) {
+    if (!authUser.isAdmin) {
       const curOrder = STAGE_ORDER[project.stage];
       const nextOrder = STAGE_ORDER[next];
       if (Math.abs(nextOrder - curOrder) > 1) return;
@@ -4115,7 +4115,7 @@ export default function SproutAIGarden() {
     const wish = wishes.find(w => w.id === wishId);
     if (!wish || !wish.fulfilledBy) return;
     // Only builder or Gardener can un-claim
-    if (authUser.email !== wish.claimedByEmail && !authUser.isGardener) return;
+    if (authUser.email !== wish.claimedByEmail && !authUser.isAdmin) return;
     // Cannot un-claim if the Plant is in Nursery
     const plant = projects.find(p => p.id === wish.fulfilledBy);
     if (plant?.stage === "nursery") return;
@@ -4259,8 +4259,8 @@ export default function SproutAIGarden() {
               <UserAvatar user={authUser} size={26}/>
               {authUser.country&&<CountryBadge country={authUser.country}/>}
               <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700,maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{authUser.displayName||authUser.email.split("@")[0]}</span>
-              {authUser.isGardener&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Admin</span>}
-              {authUser.isExcom&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Approver</span>}
+              {authUser.isAdmin&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Admin</span>}
+              {authUser.isApprover&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Approver</span>}
               <svg width={12} height={12} viewBox="0 0 12 12" fill="none" style={{flexShrink:0,transition:"transform 0.2s",transform:profileOpen?"rotate(180deg)":"rotate(0deg)"}}>
                 <path d="M3 4.5 L6 7.5 L9 4.5" stroke={C.mushroom500} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
