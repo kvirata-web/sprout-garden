@@ -3983,7 +3983,7 @@ export default function SproutAIGarden() {
   };
 
   const handleMoveStage = (project, dirOrStage) => {
-    // Permission: must be builder or Gardener
+    // Permission: must be builder or Admin
     if (!authUser || (authUser.email !== project.builderEmail && !authUser.isAdmin)) return;
 
     let next;
@@ -4001,7 +4001,7 @@ export default function SproutAIGarden() {
     // Nursery exit is ExCom-only (handled by approveProject/needsRework handlers)
     if (project.stage === 'nursery' && !authUser.isAdmin) return;
 
-    // Non-Gardeners: adjacent stages only
+    // Non-Admins: adjacent stages only
     if (!authUser.isAdmin) {
       const curOrder = STAGE_ORDER[project.stage];
       const nextOrder = STAGE_ORDER[next];
@@ -4198,7 +4198,7 @@ export default function SproutAIGarden() {
   const handleUnclaimSeed = async (wishId) => {
     const wish = wishes.find(w => w.id === wishId);
     if (!wish || !wish.fulfilledBy) return;
-    // Only builder or Gardener can un-claim
+    // Only builder or Admin can un-claim
     if (authUser.email !== wish.claimedByEmail && !authUser.isAdmin) return;
     // Cannot un-claim if the Plant is in Nursery
     const plant = projects.find(p => p.id === wish.fulfilledBy);

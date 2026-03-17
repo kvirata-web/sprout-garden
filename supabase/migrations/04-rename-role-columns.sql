@@ -15,6 +15,9 @@ RETURNS boolean AS $$
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
+-- Drop stale is_execom() function (column it referenced no longer exists after rename)
+DROP FUNCTION IF EXISTS is_execom();
+
 -- Recreate is_approver() helper (previously is_execom())
 -- Referenced in Nursery review RLS policies
 CREATE OR REPLACE FUNCTION is_approver()
