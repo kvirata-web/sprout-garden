@@ -3912,14 +3912,11 @@ export default function SproutAIGarden() {
   const [helpLoading,     setHelpLoading]     = useState(false);
 
   useEffect(() => {
-    console.log("[auth] useEffect started");
     const timeout = setTimeout(() => {
-      console.log("[auth] 5s timeout fired — forcing authLoading=false");
       setAuthLoading(false);
     }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[auth] onAuthStateChange fired, event:", event, "session:", !!session);
       try {
         if (!session) {
           setAuthUser(null);
@@ -4638,7 +4635,6 @@ export default function SproutAIGarden() {
         <WelcomeModal
           onExplore={() => setWelcomeSeen(true)}
           onDismissPermanently={handleDismissWelcomePermanently}
-          firstName={authUser.firstName}
           isApprover={authUser.isApprover}
           country={authUser.country}
         />
