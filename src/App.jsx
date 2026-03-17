@@ -1798,7 +1798,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const activeFilterCount = (deptFilter!=="All"?1:0)+(capFilter!=="All"?1:0)+(stageFilter!=="All"?1:0)+(builderFilter!=="All"?1:0)+(countryFilter!=="All"?1:0);
+  const activeFilterCount = (deptFilter!=="All"?1:0)+(stageFilter!=="All"?1:0)+(builderFilter!=="All"?1:0)+(countryFilter!=="All"?1:0);
 
   const filtered = projects.filter(p => {
     const q = search.toLowerCase();
@@ -1833,8 +1833,8 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
 
   const VIEW_MODES = [
     {id:"directory", label:"Directory", Icon:IcoViewGrid},
-    {id:"garden",    label:"Garden",    Icon:IcoViewGarden},
     {id:"board",     label:"Board",     Icon:IcoViewBoard},
+    {id:"garden",    label:"Garden",    Icon:IcoViewGarden},
   ];
 
   const ALL_STAGES_WITH_SEED = ["seed", ...STAGES];
@@ -1917,16 +1917,6 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                 </div>
               </div>
 
-              {/* AI Type */}
-              <div>
-                <div style={{fontFamily:FF,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,color:C.mushroom400,marginBottom:8}}>AI Type</div>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                  {CAPABILITIES.map(c=>(
-                    <Chip key={c} label={c} active={capFilter===c} onClick={()=>setCapFilter(c)}/>
-                  ))}
-                </div>
-              </div>
-
               {/* Builder */}
               <div style={{marginTop:14}}>
                 <div style={{fontFamily:FF,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,color:C.mushroom400,marginBottom:8}}>Builder (Farmer)</div>
@@ -1961,7 +1951,6 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
           <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
             {deptFilter!=="All"&&<ActiveFilterChip label={deptFilter} onRemove={()=>setDeptFilter("All")} color={DEPT_COLORS[deptFilter]}/>}
             {stageFilter!=="All"&&<ActiveFilterChip label={STAGE_LABELS[stageFilter]} onRemove={()=>setStageFilter("All")}/>}
-            {capFilter!=="All"&&<ActiveFilterChip label={capFilter} onRemove={()=>setCapFilter("All")}/>}
             {builderFilter!=="All"&&<ActiveFilterChip label={builderFilter} onRemove={()=>setBuilderFilter("All")}/>}
             {countryFilter!=="All"&&<ActiveFilterChip label={COUNTRY_NAME[countryFilter]} onRemove={()=>setCountryFilter("All")} icon={<FlagSVG country={countryFilter} w={14} h={10}/>}/>}
           </div>
@@ -2605,7 +2594,6 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
       </div>
 
       <div style={{padding:"16px 20px",flex:1}}>
-        <div style={{marginBottom:16,borderRadius:DS.radius.lg,overflow:"hidden",border:"1px solid "+C.mushroom100}}><ProjectImage project={project} height={140}/></div>
         <p style={{fontFamily:FF,fontSize:13,color:C.mushroom600,lineHeight:1.6,margin:"0 0 16px"}}>{project.description}</p>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
@@ -3603,11 +3591,6 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     if (overlaps.length === 0) { doAdd(); }
   };
 
-  const previewProject = {
-    id:"preview", name:form.name, builtBy:form.builtBy, builtFor:form.builtFor,
-    stage:form.stage, toolUsed:form.toolUsed, capability:"",
-  };
-
   return (
     <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.55)",backdropFilter:"blur(6px)"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,padding:28,maxWidth:540,width:"92%",maxHeight:"92vh",overflowY:"auto",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1)"}}>
@@ -3821,28 +3804,6 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
                 </button>
               );
             })}
-          </div>
-        </div>
-
-        {/* ── Preview ── */}
-        <SectionHeader title="Preview"/>
-        <div style={{
-          borderRadius:DS.radius.lg,border:"1px solid "+C.mushroom200,
-          overflow:"hidden",marginBottom:16,background:C.white,
-          boxShadow:DS.shadow.sm,
-        }}>
-          <ProjectImage project={previewProject} height={110} style={{borderBottom:"1px solid "+C.mushroom100}}/>
-          <div style={{padding:"12px 14px"}}>
-            <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:form.name?C.mushroom900:C.mushroom400,marginBottom:6,fontStyle:form.name?"normal":"italic"}}>
-              {form.name||"Your project name will appear here"}
-            </div>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-              <StageBadge stage={form.stage}/>
-              {form.toolUsed.slice(0,2).map(t=>(
-                <span key={t} style={{fontFamily:FF,fontSize:10,fontWeight:600,color:C.mushroom600,background:C.mushroom100,borderRadius:DS.radius.full,padding:"2px 8px"}}>{t}</span>
-              ))}
-              {form.builtBy&&<span style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginLeft:2}}>{form.builtBy} → {form.builtFor}</span>}
-            </div>
           </div>
         </div>
 
@@ -4266,7 +4227,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           {/* Panel header */}
           <div style={{padding:"12px 14px 0", borderBottom:"1px solid "+C.mushroom200, flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help & Guide</span>
+              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help</span>
               <button onClick={onClose} style={{width:28,height:28,borderRadius:DS.radius.sm,border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.mushroom500,fontSize:16,fontWeight:300}}
                 onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
                 onMouseOut={e=>e.currentTarget.style.background="none"}
@@ -4277,8 +4238,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
             {view === "feed" && (
               <div style={{display:"flex",gap:0,marginBottom:8}}>
                 {[
-                  ["faq",          "FAQ"],
                   ["feedback",     "Feedback"],
+                  ["faq",          "FAQ"],
                 ].map(([val, label]) => (
                   <button key={val}
                     onClick={() => setHelpTab(val)}
@@ -4547,7 +4508,7 @@ export default function SproutAIGarden() {
 
   // Help panel state
   const [helpOpen,        setHelpOpen]        = useState(false);
-  const [helpTab,         setHelpTab]         = useState("faq");
+  const [helpTab,         setHelpTab]         = useState("feedback");
   const [helpItems,       setHelpItems]       = useState([]);
   const [helpFilter,      setHelpFilter]      = useState("all"); // "all" | "report" | "ask"
   const [helpPage,        setHelpPage]        = useState(1);
@@ -5074,7 +5035,7 @@ export default function SproutAIGarden() {
   if (authLoading) {
     return (
       <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,"+C.kangkong800+" 0%,"+C.kangkong400+" 100%)"}}>
-        <div style={{fontFamily:FF,color:C.kangkong200,fontSize:14,fontWeight:600}}>Loading…</div>
+        <div style={{fontFamily:FF,color:C.kangkong200,fontSize:14,fontWeight:600}}>Opening the gate…</div>
       </div>
     );
   }
@@ -5127,7 +5088,7 @@ export default function SproutAIGarden() {
   if (dataLoading) {
     return (
       <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.mushroom100}}>
-        <div style={{fontFamily:FF,color:C.kangkong600,fontSize:14,fontWeight:600}}>Loading garden…</div>
+        <div style={{fontFamily:FF,color:C.kangkong600,fontSize:14,fontWeight:600}}>Tending the garden…</div>
       </div>
     );
   }
