@@ -3741,6 +3741,7 @@ export default function SproutAIGarden() {
 
   // Help panel state
   const [helpOpen,        setHelpOpen]        = useState(false);
+  const [helpTab,         setHelpTab]         = useState("stages");
   const [helpItems,       setHelpItems]       = useState([]);
   const [helpFilter,      setHelpFilter]      = useState("all"); // "all" | "report" | "ask"
   const [helpPage,        setHelpPage]        = useState(1);
@@ -4507,6 +4508,8 @@ export default function SproutAIGarden() {
         onStartEdit={(item) => { setHelpEditItem(item); setHelpFormTitle(item.title); setHelpFormDesc(item.description || ""); setHelpView("edit"); }}
         loading={helpLoading}
         authUser={authUser}
+        helpTab={helpTab}
+        setHelpTab={setHelpTab}
       />
 
       <style>{`
