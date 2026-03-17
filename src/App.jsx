@@ -3720,7 +3720,7 @@ export default function SproutAIGarden() {
     // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock after 5s
     const timeout = setTimeout(() => setAuthLoading(false), 5000);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       clearTimeout(timeout);
 
       if (!session) {
@@ -3730,82 +3730,56 @@ export default function SproutAIGarden() {
         return;
       }
 
-      // Keep loading state — do not render the app until domain validation passes
-      const email  = session.user.email;
-      const domain = email.split("@")[1];
+      const email   = session.user.email;
+      const domain  = email.split("@")[1];
       const country = COUNTRY_MAP[domain];
 
       if (!country) {
-        // Non-Sprout account — sign out and show error
-        await supabase.auth.signOut();
+        // Non-Sprout account — sign out and show error (fire-and-forget)
+        supabase.auth.signOut();
         setAuthError("Only @sprout.ph and @sproutsolutions.io accounts can access Grove.");
         setAuthLoading(false);
         return;
       }
 
-      // Extract first name from Google user metadata
-      const meta      = session.user.user_metadata || {};
-      const firstName = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
+      const meta        = session.user.user_metadata || {};
+      const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
+      const displayName = email.split("@")[0];
 
-      try {
-        const { data: existing } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (existing) {
-          // Update first_name if it was previously null and Google now provides it
-          if (!existing.first_name && firstName) {
-            await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
-          }
-          setAuthUser({
-            email: existing.email,
-            firstName: existing.first_name || firstName || null,
-            displayName: existing.display_name || email.split("@")[0],
-            country: existing.country,
-            isAdmin: existing.is_admin || false,
-            isApprover: existing.is_approver || false,
-            hasDismissedWelcome: existing.has_dismissed_welcome || false,
-          });
-        } else {
-          // First login — create profile row
-          const displayName = email.split("@")[0];
-          await supabase.from("profiles").insert({
-            id: session.user.id,
-            email,
-            display_name: displayName,
-            first_name: firstName,
-            country,
-            is_admin: false,
-            is_approver: false,
-            has_dismissed_welcome: false,
-          });
-          setAuthUser({
-            email,
-            firstName: firstName || null,
-            displayName,
-            country,
-            isAdmin: false,
-            isApprover: false,
-            hasDismissedWelcome: false,
-          });
-        }
-      } catch (e) {
-        console.warn("Profile load/create error:", e);
-        // Fallback: still allow access with minimal profile
-        setAuthUser({
-          email,
-          firstName: firstName || null,
-          displayName: email.split("@")[0],
-          country,
-          isAdmin: false,
-          isApprover: false,
-          hasDismissedWelcome: false,
-        });
-      }
-
+      // Immediately unblock the UI with a minimal profile — no DB await here
+      setAuthUser({ email, firstName, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false });
       setAuthLoading(false);
+
+      // Enrich with real DB profile in the background (non-blocking)
+      supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
+        .then(async ({ data: existing }) => {
+          if (existing) {
+            if (!existing.first_name && firstName) {
+              await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
+            }
+            setAuthUser({
+              email: existing.email,
+              firstName: existing.first_name || firstName || null,
+              displayName: existing.display_name || displayName,
+              country: existing.country,
+              isAdmin: existing.is_admin || false,
+              isApprover: existing.is_approver || false,
+              hasDismissedWelcome: existing.has_dismissed_welcome || false,
+            });
+          } else {
+            // First login — create profile row
+            await supabase.from("profiles").insert({
+              id: session.user.id,
+              email,
+              display_name: displayName,
+              first_name: firstName,
+              country,
+              is_admin: false,
+              is_approver: false,
+            });
+          }
+        })
+        .catch(e => console.warn("Profile load/create error:", e));
     });
 
     return () => subscription.unsubscribe();
