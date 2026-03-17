@@ -625,85 +625,86 @@ function PlantTree({size=88, wilting=false}) {
 }
 
 const PlantMap = {seedling:PlantSprout,nursery:PlantSprout,sprout:PlantGrowing,bloom:PlantBlooming,thriving:PlantTree};
-const GardenSizes = {seedling:{w:50,h:60},nursery:{w:55,h:66},sprout:{w:74,h:84},bloom:{w:78,h:88},thriving:{w:90,h:102}};
+const GardenSizes = {seedling:{w:26,h:30},nursery:{w:40,h:46},sprout:{w:58,h:66},bloom:{w:74,h:84},thriving:{w:92,h:104}};
 
-// Stage icon (small, inline) — named components to avoid JSX-in-object errors
+// Stage icon (small, inline) — Option C: solid silhouettes, readable at any size
 function SIcoSeedling({size,col}) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      {/* small single shoot — simpler than sprout */}
-      <line x1="8" y1="13" x2="8" y2="8" stroke={col} strokeWidth="1.4" strokeLinecap="round"/>
-      <path d="M8 10 Q6 9 5 10.5 Q6.5 8.5 8 10Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
-      <path d="M8 8.5 Q10 7.5 11 9 Q9.5 7 8 8.5Z" fill={col} fillOpacity="0.45" stroke={col} strokeWidth="0.6"/>
-      <circle cx="8" cy="13" r="1.5" fill={col} fillOpacity="0.3"/>
+      <rect x="7.5" y="9" width="1" height="5" rx="0.5" fill={col}/>
+      <path d="M8 12.5 Q5.5 11 4.5 8.5 C6.5 8 8 10 8 12Z" fill={col}/>
+      <path d="M8 12.5 Q10.5 11 11.5 8.5 C9.5 8 8 10 8 12Z" fill={col} opacity="0.8"/>
     </svg>
   );
 }
 function SIcoNursery({size,col}) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      {/* plant in a pot */}
-      <rect x="5" y="11" width="6" height="3.5" rx="1" fill={col} fillOpacity="0.25" stroke={col} strokeWidth="0.7"/>
-      <line x1="8" y1="11" x2="8" y2="6" stroke={col} strokeWidth="1.3" strokeLinecap="round"/>
-      <path d="M8 9 Q5.5 8 4.5 9.5 Q6.5 7 8 9Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
-      <path d="M8 7.5 Q10.5 6.5 11.5 8 Q9.5 6 8 7.5Z" fill={col} fillOpacity="0.45" stroke={col} strokeWidth="0.6"/>
+      <path d="M5.5 10.5 L6.5 14.5 L9.5 14.5 L10.5 10.5 Z" fill={col} opacity="0.55"/>
+      <rect x="5" y="9" width="6" height="2" rx="1" fill={col}/>
+      <rect x="7.5" y="5" width="1" height="4.5" rx="0.5" fill={col}/>
+      <path d="M8 9 Q5 7.5 4 5 C6.5 5 8 7 8 8.5Z" fill={col}/>
+      <path d="M8 9 Q11 7.5 12 5 C9.5 5 8 7 8 8.5Z" fill={col} opacity="0.8"/>
+      <path d="M8 7 Q5.5 5.5 5 3 C7 3.5 8 5.5 8 6.5Z" fill={col} opacity="0.7"/>
+      <path d="M8 7 Q10.5 5.5 11 3 C9 3.5 8 5.5 8 6.5Z" fill={col} opacity="0.6"/>
     </svg>
   );
 }
-// SIcoSprout — tiny sprouting bean icon for stage badges
+// SIcoSprout — solid sprout silhouette, used in wish-fulfillment callout
 function SIcoSprout({size,col}) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      {/* bean halves */}
-      <path d="M8 13 Q4 12 4 8.5 Q4 5.5 6.5 5 Q8 4.8 8 7 Q8 10 8 13Z"
-        stroke={col} strokeWidth="0.9" fill={col} fillOpacity="0.35"/>
-      <path d="M8 13 Q12 12 12 8.5 Q12 5.5 9.5 5 Q8 4.8 8 7 Q8 10 8 13Z"
-        stroke={col} strokeWidth="0.9" fill={col} fillOpacity="0.5"/>
-      {/* shoot */}
-      <line x1="8" y1="7" x2="8" y2="2.5" stroke={col} strokeWidth="1.3" strokeLinecap="round"/>
-      {/* leaves */}
-      <path d="M8 5 Q5 3.5 4.5 2 Q7 2.5 8 4.5Z" fill={col} fillOpacity="0.6" stroke={col} strokeWidth="0.5"/>
-      <path d="M8 4.5 Q11 3 11.5 1.5 Q9 2 8 4Z" fill={col} fillOpacity="0.55" stroke={col} strokeWidth="0.5"/>
+      <rect x="7.5" y="3.5" width="1" height="11" rx="0.5" fill={col}/>
+      <path d="M8 12 Q4.5 10 3 7 C5 6.5 7.5 8.5 8 11.5Z" fill={col}/>
+      <path d="M8 12 Q11.5 10 13 7 C11 6.5 8.5 8.5 8 11.5Z" fill={col} opacity="0.85"/>
+      <path d="M8 8.5 Q5 7 4 4.5 C6.5 4.5 8 6 8 8Z" fill={col} opacity="0.8"/>
+      <path d="M8 8.5 Q11 7 12 4.5 C9.5 4.5 8 6 8 8Z" fill={col} opacity="0.75"/>
     </svg>
   );
 }
 function SIcoGrowing({size,col}) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <line x1="8" y1="13" x2="8" y2="5" stroke={col} strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M8 11 Q5 10 3 12 Q5.5 9 8 11Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.7"/>
-      <path d="M8 9 Q11 8 13 10 Q10.5 7 8 9Z" fill={col} fillOpacity="0.45" stroke={col} strokeWidth="0.7"/>
-      <ellipse cx="8" cy="4.5" rx="3" ry="2" fill={col} fillOpacity="0.35" stroke={col} strokeWidth="0.7"/>
+      <rect x="7.5" y="3.5" width="1" height="11" rx="0.5" fill={col}/>
+      <path d="M8 12 Q4.5 10 3 7 C5 6.5 7.5 8.5 8 11.5Z" fill={col}/>
+      <path d="M8 12 Q11.5 10 13 7 C11 6.5 8.5 8.5 8 11.5Z" fill={col} opacity="0.85"/>
+      <path d="M8 8.5 Q5 7 4 4.5 C6.5 4.5 8 6 8 8Z" fill={col} opacity="0.8"/>
+      <path d="M8 8.5 Q11 7 12 4.5 C9.5 4.5 8 6 8 8Z" fill={col} opacity="0.75"/>
     </svg>
   );
 }
 function SIcoBlooming({size,col}) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M8 2 Q6 5 8 8 Q10 5 8 2Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
-      <path d="M2 8 Q5 6 8 8 Q5 10 2 8Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
-      <path d="M14 8 Q11 6 8 8 Q11 10 14 8Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
-      <path d="M8 14 Q6 11 8 8 Q10 11 8 14Z" fill={col} fillOpacity="0.5" stroke={col} strokeWidth="0.6"/>
-      <path d="M3.5 3.5 Q6 5.5 8 8 Q5.5 6 3.5 3.5Z" fill={col} fillOpacity="0.4" stroke={col} strokeWidth="0.5"/>
-      <path d="M12.5 3.5 Q10 5.5 8 8 Q10.5 6 12.5 3.5Z" fill={col} fillOpacity="0.4" stroke={col} strokeWidth="0.5"/>
-      <circle cx="8" cy="8" r="2" fill={col} fillOpacity="0.8"/>
+      <rect x="7.5" y="9" width="1" height="6" rx="0.5" fill={col}/>
+      <path d="M8 12 Q5 11 3.5 9 C5.5 8.5 8 10 8 11.5Z" fill={col} opacity="0.75"/>
+      <path d="M8 12 Q11 11 12.5 9 C10.5 8.5 8 10 8 11.5Z" fill={col} opacity="0.65"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill={col} opacity="0.8" transform="rotate(0 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill={col} opacity="0.65" transform="rotate(60 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill={col} opacity="0.8" transform="rotate(120 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill={col} opacity="0.65" transform="rotate(180 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill={col} opacity="0.8" transform="rotate(240 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill={col} opacity="0.65" transform="rotate(300 8 7)"/>
+      <circle cx="8" cy="7" r="2.5" fill="#e8c020"/>
+      <circle cx="8" cy="7" r="1.5" fill="#c8a010"/>
     </svg>
   );
 }
 function SIcoTree({size,col}) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <line x1="8" y1="13" x2="8" y2="8" stroke={col} strokeWidth="1.8" strokeLinecap="round"/>
-      <circle cx="8" cy="6.5" r="5" stroke={col} strokeWidth="0.9" fill={col} fillOpacity="0.12"/>
-      <circle cx="8" cy="5" r="3.5" stroke={col} strokeWidth="0.7" fill={col} fillOpacity="0.18"/>
-      <circle cx="8" cy="3.5" r="2" fill={col} fillOpacity="0.35"/>
+      <rect x="6.5" y="9.5" width="3" height="5.5" rx="1" fill={col} opacity="0.7"/>
+      <circle cx="5.5" cy="8.5" r="3.5" fill={col} opacity="0.8"/>
+      <circle cx="10.5" cy="8.5" r="3.5" fill={col} opacity="0.8"/>
+      <circle cx="8" cy="6.5" r="4.5" fill={col}/>
+      <circle cx="8" cy="4" r="3" fill={col} opacity="0.9"/>
     </svg>
   );
 }
-function StageIcon({stage, size=16}) {
+function StageIcon({stage, size=16, color}) {
   const c = STAGE_COLORS[stage];
   if (!c) return null;
-  const col = c.text;
+  const col = color || c.text;
   if (stage==="seedling") return <SIcoSeedling size={size} col={col}/>;
   if (stage==="nursery")  return <SIcoNursery size={size} col={col}/>;
   if (stage==="sprout")   return <SIcoGrowing size={size} col={col}/>;
@@ -2279,16 +2280,11 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
   };
 
   return (
-    <div ref={gardenRef} onClick={()=>setSelected(null)} style={{flex:1,position:"relative",overflow:"hidden",background:"linear-gradient(180deg,#dff0e8 0%,#c8e8d8 30%,#b8dcc8 60%,#c8d4a8 100%)"}}>
-      {Object.entries(DEPT_ZONES).map(([dept,zone])=>{
-        const dc=DEPT_COLORS[dept];
-        const active=deptFilter==="All"||deptFilter===dept;
-        return(
-          <div key={dept} style={{position:"absolute",left:zone.x+"%",top:(zone.y+8)+"%",width:zone.w+"%",height:zone.h+"%",border:"1.5px dashed "+dc+(active?"66":"1a"),borderRadius:16,background:dc+(active?"08":"02"),transition:"all 0.4s",zIndex:4,pointerEvents:"none"}}>
-            <div style={{position:"absolute",top:-12,left:"50%",transform:"translateX(-50%)",background:C.white,border:"1px solid "+dc+"40",borderRadius:DS.radius.full,padding:"1px 10px",fontFamily:FF,fontSize:9,fontWeight:700,color:dc,whiteSpace:"nowrap",opacity:active?1:0.3,boxShadow:DS.shadow.sm,textTransform:"uppercase",letterSpacing:0.8}}>{dept}</div>
-          </div>
-        );
-      })}
+    <div ref={gardenRef} onClick={()=>setSelected(null)} style={{flex:1,position:"relative",overflow:"hidden",background:"linear-gradient(180deg,#1a3a2e 0%,#1e4a35 20%,#2a5c40 45%,#3a7050 60%,#4a8060 72%,#3d6b4a 82%,#2e5238 92%,#1e3828 100%)"}}>
+      {/* Stars */}
+      <div style={{position:"absolute",top:0,left:0,right:0,height:"38%",pointerEvents:"none",zIndex:1,backgroundImage:"radial-gradient(1px 1px at 9% 14%,rgba(255,255,255,0.45) 0%,transparent 100%),radial-gradient(1px 1px at 24% 8%,rgba(255,255,255,0.3) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 38% 19%,rgba(255,255,255,0.5) 0%,transparent 100%),radial-gradient(1px 1px at 54% 11%,rgba(255,255,255,0.35) 0%,transparent 100%),radial-gradient(1px 1px at 68% 6%,rgba(255,255,255,0.4) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 81% 17%,rgba(255,255,255,0.3) 0%,transparent 100%),radial-gradient(1px 1px at 91% 10%,rgba(255,255,255,0.45) 0%,transparent 100%),radial-gradient(1px 1px at 14% 29%,rgba(255,255,255,0.2) 0%,transparent 100%),radial-gradient(1px 1px at 59% 27%,rgba(255,255,255,0.25) 0%,transparent 100%),radial-gradient(1px 1px at 47% 5%,rgba(255,255,255,0.3) 0%,transparent 100%)"}}/>
+      {/* Moon */}
+      <div style={{position:"absolute",top:18,right:52,width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle at 35% 35%,#fffde0,#f0e080)",boxShadow:"0 0 16px rgba(255,240,100,0.3),0 0 50px rgba(255,240,100,0.08)",pointerEvents:"none",zIndex:1}}/>
       <RelatedLines/>
       {projects.map((project,idx)=>{
         const{leftPct,topPct,scale}=plantPos(project);
@@ -2323,47 +2319,47 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
         );
       })}
       {/* Legend */}
-      <div style={{position:"absolute",bottom:12,left:"50%",transform:"translateX(-50%)",display:"flex",gap:14,alignItems:"center",background:"rgba(255,255,255,0.9)",backdropFilter:"blur(8px)",borderRadius:DS.radius.full,padding:"6px 18px",border:"1px solid "+C.mushroom200,boxShadow:DS.shadow.md,zIndex:20}}>
+      <div style={{position:"absolute",bottom:12,left:"50%",transform:"translateX(-50%)",display:"flex",gap:14,alignItems:"center",background:"rgba(0,0,0,0.52)",backdropFilter:"blur(10px)",borderRadius:DS.radius.full,padding:"6px 18px",border:"1px solid rgba(255,255,255,0.12)",boxShadow:"0 4px 20px rgba(0,0,0,0.4)",zIndex:20}}>
         {STAGES.map(s=>(
           <div key={s} style={{display:"flex",alignItems:"center",gap:5}}>
-            <StageIcon stage={s} size={13}/>
-            <span style={{fontFamily:FF,fontSize:10,color:C.mushroom600}}>{STAGE_LABELS[s]}</span>
+            <StageIcon stage={s} size={13} color="rgba(255,255,255,0.85)"/>
+            <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.65)"}}>{STAGE_LABELS[s]}</span>
           </div>
         ))}
-        <div style={{width:1,height:12,background:C.mushroom300}}/>
+        <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
         <div style={{display:"flex",alignItems:"center",gap:4}}>
-          <div style={{width:14,height:2,borderTop:"2px dashed "+C.carrot500}}/>
-          <span style={{fontFamily:FF,fontSize:10,color:C.carrot500}}>Related</span>
+          <div style={{width:14,height:2,borderTop:"2px dashed rgba(255,160,80,0.8)"}}/>
+          <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,160,80,0.8)"}}>Related</span>
         </div>
         {wishes&&wishes.filter(w=>!w.fulfilledBy).length>0&&(
           <>
-            <div style={{width:1,height:12,background:C.mushroom300}}/>
+            <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
             <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <WishSeed size={14} color={C.mushroom500}/>
-              <span style={{fontFamily:FF,fontSize:10,color:C.mushroom500,fontWeight:600}}>{wishes.filter(w=>!w.fulfilledBy).length} seeds in wishlist</span>
+              <WishSeed size={14} color="rgba(255,255,255,0.5)"/>
+              <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.55)",fontWeight:600}}>{wishes.filter(w=>!w.fulfilledBy).length} seeds in wishlist</span>
             </div>
           </>
         )}
         {(projects.some(p=>p.country==="PH")||projects.some(p=>p.country==="TH"))&&(
           <>
-            <div style={{width:1,height:12,background:C.mushroom300}}/>
+            <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               {projects.some(p=>p.country==="PH")&&(
-                <span style={{fontFamily:FF,fontSize:10,color:C.mushroom500,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="PH" w={14} h={10}/>{projects.filter(p=>p.country==="PH").length}</span>
+                <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="PH" w={14} h={10}/>{projects.filter(p=>p.country==="PH").length}</span>
               )}
               {projects.some(p=>p.country==="TH")&&(
-                <span style={{fontFamily:FF,fontSize:10,color:C.mushroom500,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="TH" w={14} h={10}/>{projects.filter(p=>p.country==="TH").length}</span>
+                <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="TH" w={14} h={10}/>{projects.filter(p=>p.country==="TH").length}</span>
               )}
             </div>
           </>
         )}
       </div>
       {selected&&findRelated(selected,projects).length>0&&(
-        <div style={{position:"absolute",top:16,right:16,zIndex:20,background:C.white,border:"1.5px solid "+C.mango500,borderRadius:DS.radius.lg,padding:"10px 14px",maxWidth:220,boxShadow:DS.shadow.md}}>
-          <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mango600,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
-            <IcoWarning size={14} color={C.mango500}/> Possible Overlap
+        <div style={{position:"absolute",top:16,right:16,zIndex:20,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,180,60,0.4)",borderRadius:DS.radius.lg,padding:"10px 14px",maxWidth:220,boxShadow:"0 4px 20px rgba(0,0,0,0.4)"}}>
+          <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:"rgba(255,180,60,0.9)",marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
+            <IcoWarning size={14} color="rgba(255,180,60,0.9)"/> Possible Overlap
           </div>
-          <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600,lineHeight:1.4}}>
+          <div style={{fontFamily:FF,fontSize:11,color:"rgba(255,255,255,0.65)",lineHeight:1.4}}>
             {findRelated(selected,projects).length} project(s) share the same area as <strong>{selected.name}</strong>
           </div>
         </div>
