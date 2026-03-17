@@ -37,7 +37,6 @@ const C = DS.colors;
 // ── Stage / dept data ─────────────────────────────────────────────────────────
 // ── Country constants ─────────────────────────────────────────────────────────
 const COUNTRY_MAP  = {"sprout.ph":"PH", "sproutsolutions.io":"TH"};
-const COUNTRY_FLAG = {"PH":"🇵🇭", "TH":"🇹🇭"};
 
 // Inline SVG flag — no emoji, no external images, renders everywhere
 const FlagPH = ({w=24,h=16}) => (
@@ -442,19 +441,7 @@ function IcoNote({size=16,color=C.kangkong600}) {
     </svg>
   );
 }
-function IcoTimeline({size=16,color=C.kangkong600}) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <line x1="4" y1="2" x2="4" y2="14" stroke={color} strokeWidth="0.9" opacity="0.35"/>
-      {[3,7,11].map((y,i) => (
-        <g key={y}>
-          <circle cx="4" cy={y} r={i===2?"2":"1.5"} fill={i===2?color:C.mushroom300} stroke={color} strokeWidth="0.8"/>
-          <line x1="7" y1={y} x2="14" y2={y} stroke={color} strokeWidth="0.8" strokeLinecap="round" opacity="0.5"/>
-        </g>
-      ))}
-    </svg>
-  );
-}
+
 function IcoSearch({size=16,color=C.mushroom400}) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
@@ -901,19 +888,6 @@ function Card({children,tone="plain",style={},onClick,hoverable}) {
   );
 }
 
-// Logo
-const SproutLogo = () => (
-  <div style={{display:"flex",alignItems:"center",gap:8}}>
-    <div style={{width:32,height:32,borderRadius:8,background:C.kangkong800,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <IcoGarden size={18} color={C.kangkong200}/>
-    </div>
-    <div>
-      <div style={{fontFamily:FF,fontWeight:700,fontSize:16,color:C.mushroom900,lineHeight:1.1}}>Grove</div>
-      <div style={{fontFamily:FF,fontSize:10,color:C.kangkong600,fontWeight:600,letterSpacing:1,textTransform:"uppercase"}}>by Sprout</div>
-    </div>
-  </div>
-);
-
 const GroveLogo = ({ theme = "dark", size = 32 }) => {
   const THEMES = {
     dark:  { bg: C.kangkong800, icon: C.kangkong100, vein: C.kangkong800 },
@@ -1052,7 +1026,7 @@ const getActivityFeed = (projects, wishes) => {
       text = `${w.title} claimed by ${w.claimedBy}`;
     } else {
       type = "seed";
-      text = `New Seed: ${w.title} — ${w.upvoters.length} upvotes`;
+      text = `New Seed: ${w.title} — ${(w.upvoters || []).length} upvotes`;
     }
     events.push({ type, text, age: w.createdDaysAgo, id: w.id });
   }
@@ -2597,7 +2571,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
           {[
             {l:"Impact",  v:project.impact,                                              icon:<IcoImpact size={12} color={C.kangkong600}/>},
-            {l:"Builder",   v:project.owner,                                               icon:<IcoNote size={12} color={C.mushroom500}/>},
+            {l:"Builder",   v:project.builder||"—",                                        icon:<IcoNote size={12} color={C.mushroom500}/>},
             {l:"Updated", v:project.lastUpdated===0?"Today":project.lastUpdated+"d ago", icon:project.lastUpdated>30?<IcoStale size={12} color={C.mango500}/>:<IcoCheck size={12} color={C.kangkong500}/>},
             {l:"Data",    v:(project.dataSources?.length?project.dataSources.join(", "):project.dataSource)||"—", icon:<IcoNote size={12} color={C.mushroom500}/>},
           ].map(item=>(
@@ -4143,30 +4117,6 @@ function AboutModal({onClose}) {
 const ALLOWED_DOMAINS = ["sprout.ph", "sproutsolutions.io"];
 const isAllowedEmail  = (email) => ALLOWED_DOMAINS.some(d => email.endsWith("@" + d));
 
-// Prototype demo user — auto-logged in on load
-const DEMO_USER = {
-  email: "demo@sprout.ph",
-  displayName: "Demo User",
-  photoURL: `https://ui-avatars.com/api/?name=Demo+User&background=1f6e1f&color=fff&size=128`,
-  isAdmin: false,
-  country: "PH",
-};
-
-const DEMO_USER_TH = {
-  email: "demo@sproutsolutions.io",
-  displayName: "Demo User TH",
-  photoURL: `https://ui-avatars.com/api/?name=Demo+TH&background=1a5276&color=fff&size=128`,
-  isAdmin: false,
-  country: "TH",
-};
-
-const ADMIN_USER = {
-  email: "kvirata@sprout.ph",
-  displayName: "VK Virata",
-  photoURL: `https://ui-avatars.com/api/?name=VK+Virata&background=0e380e&color=d6f0d6&size=128`,
-  isAdmin: true,
-  country: "PH",
-};
 
 function FirstTimeCountryModal({onSelect}) {
   return (
@@ -4635,7 +4585,10 @@ export default function SproutAIGarden() {
               setAuthUser(prev => ({...prev, profileLoaded: true}));
             }
           })
-          .catch(e => console.warn("Profile load/create error:", e));
+          .catch(e => {
+            console.warn("Profile load/create error:", e);
+            setAuthUser(prev => ({...prev, profileLoaded: true}));
+          });
       } catch (e) {
         console.error("Auth state change error:", e);
         setAuthLoading(false);
@@ -4782,6 +4735,7 @@ export default function SproutAIGarden() {
   // ── Project mutations ─────────────────────────────────────────────────────
 
   const addNote = (id, text) => {
+    if (!authUser) return;
     if (!text.trim()) return;
     const updated = projects.find(p => p.id === id);
     if (!updated) return;
@@ -4801,7 +4755,9 @@ export default function SproutAIGarden() {
   };
 
   const handleUpdateProject = async (updated) => {
+    if (!authUser || (authUser.email !== updated.builderEmail && !authUser.isAdmin)) return;
     const row = fromProject(updated);
+    delete row.country; // country is immutable — never send in UPDATE
     const { error } = await supabase.from("projects").update(row).eq("id", updated.id);
     if (error) { console.error("handleUpdateProject:", error); return; }
     setProjects(prev => prev.map(p => p.id === updated.id ? {...p, ...updated} : p));
@@ -4872,6 +4828,8 @@ export default function SproutAIGarden() {
   };
 
   const submitToNursery = async (projectId, prototypeLink, deckLink) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!authUser || !project || (authUser.email !== project.builderEmail && !authUser.isAdmin)) return;
     const now = new Date().toISOString();
     const { error } = await supabase.from("projects").update({
       stage: "nursery",
@@ -4907,6 +4865,7 @@ export default function SproutAIGarden() {
   };
 
   const approveProject = async (projectId) => {
+    if (!authUser?.isApprover && !authUser?.isAdmin) return;
     const now = new Date().toISOString();
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
@@ -4933,6 +4892,7 @@ export default function SproutAIGarden() {
   };
 
   const needsRework = async (projectId, comment) => {
+    if (!authUser?.isApprover && !authUser?.isAdmin) return;
     if (!comment?.trim()) return;
     const now = new Date().toISOString();
     const project = projects.find(p => p.id === projectId);
