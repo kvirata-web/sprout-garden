@@ -1332,8 +1332,32 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   )}
 </div>
 
-          {/* ── TOOLS_PLACEHOLDER ── Task 7 fills this */}
-          {/* TOOLS_PLACEHOLDER */}
+          {/* ── Tools in Use ─────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.2s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Tools in Use
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+    {toolCounts.length === 0 ? (
+      <div style={{ fontSize:11, color:C.mushroom400 }}>No tool data yet.</div>
+    ) : (() => {
+      const maxT = toolCounts[0]?.count || 1;
+      return (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px 20px" }}>
+          {toolCounts.map(({ tool, count }) => (
+            <div key={tool} style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:11, fontWeight:500, color:C.mushroom800, width:80, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tool}</span>
+              <div style={{ flex:1, height:4, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
+                <div style={{ height:"100%", width: barsReady ? `${(count/maxT)*100}%` : 0, background:C.kangkong500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
+              </div>
+              <span style={{ fontSize:10, color:C.mushroom500, width:20, textAlign:"right", flexShrink:0 }}>{count}</span>
+            </div>
+          ))}
+        </div>
+      );
+    })()}
+  </div>
+</div>
 
         </div>{/* end left column */}
 
