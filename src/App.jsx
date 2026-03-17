@@ -3717,12 +3717,14 @@ export default function SproutAIGarden() {
   const [helpLoading,     setHelpLoading]     = useState(false);
 
   useEffect(() => {
-    // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock after 5s
-    const timeout = setTimeout(() => setAuthLoading(false), 5000);
+    console.log("[auth] useEffect started");
+    const timeout = setTimeout(() => {
+      console.log("[auth] 5s timeout fired — forcing authLoading=false");
+      setAuthLoading(false);
+    }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Do NOT clear the timeout here — let it always fire as a guaranteed safety net.
-      // If this callback throws or hangs for any reason, the 5s fallback still unblocks the UI.
+      console.log("[auth] onAuthStateChange fired, event:", event, "session:", !!session);
       try {
         if (!session) {
           setAuthUser(null);
