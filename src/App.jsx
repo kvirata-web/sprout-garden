@@ -3461,7 +3461,90 @@ function FirstTimeCountryModal({onSelect}) {
 function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
   view, setView, submitType, setSubmitType, formTitle, setFormTitle,
   formDesc, setFormDesc, editItem, onOpen, onSubmit, onUpvote,
-  onResolve, onDelete, onStartEdit, loading, authUser }) {
+  onResolve, onDelete, onStartEdit, loading, authUser, helpTab, setHelpTab }) {
+
+  const STAGE_GUIDE = [
+    {
+      key: "seed", emoji: "🌰", label: "Seed",
+      borderColor: C.mushroom400, textColor: C.mushroom800,
+      desc: "An idea for a project, tool, or solution that could help a team or the whole company. Anyone at Sprout can plant a seed, regardless of their technical background.",
+      gardenBadge: false,
+      callouts: [
+        {
+          id: "overlap",
+          bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
+          icon: "🔍",
+          title: "Overlap detection",
+          body: "When you add a Seed, Grove checks if a similar idea or project already exists. If it does, you'll see a prompt to connect with that builder instead of starting from scratch.",
+        },
+      ],
+    },
+    {
+      key: "seedling", emoji: "🌱", label: "Seedling",
+      borderColor: STAGE_COLORS.seedling.border, textColor: STAGE_COLORS.seedling.text,
+      desc: "Someone has claimed this seed and is actively building it. This is the hands-on stage — experimenting, prototyping, and figuring out what works.",
+      gardenBadge: false,
+      callouts: [
+        {
+          id: "requirements",
+          bg: C.mango100, border: C.mango500, textColor: C.mango700,
+          icon: "📋",
+          title: "What you need at this stage",
+          body: "A working prototype (something people can try) and a short deck explaining what you're building and its impact. Both are required before moving to Nursery.",
+        },
+        {
+          id: "ai-help",
+          bg: C.kangkong100, border: C.kangkong300, textColor: C.kangkong700,
+          icon: "✨",
+          title: "Not sure how to make a deck?",
+          body: "AI can help you put one together quickly. Ask Claude or Gemini to help you structure your idea, how it works, and the impact in a few slides.",
+        },
+        {
+          id: "overlap-seedling",
+          bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
+          icon: "🔍",
+          title: "Overlap detection also runs here",
+          body: "If your project overlaps with another Seedling or Garden project, Grove will surface it so you can reach out and collaborate.",
+        },
+      ],
+    },
+    {
+      key: "nursery", emoji: "🌿", label: "Nursery",
+      borderColor: STAGE_COLORS.nursery.border, textColor: STAGE_COLORS.nursery.text,
+      desc: "Before spending more time building, leadership reviews your prototype and deck. The goal isn't to gatekeep — it's to make sure you get the right guidance, connections, and resources before you invest more time.",
+      gardenBadge: true,
+      callouts: [
+        {
+          id: "feedback",
+          bg: C.mango100, border: C.mango500, textColor: C.mango700,
+          icon: "💬",
+          title: "If leadership needs changes before approving",
+          body: "You'll get feedback directly in Grove. You can update your work and resubmit — your project is never stuck.",
+        },
+      ],
+    },
+    {
+      key: "sprout", emoji: "🌿", label: "Sprout",
+      borderColor: STAGE_COLORS.sprout.border, textColor: STAGE_COLORS.sprout.text,
+      desc: "Approved by leadership. You're now building the full product with momentum, guidance, and company backing behind you.",
+      gardenBadge: true,
+      callouts: [],
+    },
+    {
+      key: "bloom", emoji: "🌸", label: "Bloom",
+      borderColor: STAGE_COLORS.bloom.border, textColor: STAGE_COLORS.bloom.text,
+      desc: "Live and in the hands of real users. The team is testing, gathering feedback, and refining before full rollout.",
+      gardenBadge: true,
+      callouts: [],
+    },
+    {
+      key: "thriving", emoji: "🌳", label: "Thriving",
+      borderColor: STAGE_COLORS.thriving.border, textColor: STAGE_COLORS.thriving.text,
+      desc: "Delivering real, measurable value to Sprout. This is the goal every seed is working towards.",
+      gardenBadge: true,
+      callouts: [],
+    },
+  ];
 
   // helpDateLabel is local to avoid conflict with imported daysAgo (which returns a number)
   const helpDateLabel = (ts) => {
@@ -3522,15 +3605,38 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           {/* Panel header */}
           <div style={{padding:"12px 14px 0", borderBottom:"1px solid "+C.mushroom200, flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help</span>
+              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help & Guide</span>
               <button onClick={onClose} style={{width:28,height:28,borderRadius:DS.radius.sm,border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.mushroom500,fontSize:16,fontWeight:300}}
                 onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
                 onMouseOut={e=>e.currentTarget.style.background="none"}
               >✕</button>
             </div>
 
-            {/* + Report and + Ask buttons — hidden during submit/edit */}
+            {/* Top-level tab nav — only in feed view */}
             {view === "feed" && (
+              <div style={{display:"flex",gap:0,marginBottom:8}}>
+                {[
+                  ["stages",       "Stages"],
+                  ["adding-work",  "Adding work"],
+                  ["roles",        "Roles"],
+                  ["faq",          "FAQ"],
+                ].map(([val, label]) => (
+                  <button key={val}
+                    onClick={() => setHelpTab(val)}
+                    style={{
+                      padding:"6px 11px", fontFamily:FF, fontSize:12, fontWeight:500,
+                      border:"none", background:"none", cursor:"pointer",
+                      color: helpTab === val ? C.kangkong700 : C.mushroom500,
+                      borderBottom: helpTab === val ? "2px solid "+C.kangkong600 : "2px solid transparent",
+                      transition:"all 0.15s", whiteSpace:"nowrap",
+                    }}
+                  >{label}</button>
+                ))}
+              </div>
+            )}
+
+            {/* + Report and + Ask buttons — adding-work tab only */}
+            {view === "feed" && helpTab === "adding-work" && (
               <div style={{display:"flex",gap:6,marginBottom:10}}>
                 <button onClick={()=>{setSubmitType("report");setFormTitle("");setFormDesc("");setView("submit");}}
                   style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,background:"none",fontFamily:FF,fontSize:12,fontWeight:500,color:C.mushroom700,cursor:"pointer",transition:"all 0.15s"}}
@@ -3545,8 +3651,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
               </div>
             )}
 
-            {/* Filter tabs — only in feed view */}
-            {view === "feed" && (
+            {/* Filter tabs — adding-work tab only */}
+            {view === "feed" && helpTab === "adding-work" && (
               <div style={{display:"flex",gap:0,borderBottom:"1px solid "+C.mushroom200}}>
                 {[["all","All"],["report","Reports"],["ask","Asks"]].map(([val,label])=>(
                   <button key={val} onClick={()=>{setFilter(val);setPage(1);}}
@@ -3559,11 +3665,65 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                 ))}
               </div>
             )}
+            {/* Header bottom border when filter tabs not shown */}
+            {view === "feed" && helpTab !== "adding-work" && (
+              <div style={{borderBottom:"1px solid "+C.mushroom200}}/>
+            )}
           </div>
 
           {/* Panel body */}
           <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
-            {view === "feed" && (
+
+            {/* ── Stages guide ── */}
+            {view === "feed" && helpTab === "stages" && (
+              <div style={{display:"flex",flexDirection:"column",gap:20,paddingBottom:16}}>
+                {STAGE_GUIDE.map(stage => (
+                  <div key={stage.key} style={{borderLeft:"4px solid "+stage.borderColor,paddingLeft:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                      <span style={{fontSize:16}}>{stage.emoji}</span>
+                      <span style={{fontFamily:FF,fontSize:14,fontWeight:700,color:stage.textColor}}>{stage.label}</span>
+                      {stage.gardenBadge && (
+                        <span style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:DS.radius.full,background:stage.borderColor+"22",color:stage.textColor,border:"1px solid "+stage.borderColor}}>
+                          Garden
+                        </span>
+                      )}
+                    </div>
+                    <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,lineHeight:1.65,marginBottom:stage.callouts.length > 0 ? 10 : 0}}>
+                      {stage.desc}
+                    </div>
+                    {stage.callouts.map(callout => (
+                      <div key={callout.id} style={{background:callout.bg,border:"1px solid "+callout.border,borderRadius:DS.radius.md,padding:"10px 12px",marginTop:8}}>
+                        <div style={{display:"flex",gap:7,alignItems:"flex-start"}}>
+                          <span style={{fontSize:13,flexShrink:0,marginTop:1}}>{callout.icon}</span>
+                          <div>
+                            <span style={{fontFamily:FF,fontSize:12,fontWeight:700,color:callout.textColor}}>
+                              {callout.title}
+                            </span>
+                            <span style={{fontFamily:FF,fontSize:12,color:callout.textColor,lineHeight:1.6}}>
+                              {" "}{callout.body}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Empty states for Roles / FAQ ── */}
+            {view === "feed" && (helpTab === "roles" || helpTab === "faq") && (
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
+                <div style={{fontSize:24}}>🌱</div>
+                <div style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom600}}>Coming soon</div>
+                <div style={{fontFamily:FF,fontSize:12,color:C.mushroom400,textAlign:"center"}}>
+                  This section is being planted.
+                </div>
+              </div>
+            )}
+
+            {/* ── Adding work feed (existing content) ── */}
+            {view === "feed" && helpTab === "adding-work" && (
               <>
                 {pageItems.length === 0 ? (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
