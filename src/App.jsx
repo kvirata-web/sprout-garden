@@ -4127,10 +4127,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
             {view === "feed" && (
               <div style={{display:"flex",gap:0,marginBottom:8}}>
                 {[
-                  ["stages",       "Stages"],
-                  ["adding-work",  "Adding work"],
-                  ["roles",        "Roles"],
                   ["faq",          "FAQ"],
+                  ["feedback",     "Feedback"],
                 ].map(([val, label]) => (
                   <button key={val}
                     onClick={() => setHelpTab(val)}
@@ -4146,8 +4144,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
               </div>
             )}
 
-            {/* + Report and + Ask buttons — adding-work tab only */}
-            {view === "feed" && helpTab === "adding-work" && (
+            {/* + Report and + Ask buttons — feedback tab only */}
+            {view === "feed" && helpTab === "feedback" && (
               <div style={{display:"flex",gap:6,marginBottom:10}}>
                 <button onClick={()=>{setSubmitType("report");setFormTitle("");setFormDesc("");setView("submit");}}
                   style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,background:"none",fontFamily:FF,fontSize:12,fontWeight:500,color:C.mushroom700,cursor:"pointer",transition:"all 0.15s"}}
@@ -4162,8 +4160,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
               </div>
             )}
 
-            {/* Filter tabs — adding-work tab only */}
-            {view === "feed" && helpTab === "adding-work" && (
+            {/* Filter tabs — feedback tab only */}
+            {view === "feed" && helpTab === "feedback" && (
               <div style={{display:"flex",gap:0,borderBottom:"1px solid "+C.mushroom200}}>
                 {[["all","All"],["report","Reports"],["ask","Asks"]].map(([val,label])=>(
                   <button key={val} onClick={()=>{setFilter(val);setPage(1);}}
@@ -4177,7 +4175,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
               </div>
             )}
             {/* Header bottom border when filter tabs not shown */}
-            {view === "feed" && helpTab !== "adding-work" && (
+            {view === "feed" && helpTab !== "feedback" && (
               <div style={{borderBottom:"1px solid "+C.mushroom200}}/>
             )}
           </div>
@@ -4185,8 +4183,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           {/* Panel body */}
           <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
 
-            {/* ── Stages guide ── */}
-            {view === "feed" && helpTab === "stages" && (
+            {/* ── FAQ / Stages guide ── */}
+            {view === "feed" && helpTab === "faq" && (
               <div style={{display:"flex",flexDirection:"column",gap:20,paddingBottom:16}}>
                 {STAGE_GUIDE.map(stage => (
                   <div key={stage.key} style={{borderLeft:"4px solid "+stage.borderColor,paddingLeft:12}}>
@@ -4222,19 +4220,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
               </div>
             )}
 
-            {/* ── Empty states for Roles / FAQ ── */}
-            {view === "feed" && (helpTab === "roles" || helpTab === "faq") && (
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
-                <div style={{fontSize:24}}>🌱</div>
-                <div style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom600}}>Coming soon</div>
-                <div style={{fontFamily:FF,fontSize:12,color:C.mushroom400,textAlign:"center"}}>
-                  This section is being planted.
-                </div>
-              </div>
-            )}
-
-            {/* ── Adding work feed (existing content) ── */}
-            {view === "feed" && helpTab === "adding-work" && (
+            {/* ── Feedback feed (existing content) ── */}
+            {view === "feed" && helpTab === "feedback" && (
               <>
                 {pageItems.length === 0 ? (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
@@ -4371,7 +4358,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           </div>
 
           {/* Pagination footer — only in feed view, only when multiple pages */}
-          {view === "feed" && helpTab === "adding-work" && totalPages > 1 && (
+          {view === "feed" && helpTab === "feedback" && totalPages > 1 && (
             <div style={{borderTop:"1px solid "+C.mushroom200,padding:"8px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
               <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}
                 style={{padding:"4px 10px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,fontFamily:FF,fontSize:11,background:"none",cursor:page===1?"default":"pointer",color:page===1?C.mushroom300:C.mushroom600}}>Prev</button>
@@ -4410,7 +4397,7 @@ export default function SproutAIGarden() {
 
   // Help panel state
   const [helpOpen,        setHelpOpen]        = useState(false);
-  const [helpTab,         setHelpTab]         = useState("stages");
+  const [helpTab,         setHelpTab]         = useState("faq");
   const [helpItems,       setHelpItems]       = useState([]);
   const [helpFilter,      setHelpFilter]      = useState("all"); // "all" | "report" | "ask"
   const [helpPage,        setHelpPage]        = useState(1);
@@ -4559,7 +4546,7 @@ export default function SproutAIGarden() {
     setHelpPage(1);
     setHelpFilter("all");
     setHelpView("feed");
-    setHelpTab("stages");
+    setHelpTab("faq");
     await loadHelpItems();
   };
 
