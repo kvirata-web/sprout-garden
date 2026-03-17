@@ -182,6 +182,13 @@ describe('fromProject', () => {
     expect(Object.prototype.hasOwnProperty.call(row, 'country')).toBe(false)
   })
 
+  it('INSERT pattern: spreading country back in gives correct row for new records', () => {
+    // addProject does: {...fromProject(proj), country: proj.country}
+    const row = { ...fromProject(baseProject), country: baseProject.country }
+    expect(row.country).toBe('PH')
+    expect(row.name).toBe('Test Project')
+  })
+
   it('defaults toolUsed to [] when undefined', () => {
     const row = fromProject({ ...baseProject, toolUsed: undefined })
     expect(row.tool_used).toEqual([])
