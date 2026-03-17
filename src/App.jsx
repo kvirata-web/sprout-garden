@@ -2292,136 +2292,227 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
 
 
 
-// ── Garden Map View (extracted for use inside GardenHub) ──────────────────────
-const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptFilter, capFilter}) => {
+// ── Garden Horizon — theme system ─────────────────────────────────────────────
+
+function getGardenPhase() {
+  const h=new Date().getHours(), m=new Date().getMinutes(), t=h+m/60;
+  if(t>=6&&t<8) return 'dawn';
+  if(t>=8&&t<17.5) return 'day';
+  if(t>=17.5&&t<20) return 'dusk';
+  return 'night';
+}
+
+const GARDEN_THEMES = {
+  night:{
+    sky:'linear-gradient(180deg,#0c1e1a 0%,#112a20 25%,#1a3a2a 50%,#223a28 70%,#2a4830 85%,#1e3828 100%)',
+    hillBg:"#152a1e", hillMid:"#1c3828", hillFg:"#243c30",
+    ground:'linear-gradient(180deg,#243c30 0%,#1a2e22 100%)',
+    divider:'rgba(255,255,255,0.07)', deptLabel:'rgba(255,255,255,0.28)',
+    stars:1, moon:0.9, sun:0, clouds:0,
+    legend:{bg:'rgba(8,18,12,0.78)',border:'rgba(255,255,255,0.09)',color:'rgba(255,255,255,0.55)'},
+  },
+  dawn:{
+    sky:'linear-gradient(180deg,#1a2a38 0%,#3a4060 20%,#c8603a 40%,#e8905a 55%,#f0c080 68%,#b8d8a0 82%,#3a6040 100%)',
+    hillBg:"#1e3028", hillMid:"#263c30", hillFg:"#305a3a",
+    ground:'linear-gradient(180deg,#305a3a 0%,#223828 100%)',
+    divider:'rgba(255,200,140,0.10)', deptLabel:'rgba(255,240,200,0.5)',
+    stars:0.3, moon:0.2, sun:0, clouds:0.2,
+    legend:{bg:'rgba(10,14,10,0.72)',border:'rgba(255,200,100,0.15)',color:'rgba(255,240,200,0.6)'},
+  },
+  day:{
+    sky:'linear-gradient(180deg,#4a9ad4 0%,#74b8e8 20%,#a0d0f0 40%,#c8e8f8 58%,#d8f0e0 72%,#4a8a5a 88%,#2e5e38 100%)',
+    hillBg:"#2a5a38", hillMid:"#357040", hillFg:"#407848",
+    ground:'linear-gradient(180deg,#407848 0%,#2a5030 100%)',
+    divider:'rgba(80,140,80,0.14)', deptLabel:'rgba(20,60,30,0.55)',
+    stars:0, moon:0, sun:1, clouds:1,
+    legend:{bg:'rgba(255,255,255,0.82)',border:'rgba(80,140,80,0.2)',color:'rgba(30,70,40,0.7)'},
+  },
+  dusk:{
+    sky:'linear-gradient(180deg,#1a1a3a 0%,#3a2060 15%,#c03030 35%,#e06028 50%,#f09040 62%,#c07848 74%,#3a5830 88%,#203020 100%)',
+    hillBg:"#1e2a22", hillMid:"#283830", hillFg:"#324838",
+    ground:'linear-gradient(180deg,#324838 0%,#1e2c22 100%)',
+    divider:'rgba(255,140,80,0.10)', deptLabel:'rgba(255,220,180,0.45)',
+    stars:0.1, moon:0.1, sun:0.3, clouds:0.2,
+    legend:{bg:'rgba(10,8,6,0.78)',border:'rgba(255,140,60,0.15)',color:'rgba(255,210,160,0.55)'},
+  },
+};
+
+function GardenCloud({top, width, duration, delay, opacity}) {
+  return (
+    <div style={{position:"absolute",top,pointerEvents:"none",opacity,transition:"opacity 3s ease",animation:`cloudDrift ${duration}s linear ${delay}s infinite`}}>
+      <div style={{position:"relative",width,height:22}}>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:22,background:"rgba(255,255,255,0.88)",borderRadius:50}}/>
+        <div style={{position:"absolute",bottom:8,left:14,width:50,height:50,background:"rgba(255,255,255,0.88)",borderRadius:"50%"}}/>
+        <div style={{position:"absolute",bottom:4,left:50,width:35,height:35,background:"rgba(255,255,255,0.88)",borderRadius:"50%"}}/>
+      </div>
+    </div>
+  );
+}
+
+const GARDEN_STARS = "radial-gradient(1px 1px at 5% 10%,rgba(255,255,255,0.55) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 12% 5%,rgba(255,255,255,0.45) 0%,transparent 100%),radial-gradient(1px 1px at 20% 18%,rgba(255,255,255,0.35) 0%,transparent 100%),radial-gradient(1px 1px at 29% 7%,rgba(255,255,255,0.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 38% 14%,rgba(255,255,255,0.4) 0%,transparent 100%),radial-gradient(1px 1px at 47% 4%,rgba(255,255,255,0.45) 0%,transparent 100%),radial-gradient(1px 1px at 54% 20%,rgba(255,255,255,0.3) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 63% 9%,rgba(255,255,255,0.5) 0%,transparent 100%),radial-gradient(1px 1px at 71% 16%,rgba(255,255,255,0.35) 0%,transparent 100%),radial-gradient(1px 1px at 78% 3%,rgba(255,255,255,0.45) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 85% 12%,rgba(255,255,255,0.4) 0%,transparent 100%),radial-gradient(1px 1px at 91% 8%,rgba(255,255,255,0.55) 0%,transparent 100%),radial-gradient(1px 1px at 43% 30%,rgba(255,255,255,0.2) 0%,transparent 100%),radial-gradient(1px 1px at 67% 26%,rgba(255,255,255,0.28) 0%,transparent 100%)";
+
+// Row config: front row on ground + up to 2 stacked back rows
+const GARDEN_ROWS = [
+  {bottom:"14%", scale:1.00, baseOpacity:1.0,  zBase:2},
+  {bottom:"22%", scale:0.78, baseOpacity:0.70,  zBase:1},
+  {bottom:"29%", scale:0.62, baseOpacity:0.55,  zBase:0},
+];
+const FRONT_POS = [0.12, 0.34, 0.58, 0.80];
+const BACK_POS  = [0.22, 0.50, 0.74, 0.92];
+
+// ── Garden Map View ────────────────────────────────────────────────────────────
+const GardenMapView = ({projects, filtered, wishes, selected, setSelected}) => {
+  const [phase, setPhase] = useState(getGardenPhase);
   const [hoverId, setHoverId] = useState(null);
-  const gardenRef = useRef(null);
-  const [gardenRect, setGardenRect] = useState(null);
 
   useEffect(()=>{
-    const u=()=>{if(gardenRef.current){const r=gardenRef.current.getBoundingClientRect();setGardenRect({width:r.width,height:r.height});}};
-    u(); window.addEventListener("resize",u); return()=>window.removeEventListener("resize",u);
+    const id=setInterval(()=>setPhase(getGardenPhase()),60000);
+    return()=>clearInterval(id);
   },[]);
 
+  const theme = GARDEN_THEMES[phase];
   const isVisible = p => filtered.some(f=>f.id===p.id);
-  const plantPos = p => {
-    const z=DEPT_ZONES[p.builtBy]; if(!z) return{leftPct:50,topPct:50,scale:1};
-    const px=z.x+(p.zx/100)*z.w, py=z.y+(p.zy/100)*z.h;
-    return{leftPct:px,topPct:py,scale:0.65+(py/100)*0.45};
-  };
 
-  const RelatedLines = () => {
-    if(!selected||!gardenRect) return null;
-    const related=findRelated(selected,projects);
-    const gp=p=>{const z=DEPT_ZONES[p.builtBy];if(!z)return{cx:50,cy:50};return{cx:(z.x+(p.zx/100)*z.w)/100*gardenRect.width,cy:(z.y+(p.zy/100)*z.h)/100*gardenRect.height};};
-    const sel=gp(selected);
-    return (
-      <svg style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:12,overflow:"visible"}} width={gardenRect.width} height={gardenRect.height}>
-        <defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-        {related.map(p=>{
-          const{cx,cy}=gp(p);
-          const mx=(sel.cx+cx)/2, my=Math.max(sel.cy,cy)+50;
-          const isSP=p.problemSpace===selected.problemSpace;
-          const col=isSP?C.carrot500:C.kangkong500;
-          return(
-            <g key={p.id}>
-              <path d={"M"+sel.cx+","+sel.cy+" Q"+mx+","+my+" "+cx+","+cy} stroke={col} strokeWidth={isSP?2.5:1.5} fill="none" strokeDasharray={isSP?"7,4":"3,4"} opacity="0.7" filter="url(#glow)"/>
-              <circle cx={cx} cy={cy} r="6" fill={col} opacity="0.4"/>
-            </g>
-          );
-        })}
-        <circle cx={sel.cx} cy={sel.cy} r="10" fill="none" stroke={C.kangkong500} strokeWidth="2" opacity="0.8" filter="url(#glow)">
-          <animate attributeName="r" values="10;16;10" dur="2s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.8;0.2;0.8" dur="2s" repeatCount="indefinite"/>
-        </circle>
-      </svg>
-    );
-  };
+  // Stable dept order: DEPT_ZONES order first, then any unknowns
+  const allBuiltBy = [...new Set(projects.map(p=>p.builtBy))];
+  const depts = Object.keys(DEPT_ZONES).filter(d=>allBuiltBy.includes(d))
+    .concat(allBuiltBy.filter(d=>!Object.keys(DEPT_ZONES).includes(d)));
+  const N = Math.max(depts.length, 1);
+
+  // Group projects by dept, sorted seedling → thriving
+  const STAGE_IDX = {seedling:0,nursery:1,sprout:2,bloom:3,thriving:4};
+  const byDept = {};
+  depts.forEach(d=>{
+    byDept[d]=projects.filter(p=>p.builtBy===d).sort((a,b)=>(STAGE_IDX[a.stage]||0)-(STAGE_IDX[b.stage]||0));
+  });
 
   return (
-    <div ref={gardenRef} onClick={()=>setSelected(null)} style={{flex:1,position:"relative",overflow:"hidden",background:"linear-gradient(180deg,#1a3a2e 0%,#1e4a35 20%,#2a5c40 45%,#3a7050 60%,#4a8060 72%,#3d6b4a 82%,#2e5238 92%,#1e3828 100%)"}}>
-      {/* Stars */}
-      <div style={{position:"absolute",top:0,left:0,right:0,height:"38%",pointerEvents:"none",zIndex:1,backgroundImage:"radial-gradient(1px 1px at 9% 14%,rgba(255,255,255,0.45) 0%,transparent 100%),radial-gradient(1px 1px at 24% 8%,rgba(255,255,255,0.3) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 38% 19%,rgba(255,255,255,0.5) 0%,transparent 100%),radial-gradient(1px 1px at 54% 11%,rgba(255,255,255,0.35) 0%,transparent 100%),radial-gradient(1px 1px at 68% 6%,rgba(255,255,255,0.4) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 81% 17%,rgba(255,255,255,0.3) 0%,transparent 100%),radial-gradient(1px 1px at 91% 10%,rgba(255,255,255,0.45) 0%,transparent 100%),radial-gradient(1px 1px at 14% 29%,rgba(255,255,255,0.2) 0%,transparent 100%),radial-gradient(1px 1px at 59% 27%,rgba(255,255,255,0.25) 0%,transparent 100%),radial-gradient(1px 1px at 47% 5%,rgba(255,255,255,0.3) 0%,transparent 100%)"}}/>
-      {/* Moon */}
-      <div style={{position:"absolute",top:18,right:52,width:30,height:30,borderRadius:"50%",background:"radial-gradient(circle at 35% 35%,#fffde0,#f0e080)",boxShadow:"0 0 16px rgba(255,240,100,0.3),0 0 50px rgba(255,240,100,0.08)",pointerEvents:"none",zIndex:1}}/>
-      <RelatedLines/>
-      {projects.map((project,idx)=>{
-        const{leftPct,topPct,scale}=plantPos(project);
-        const visible=isVisible(project);
-        const wilting=project.lastUpdated>60;
-        const size=GardenSizes[project.stage]||GardenSizes.seedling;
-        const isHov=hoverId===project.id;
-        const isSel=selected?.id===project.id;
-        const dc=getDeptColor(project.builtBy);
-        const hasRelated=selected&&findRelated(selected,projects).some(r=>r.id===project.id);
-        return(
-          <div key={project.id}
-            onClick={e=>{e.stopPropagation();setSelected(project);}}
-            onMouseEnter={()=>setHoverId(project.id)}
-            onMouseLeave={()=>setHoverId(null)}
-            style={{position:"absolute",left:leftPct+"%",top:(topPct+8)+"%",transform:"translate(-50%,-50%) scale("+scale+")",width:size.w,height:size.h,cursor:"pointer",opacity:visible?1:0.08,transition:"opacity 0.4s",zIndex:isSel?18:isHov?16:5+Math.floor(topPct/10),animation:"sway "+(3.5+(idx%4)*0.8)+"s ease-in-out "+((idx*0.4)%3)+"s infinite",transformOrigin:"bottom center"}}>
-            {isSel&&<div style={{position:"absolute",inset:-10,borderRadius:"50%",border:"2.5px solid "+dc,boxShadow:"0 0 20px "+dc+"50",animation:"pulse 2s ease-in-out infinite"}}/>}
-            {hasRelated&&!isSel&&<div style={{position:"absolute",inset:-8,borderRadius:"50%",border:"2px dashed "+C.carrot500,opacity:0.7,animation:"pulse 2s ease-in-out 0.5s infinite"}}/>}
-            {isHov&&visible&&<div style={{position:"absolute",inset:-8,borderRadius:"50%",background:"radial-gradient(circle,"+dc+"20 0%,transparent 70%)",pointerEvents:"none"}}/>}
-            <GardenPlant stage={project.stage} size={size.w} wilting={wilting}/>
-            {wilting&&<div style={{position:"absolute",top:-4,right:-4}}><IcoStale size={14} color={C.mango500}/></div>}
-            <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:7,height:7,borderRadius:"50%",background:dc,border:"1.5px solid white",boxShadow:"0 0 5px "+dc+"90"}}/>
-            {isHov&&visible&&(
-              <div style={{position:"absolute",bottom:"108%",left:"50%",transform:"translateX(-50%)",background:C.mushroom900,color:C.mushroom50,padding:"8px 12px",borderRadius:DS.radius.lg,fontFamily:FF,fontSize:11,whiteSpace:"nowrap",pointerEvents:"none",zIndex:100,boxShadow:DS.shadow.lg,border:"1px solid "+C.mushroom700}}>
-                <div style={{fontWeight:700,marginBottom:2}}>{project.name}</div>
-                <div style={{opacity:0.7,fontSize:10}}>{project.builtBy}{project.builtFor!==project.builtBy?" → "+project.builtFor:""}</div>
-                <div style={{opacity:0.6,fontSize:10}}>{project.capability} · {STAGE_LABELS[project.stage]}</div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-      {/* Legend */}
-      <div style={{position:"absolute",bottom:12,left:"50%",transform:"translateX(-50%)",display:"flex",gap:14,alignItems:"center",background:"rgba(0,0,0,0.52)",backdropFilter:"blur(10px)",borderRadius:DS.radius.full,padding:"6px 18px",border:"1px solid rgba(255,255,255,0.12)",boxShadow:"0 4px 20px rgba(0,0,0,0.4)",zIndex:20}}>
-        {STAGES.map(s=>(
-          <div key={s} style={{display:"flex",alignItems:"center",gap:5}}>
-            <StageIcon stage={s} size={13} color="rgba(255,255,255,0.85)"/>
-            <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.65)"}}>{STAGE_LABELS[s]}</span>
+    <div onClick={()=>setSelected(null)} style={{flex:1,overflowX:"auto",overflowY:"hidden",position:"relative"}}>
+      <div style={{position:"relative",height:"100%",minWidth:`max(100%, ${N*220}px)`}}>
+
+        {/* Sky */}
+        <div style={{position:"absolute",inset:0,background:theme.sky,transition:"background 4s ease"}}/>
+
+        {/* Stars */}
+        <div style={{position:"absolute",top:0,left:0,right:0,height:"55%",pointerEvents:"none",backgroundImage:GARDEN_STARS,opacity:theme.stars,transition:"opacity 3s ease"}}/>
+
+        {/* Moon */}
+        <div style={{position:"absolute",top:28,left:"86%",width:40,height:40,borderRadius:"50%",background:"radial-gradient(circle at 35% 35%,#fffde0,#f0e080)",boxShadow:"0 0 20px rgba(255,240,100,0.35),0 0 70px rgba(255,240,100,0.12)",pointerEvents:"none",opacity:theme.moon,transition:"opacity 3s ease"}}/>
+
+        {/* Sun */}
+        <div style={{position:"absolute",top:36,left:"84%",width:52,height:52,borderRadius:"50%",background:"radial-gradient(circle at 40% 40%,#fff8c0,#ffd740,#ffb300)",boxShadow:"0 0 30px rgba(255,200,50,0.6),0 0 80px rgba(255,200,50,0.25)",pointerEvents:"none",opacity:theme.sun,transition:"opacity 3s ease"}}/>
+
+        {/* Clouds */}
+        <GardenCloud top="12%" width={100} duration={55} delay={0}   opacity={theme.clouds}/>
+        <GardenCloud top="7%"  width={70}  duration={80} delay={-20} opacity={theme.clouds}/>
+        <GardenCloud top="18%" width={85}  duration={68} delay={-35} opacity={theme.clouds}/>
+
+        {/* Hills */}
+        <div style={{position:"absolute",left:"-5%",right:"-5%",bottom:0,height:"38%",borderRadius:"50% 50% 0 0",background:theme.hillBg,transition:"background 4s ease",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",left:"-5%",right:"-5%",bottom:0,height:"30%",borderRadius:"65% 35% 0 0",background:theme.hillMid,transition:"background 4s ease",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",left:"-5%",right:"-5%",bottom:0,height:"22%",borderRadius:"38% 62% 0 0",background:theme.hillFg,transition:"background 4s ease",pointerEvents:"none"}}/>
+
+        {/* Ground */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:"16%",background:theme.ground,transition:"background 4s ease",pointerEvents:"none"}}/>
+
+        {/* Section dividers */}
+        {depts.slice(0,-1).map((_,i)=>(
+          <div key={i} style={{position:"absolute",bottom:0,top:"25%",left:`${(i+1)/N*100}%`,width:1,background:`linear-gradient(180deg,transparent,${theme.divider} 40%,${theme.divider} 70%,transparent)`,pointerEvents:"none",transition:"background 4s ease"}}/>
+        ))}
+
+        {/* Soil patches */}
+        {depts.map((d,i)=>(
+          <div key={d+"soil"} style={{position:"absolute",bottom:"10%",left:`${(i+0.5)/N*100-6}%`,width:"12%",height:90,borderRadius:"50%",transform:"scaleY(0.2)",filter:"blur(22px)",opacity:0.4,background:getDeptColor(d),pointerEvents:"none"}}/>
+        ))}
+
+        {/* Dept labels */}
+        {depts.map((d,i)=>(
+          <div key={d+"lbl"} style={{position:"absolute",bottom:"5.5%",left:`${(i+0.5)/N*100}%`,transform:"translateX(-50%)",fontFamily:FF,fontSize:9,fontWeight:700,letterSpacing:"1.4px",textTransform:"uppercase",whiteSpace:"nowrap",color:theme.deptLabel,pointerEvents:"none",transition:"color 4s ease"}}>
+            {d}
           </div>
         ))}
-        <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
-        <div style={{display:"flex",alignItems:"center",gap:4}}>
-          <div style={{width:14,height:2,borderTop:"2px dashed rgba(255,160,80,0.8)"}}/>
-          <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,160,80,0.8)"}}>Related</span>
-        </div>
-        {wishes&&wishes.filter(w=>!w.fulfilledBy).length>0&&(
-          <>
-            <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <WishSeed size={14} color="rgba(255,255,255,0.5)"/>
-              <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.55)",fontWeight:600}}>{wishes.filter(w=>!w.fulfilledBy).length} seeds in wishlist</span>
-            </div>
-          </>
+
+        {/* Plants */}
+        {depts.flatMap((dept,di)=>
+          byDept[dept].map((project,pi)=>{
+            const rowIdx = Math.floor(pi/4);
+            const colIdx = pi%4;
+            const row = GARDEN_ROWS[Math.min(rowIdx, GARDEN_ROWS.length-1)];
+            const posFrac = rowIdx===0 ? FRONT_POS : BACK_POS;
+            const leftPct = di/N*100 + posFrac[Math.min(colIdx,3)] * (100/N);
+            const visible = isVisible(project);
+            const wilting = project.lastUpdated>60;
+            const size = GardenSizes[project.stage]||GardenSizes.seedling;
+            const isHov = hoverId===project.id;
+            const isSel = selected?.id===project.id;
+            const dc = getDeptColor(project.builtBy);
+            const dur = 3.5+(pi%4)*0.7;
+            const del = (pi*0.4)%3;
+            return (
+              <div key={project.id}
+                style={{position:"absolute",left:`${leftPct}%`,bottom:row.bottom,marginLeft:`-${size.w/2}px`,opacity:(visible?1:0.08)*row.baseOpacity,transition:"opacity 0.4s",zIndex:isSel?18:isHov?16:row.zBase,transform:`scale(${row.scale})`,transformOrigin:"bottom center"}}>
+                {isSel&&<div style={{position:"absolute",inset:-10,borderRadius:"50%",border:"2.5px solid "+dc,boxShadow:"0 0 20px "+dc+"50",animation:"pulse 2s ease-in-out infinite"}}/>}
+                <div
+                  onClick={e=>{e.stopPropagation();setSelected(project);}}
+                  onMouseEnter={()=>setHoverId(project.id)}
+                  onMouseLeave={()=>setHoverId(null)}
+                  style={{cursor:"pointer",transformOrigin:"bottom center",animation:`gardenSway ${dur}s ease-in-out ${del}s infinite`,filter:"drop-shadow(0 3px 6px rgba(0,0,0,0.3))"}}>
+                  <GardenPlant stage={project.stage} size={size.w} wilting={wilting}/>
+                  {wilting&&<div style={{position:"absolute",top:-4,right:-4}}><IcoStale size={14} color={C.mango500}/></div>}
+                  <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:7,height:7,borderRadius:"50%",background:dc,border:"1.5px solid white",boxShadow:"0 0 5px "+dc+"90"}}/>
+                  {isHov&&visible&&(
+                    <div style={{position:"absolute",bottom:"108%",left:"50%",transform:"translateX(-50%)",background:C.mushroom900,color:C.mushroom50,padding:"8px 12px",borderRadius:DS.radius.lg,fontFamily:FF,fontSize:11,whiteSpace:"nowrap",pointerEvents:"none",zIndex:100,boxShadow:DS.shadow.lg,border:"1px solid "+C.mushroom700}}>
+                      <div style={{fontWeight:700,marginBottom:2}}>{project.name}</div>
+                      <div style={{opacity:0.7,fontSize:10}}>{project.builtBy}{project.builtFor!==project.builtBy?" → "+project.builtFor:""}</div>
+                      <div style={{opacity:0.6,fontSize:10}}>{project.capability} · {STAGE_LABELS[project.stage]}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
         )}
-        {(projects.some(p=>p.country==="PH")||projects.some(p=>p.country==="TH"))&&(
-          <>
-            <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              {projects.some(p=>p.country==="PH")&&(
-                <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="PH" w={14} h={10}/>{projects.filter(p=>p.country==="PH").length}</span>
-              )}
-              {projects.some(p=>p.country==="TH")&&(
-                <span style={{fontFamily:FF,fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="TH" w={14} h={10}/>{projects.filter(p=>p.country==="TH").length}</span>
-              )}
+
+        {/* Legend */}
+        <div style={{position:"absolute",bottom:12,left:"50%",transform:"translateX(-50%)",display:"flex",gap:14,alignItems:"center",background:theme.legend.bg,backdropFilter:"blur(10px)",borderRadius:DS.radius.full,padding:"6px 18px",border:"1px solid "+theme.legend.border,boxShadow:"0 4px 20px rgba(0,0,0,0.4)",zIndex:20,transition:"background 4s,border-color 4s",whiteSpace:"nowrap"}}>
+          {STAGES.map(s=>(
+            <div key={s} style={{display:"flex",alignItems:"center",gap:5}}>
+              <StageIcon stage={s} size={13} color={theme.legend.color}/>
+              <span style={{fontFamily:FF,fontSize:10,color:theme.legend.color}}>{STAGE_LABELS[s]}</span>
             </div>
-          </>
+          ))}
+          {wishes&&wishes.filter(w=>!w.fulfilledBy).length>0&&(
+            <>
+              <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <WishSeed size={14} color={theme.legend.color}/>
+                <span style={{fontFamily:FF,fontSize:10,color:theme.legend.color,fontWeight:600}}>{wishes.filter(w=>!w.fulfilledBy).length} seeds</span>
+              </div>
+            </>
+          )}
+          {(projects.some(p=>p.country==="PH")||projects.some(p=>p.country==="TH"))&&(
+            <>
+              <div style={{width:1,height:12,background:"rgba(255,255,255,0.15)"}}/>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                {projects.some(p=>p.country==="PH")&&<span style={{fontFamily:FF,fontSize:10,color:theme.legend.color,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="PH" w={14} h={10}/>{projects.filter(p=>p.country==="PH").length}</span>}
+                {projects.some(p=>p.country==="TH")&&<span style={{fontFamily:FF,fontSize:10,color:theme.legend.color,fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><FlagSVG country="TH" w={14} h={10}/>{projects.filter(p=>p.country==="TH").length}</span>}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Overlap panel */}
+        {selected&&findRelated(selected,projects).length>0&&(
+          <div style={{position:"absolute",top:16,right:16,zIndex:20,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,180,60,0.4)",borderRadius:DS.radius.lg,padding:"10px 14px",maxWidth:220,boxShadow:"0 4px 20px rgba(0,0,0,0.4)"}}>
+            <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:"rgba(255,180,60,0.9)",marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
+              <IcoWarning size={14} color="rgba(255,180,60,0.9)"/> Possible Overlap
+            </div>
+            <div style={{fontFamily:FF,fontSize:11,color:"rgba(255,255,255,0.65)",lineHeight:1.4}}>
+              {findRelated(selected,projects).length} project(s) share the same area as <strong>{selected.name}</strong>
+            </div>
+          </div>
         )}
       </div>
-      {selected&&findRelated(selected,projects).length>0&&(
-        <div style={{position:"absolute",top:16,right:16,zIndex:20,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,180,60,0.4)",borderRadius:DS.radius.lg,padding:"10px 14px",maxWidth:220,boxShadow:"0 4px 20px rgba(0,0,0,0.4)"}}>
-          <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:"rgba(255,180,60,0.9)",marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
-            <IcoWarning size={14} color="rgba(255,180,60,0.9)"/> Possible Overlap
-          </div>
-          <div style={{fontFamily:FF,fontSize:11,color:"rgba(255,255,255,0.65)",lineHeight:1.4}}>
-            {findRelated(selected,projects).length} project(s) share the same area as <strong>{selected.name}</strong>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -5243,6 +5334,8 @@ export default function SproutAIGarden() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
         @keyframes sway{0%,100%{transform:translate(-50%,-50%) rotate(-0.8deg)}50%{transform:translate(-50%,-50%) rotate(0.8deg)}}
+        @keyframes gardenSway{0%,100%{transform:rotate(-1.2deg)}50%{transform:rotate(1.2deg)}}
+        @keyframes cloudDrift{from{transform:translateX(-200px)}to{transform:translateX(110vw)}}
         @keyframes slideInRight{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
         @keyframes slideInPanel{from{transform:translateX(100%)}to{transform:translateX(0)}}
