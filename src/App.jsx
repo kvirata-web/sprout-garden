@@ -1110,8 +1110,205 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
         })}
       </div>
 
-      {/* ── BODY_PLACEHOLDER ── Tasks 4-8 fill this section */}
-      {/* BODY_PLACEHOLDER */}
+      {/* ── Two-column body ─────────────────────────────────────────────── */}
+      <div style={{ display:"flex", gap:16, alignItems:"start" }}>
+
+        {/* ── LEFT COLUMN (flex 1.45) ──────────────────────────────────── */}
+        <div style={{ flex:"1.45 1 0", minWidth:0, display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* ── Action zone — Your Focus ────────────────────────────────── */}
+          <div style={{ animation:"fadeUp 0.4s ease 0.1s both" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+              Your Focus
+            </div>
+            <div style={{ display:"flex", gap:12 }}>
+
+              {/* LEFT PANEL */}
+              <div style={{ flex:1, background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+                {authUser?.isExcom ? (
+                  /* Approver: Nursery queue */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Nursery Queue
+                    </div>
+                    {nurseryQueue.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>No plants awaiting review.</div>
+                    ) : nurseryQueue.map((p, i) => {
+                      const submitted = p.submittedAt ? Math.floor((Date.now() - new Date(p.submittedAt).getTime()) / 86400000) : p.lastUpdated;
+                      const overdue = submitted > 7;
+                      return (
+                        <div key={p.id}
+                          onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                          onClick={() => onSelectProject(p)}
+                          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<nurseryQueue.length-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                        >
+                          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
+                            <span style={{ fontSize:9, fontWeight:600, background:C.mango100, color:C.mango600, border:`0.5px solid ${C.mango500}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0 }}>
+                              Nursery
+                            </span>
+                            <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                          </div>
+                          {overdue && (
+                            <span style={{ fontSize:9, fontWeight:600, background:C.tomato100, color:C.tomato500, border:`0.5px solid ${C.tomato500}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0, marginLeft:6 }}>
+                              Overdue {submitted}d
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : authUser?.isGardener ? (
+                  /* Admin: Garden health — stale plants */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Garden Health
+                    </div>
+                    {stalePlants.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>No stale plants. Garden is healthy!</div>
+                    ) : stalePlants.slice(0, 5).map((p, i) => (
+                      <div key={p.id}
+                        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                        onClick={() => onSelectProject(p)}
+                        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(stalePlants.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                      >
+                        <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{p.name}</span>
+                        <span style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginLeft:8 }}>{p.lastUpdated}d ago</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  /* Planter: My plants with next-action CTAs */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      My Plants
+                    </div>
+                    {myProjects.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>You haven&rsquo;t added any plants yet.</div>
+                    ) : myProjects.slice(0, 5).map((p, i) => {
+                      let ctaText = null;
+                      if (p.stage === "seedling" && !p.prototypeLink) ctaText = "Add prototype →";
+                      else if (p.stage === "seedling" && p.prototypeLink) ctaText = "Submit for review →";
+                      else if (p.stage === "nursery" && p.reviewStatus === "needs_rework") ctaText = "View feedback →";
+                      else if (p.stage === "nursery") ctaText = null;
+                      else ctaText = "View →";
+                      return (
+                        <div key={p.id}
+                          onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; const cta=e.currentTarget.querySelector(".ov-cta"); if(cta) cta.style.opacity=1; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; const cta=e.currentTarget.querySelector(".ov-cta"); if(cta) cta.style.opacity=0; }}
+                          onClick={() => onSelectProject(p)}
+                          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                        >
+                          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
+                            <span style={{ fontSize:9, fontWeight:600, background:STAGE_COLORS[p.stage]?.bg, color:STAGE_COLORS[p.stage]?.text, border:`0.5px solid ${STAGE_COLORS[p.stage]?.border}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0 }}>
+                              {STAGE_LABELS[p.stage]}
+                            </span>
+                            <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                          </div>
+                          {ctaText ? (
+                            <span className="ov-cta" style={{ fontSize:11, fontWeight:600, color:C.kangkong500, flexShrink:0, marginLeft:8, opacity:0, transition:"opacity 0.15s" }}>{ctaText}</span>
+                          ) : (
+                            <span className="ov-cta" style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginLeft:8, opacity:0 }}>Under review</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+
+              {/* RIGHT PANEL */}
+              <div style={{ flex:1, background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+                {authUser?.isExcom ? (
+                  /* Approver: My plants */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      My Plants
+                    </div>
+                    {myProjects.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>You haven&rsquo;t added any plants yet.</div>
+                    ) : myProjects.slice(0,5).map((p, i) => (
+                      <div key={p.id}
+                        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                        onClick={() => onSelectProject(p)}
+                        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                      >
+                        <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{p.name}</span>
+                        <span style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginLeft:8 }}>{p.lastUpdated}d ago</span>
+                      </div>
+                    ))}
+                  </>
+                ) : authUser?.isGardener ? (
+                  /* Admin: Quick stats */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Quick Stats
+                    </div>
+                    {[
+                      { label:"Total plants", value:projects.length },
+                      { label:"Pipeline health", value:healthPct + "%" },
+                      { label:"Nursery queue", value:nurseryQueue.length },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:`0.5px solid ${C.mushroom100}` }}>
+                        <span style={{ fontSize:11, color:C.mushroom600 }}>{label}</span>
+                        <span style={{ fontSize:12, fontWeight:700, color:C.mushroom900 }}>{value}</span>
+                      </div>
+                    ))}
+                    <button onClick={() => onNavigateGarden?.("board","All")} style={{ marginTop:10, fontSize:11, fontWeight:600, color:C.kangkong500, background:"none", border:`0.5px solid ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"5px 10px", cursor:"pointer", width:"100%" }}>
+                      View Board →
+                    </button>
+                  </>
+                ) : (
+                  /* Planter: Seeds to claim */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Seeds to Claim
+                    </div>
+                    {seedsToClaim.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>No unclaimed Seeds right now.</div>
+                    ) : seedsToClaim.map((w, i) => (
+                      <div key={w.id}
+                        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                        onClick={() => onNavigateWishlist?.()}
+                        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<seedsToClaim.length-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                      >
+                        <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{w.title}</span>
+                        <span style={{ fontSize:10, color:C.ubas500, fontWeight:600, flexShrink:0, marginLeft:8 }}>▲ {w.upvoters.length}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+            </div>{/* end action zone flex */}
+          </div>{/* end action zone section */}
+
+          {/* ── ACTIVITY_FEED_PLACEHOLDER ── Task 5 fills this */}
+          {/* ACTIVITY_FEED_PLACEHOLDER */}
+
+          {/* ── TOOLS_PLACEHOLDER ── Task 7 fills this */}
+          {/* TOOLS_PLACEHOLDER */}
+
+        </div>{/* end left column */}
+
+        {/* ── RIGHT COLUMN (flex 1) ─────────────────────────────────────── */}
+        <div style={{ flex:"1 1 0", minWidth:0, display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* ── SPOTLIGHT_PLACEHOLDER ── Task 6 fills this */}
+          {/* SPOTLIGHT_PLACEHOLDER */}
+
+          {/* ── LEADERBOARDS_PLACEHOLDER ── Task 6 fills this */}
+          {/* LEADERBOARDS_PLACEHOLDER */}
+
+          {/* ── DEPT_PLACEHOLDER ── Task 8 fills this */}
+          {/* DEPT_PLACEHOLDER */}
+
+        </div>{/* end right column */}
+
+      </div>{/* end two-column body */}
 
     </div>
   );
