@@ -1318,7 +1318,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   {/* Seeds nudge */}
   {seedCount > 0 && (
     <div
-      onMouseEnter={e => { e.currentTarget.style.background="#f3f0ff"; e.currentTarget.style.transform="translateY(-1px)"; }}
+      onMouseEnter={e => { e.currentTarget.style.background=C.ubas100; e.currentTarget.style.transform="translateY(-1px)"; }}
       onMouseLeave={e => { e.currentTarget.style.background=C.ubas100; e.currentTarget.style.transform="none"; }}
       onClick={() => onNavigateWishlist?.()}
       style={{ marginTop:8, padding:"10px 14px", background:C.ubas100, border:`0.5px solid ${C.ubas400}`, borderRadius:DS.radius.md, display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", transition:"all 0.15s" }}
