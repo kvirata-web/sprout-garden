@@ -2291,48 +2291,100 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
 
 
 
-// ── Garden Horizon — theme system ─────────────────────────────────────────────
+// ── Time-of-day — shared theme system ─────────────────────────────────────────
+
+function getTimeOfDayStyle() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 9)  return {
+    bg:  "linear-gradient(170deg,#fde8cc 0%,#fef3e2 30%,#f0f8ee 70%,#e4f4e0 100%)",
+    glow:"radial-gradient(circle at 92% 0%,#fde68a 0%,#fef3c7 35%,transparent 65%)",
+    glowOpacity:0.6,
+  };
+  if (h >= 9 && h < 12) return {
+    bg:  "linear-gradient(170deg,#f0faf0 0%,#f5f8f0 35%,#f5f3ee 70%,#eef5ea 100%)",
+    glow:"radial-gradient(circle at 88% 0%,#fef9c3 0%,#fefce8 45%,transparent 72%)",
+    glowOpacity:0.45,
+  };
+  if (h >= 12 && h < 15) return {
+    bg:  "linear-gradient(170deg,#f8f6f2 0%,#f5f3ee 50%,#eef6f0 100%)",
+    glow:null,
+    glowOpacity:0,
+  };
+  if (h >= 15 && h < 18) return {
+    bg:  "linear-gradient(170deg,#faf2e8 0%,#f5f0e8 40%,#eef4ec 80%,#e8f2e4 100%)",
+    glow:"radial-gradient(circle at 95% 8%,#fcd97a 0%,#fef3c7 42%,transparent 68%)",
+    glowOpacity:0.38,
+  };
+  if (h >= 18 && h < 21) return {
+    bg:  "linear-gradient(170deg,#fce8d0 0%,#f8e4cc 30%,#f0ece4 65%,#e8f0e8 100%)",
+    glow:"radial-gradient(circle at 90% 5%,#f6a84a 0%,#fcd9a0 42%,transparent 68%)",
+    glowOpacity:0.45,
+  };
+  return {
+    bg:  "linear-gradient(170deg,#e4ecf4 0%,#eaeff2 35%,#e8eeec 65%,#e4ece8 100%)",
+    glow:"radial-gradient(circle at 88% 0%,#ddeaf4 0%,#eaf4fc 45%,transparent 72%)",
+    glowOpacity:0.55,
+  };
+}
 
 function getGardenPhase() {
-  const h=new Date().getHours(), m=new Date().getMinutes(), t=h+m/60;
-  if(t>=6&&t<8) return 'dawn';
-  if(t>=8&&t<17.5) return 'day';
-  if(t>=17.5&&t<20) return 'dusk';
+  const h = new Date().getHours();
+  if (h >= 5 && h < 9)  return 'sunrise';
+  if (h >= 9 && h < 12) return 'morning';
+  if (h >= 12 && h < 15) return 'midday';
+  if (h >= 15 && h < 18) return 'afternoon';
+  if (h >= 18 && h < 21) return 'dusk';
   return 'night';
 }
 
 const GARDEN_THEMES = {
-  night:{
-    sky:'linear-gradient(180deg,#0c1e1a 0%,#112a20 25%,#1a3a2a 50%,#223a28 70%,#2a4830 85%,#1e3828 100%)',
-    hillBg:"#152a1e", hillMid:"#1c3828", hillFg:"#243c30",
-    ground:'linear-gradient(180deg,#243c30 0%,#1a2e22 100%)',
-    divider:'rgba(255,255,255,0.07)', deptLabel:'rgba(255,255,255,0.28)',
-    stars:1, moon:0.9, sun:0, clouds:0,
-    legend:{bg:'rgba(8,18,12,0.78)',border:'rgba(255,255,255,0.09)',color:'rgba(255,255,255,0.55)'},
+  sunrise:{
+    sky:'linear-gradient(180deg,#fde8c8 0%,#f8c890 12%,#fad4a0 28%,#feedd4 48%,#eaf4e8 68%,#9acc94 84%,#568a58 100%)',
+    hillBg:"#2a5830", hillMid:"#387040", hillFg:"#4a8050",
+    ground:'linear-gradient(180deg,#4a8050 0%,#2e4e2c 100%)',
+    divider:'rgba(50,100,50,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    stars:0, moon:0, sun:0.50, clouds:0.30,
+    legend:{bg:'rgba(255,255,255,0.80)',border:'rgba(80,140,60,0.18)',color:'rgba(30,70,30,0.72)'},
   },
-  dawn:{
-    sky:'linear-gradient(180deg,#1a2a38 0%,#3a4060 20%,#c8603a 40%,#e8905a 55%,#f0c080 68%,#b8d8a0 82%,#3a6040 100%)',
-    hillBg:"#1e3028", hillMid:"#263c30", hillFg:"#305a3a",
-    ground:'linear-gradient(180deg,#305a3a 0%,#223828 100%)',
-    divider:'rgba(255,200,140,0.10)', deptLabel:'rgba(255,240,200,0.5)',
-    stars:0.3, moon:0.2, sun:0, clouds:0.2,
-    legend:{bg:'rgba(10,14,10,0.72)',border:'rgba(255,200,100,0.15)',color:'rgba(255,240,200,0.6)'},
+  morning:{
+    sky:'linear-gradient(180deg,#c8e4f0 0%,#d8eef8 18%,#eaf6fe 38%,#f4fcf8 56%,#dcf0dc 72%,#88bc80 86%,#4a8450 100%)',
+    hillBg:"#2c6032", hillMid:"#3a7040", hillFg:"#4c8050",
+    ground:'linear-gradient(180deg,#4c8050 0%,#2e4e2e 100%)',
+    divider:'rgba(50,110,50,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    stars:0, moon:0, sun:0.85, clouds:0.65,
+    legend:{bg:'rgba(255,255,255,0.82)',border:'rgba(80,140,70,0.20)',color:'rgba(30,70,30,0.72)'},
   },
-  day:{
-    sky:'linear-gradient(180deg,#4a9ad4 0%,#74b8e8 20%,#a0d0f0 40%,#c8e8f8 58%,#d8f0e0 72%,#4a8a5a 88%,#2e5e38 100%)',
-    hillBg:"#2a5a38", hillMid:"#357040", hillFg:"#407848",
-    ground:'linear-gradient(180deg,#407848 0%,#2a5030 100%)',
-    divider:'rgba(80,140,80,0.14)', deptLabel:'rgba(20,60,30,0.55)',
-    stars:0, moon:0, sun:1, clouds:1,
-    legend:{bg:'rgba(255,255,255,0.82)',border:'rgba(80,140,80,0.2)',color:'rgba(30,70,40,0.7)'},
+  midday:{
+    sky:'linear-gradient(180deg,#b8daf0 0%,#cce8f8 20%,#e4f4fc 40%,#f4fdf8 58%,#e0f4e0 74%,#84bc78 88%,#488448 100%)',
+    hillBg:"#2e6234", hillMid:"#3c7244", hillFg:"#4e8254",
+    ground:'linear-gradient(180deg,#4e8254 0%,#304e32 100%)',
+    divider:'rgba(50,110,50,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    stars:0, moon:0, sun:1, clouds:0.80,
+    legend:{bg:'rgba(255,255,255,0.84)',border:'rgba(80,140,70,0.20)',color:'rgba(30,70,30,0.72)'},
+  },
+  afternoon:{
+    sky:'linear-gradient(180deg,#f0e4c0 0%,#f4eacc 18%,#faf4d8 38%,#faf8ec 56%,#e8f0dc 72%,#84b478 86%,#488448 100%)',
+    hillBg:"#2c5c30", hillMid:"#3a6c3c", hillFg:"#4a7c4c",
+    ground:'linear-gradient(180deg,#4a7c4c 0%,#2e4a2e 100%)',
+    divider:'rgba(50,100,45,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    stars:0, moon:0, sun:0.70, clouds:0.50,
+    legend:{bg:'rgba(255,255,255,0.82)',border:'rgba(80,130,60,0.18)',color:'rgba(30,70,30,0.72)'},
   },
   dusk:{
-    sky:'linear-gradient(180deg,#1a1a3a 0%,#3a2060 15%,#c03030 35%,#e06028 50%,#f09040 62%,#c07848 74%,#3a5830 88%,#203020 100%)',
-    hillBg:"#1e2a22", hillMid:"#283830", hillFg:"#324838",
-    ground:'linear-gradient(180deg,#324838 0%,#1e2c22 100%)',
-    divider:'rgba(255,140,80,0.10)', deptLabel:'rgba(255,220,180,0.45)',
-    stars:0.1, moon:0.1, sun:0.3, clouds:0.2,
-    legend:{bg:'rgba(10,8,6,0.78)',border:'rgba(255,140,60,0.15)',color:'rgba(255,210,160,0.55)'},
+    sky:'linear-gradient(180deg,#e4c0a0 0%,#eab880 14%,#f0c87c 28%,#f8d8a8 46%,#f0dcc8 60%,#cce0b4 76%,#78a860 88%,#406038 100%)',
+    hillBg:"#2a5030", hillMid:"#386038", hillFg:"#487040",
+    ground:'linear-gradient(180deg,#487040 0%,#2c4828 100%)',
+    divider:'rgba(60,100,40,0.10)', deptLabel:'rgba(30,60,20,0.52)',
+    stars:0.15, moon:0.25, sun:0.35, clouds:0.30,
+    legend:{bg:'rgba(255,250,240,0.82)',border:'rgba(100,120,50,0.18)',color:'rgba(40,60,20,0.72)'},
+  },
+  night:{
+    sky:'linear-gradient(180deg,#b8c8d8 0%,#c2d0e2 20%,#ccd8e8 36%,#d2dce8 52%,#d6e4da 68%,#8ab890 84%,#487850 100%)',
+    hillBg:"#2a4838", hillMid:"#344c3e", hillFg:"#3e5844",
+    ground:'linear-gradient(180deg,#3e5844 0%,#263828 100%)',
+    divider:'rgba(50,80,60,0.12)', deptLabel:'rgba(20,50,30,0.52)',
+    stars:0.55, moon:0.75, sun:0, clouds:0.15,
+    legend:{bg:'rgba(255,255,255,0.78)',border:'rgba(70,100,80,0.20)',color:'rgba(20,50,30,0.72)'},
   },
 };
 
@@ -5111,8 +5163,15 @@ export default function SproutAIGarden() {
     {id:"wishlist",  label:"Seeds",     Icon:IcoWishlist},
   ];
 
+  const tod = getTimeOfDayStyle();
+
   return (
-    <div style={{fontFamily:FF,background:C.mushroom100,minHeight:"100vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{fontFamily:FF,background:tod.bg,minHeight:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",position:"relative",transition:"background 2s ease"}}>
+
+      {/* Time-of-day glow — sits behind all content */}
+      {tod.glow&&(
+        <div style={{position:"fixed",inset:0,background:tod.glow,opacity:tod.glowOpacity,pointerEvents:"none",zIndex:0}}/>
+      )}
 
       {/* ── Top Navbar ── */}
       <div style={{padding:"0 24px",zIndex:30,position:"relative",background:C.white,borderBottom:"1px solid "+C.mushroom200,display:"flex",alignItems:"center",justifyContent:"space-between",height:56,flexShrink:0,boxShadow:DS.shadow.sm}}>
