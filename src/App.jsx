@@ -917,220 +917,157 @@ const getToolCounts = (projects) => {
     .slice(0, 6);
 };
 
-// ── Executive Dashboard ───────────────────────────────────────────────────────
-const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden, onNavigateWishlist}) => {
-  const [rankMode, setRankMode] = useState("builtBy"); // "builtBy" | "builtFor"
+// ── Overview Dashboard ────────────────────────────────────────────────────────
+const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavigateGarden, onNavigateWishlist }) => {
+  // ── Animation state ─────────────────────────────────────────────────────────
+  const [counts, setCounts]         = useState({ seeds:0, seedling:0, nursery:0, sprout:0, bloom:0, thriving:0 });
+  const [barsReady, setBarsReady]   = useState(false);
+  const [hoverTile, setHoverTile]   = useState(null);
+  const [clickTile, setClickTile]   = useState(null);
 
-  const launched   = projects.filter(p=>p.stage==="bloom"||p.stage==="thriving");
-  const inProgress = projects.filter(p=>p.stage==="sprout"||p.stage==="seedling");
-  const wilting    = projects.filter(p=>p.lastUpdated>30);
-  const totalImpacts = launched.filter(p=>p.impact!=="TBD");
-  const spotlight  = launched.sort((a,b)=>a.lastUpdated-b.lastUpdated)[0];
-  const healthPct  = Math.round((launched.length/Math.max(projects.length,1))*100);
+  // ── Computed data ────────────────────────────────────────────────────────────
+  const unclaimedSeeds = wishes.filter(w => !w.claimedBy && !w.fulfilledBy);
+  const seedCount      = unclaimedSeeds.length;
+  const highVoteSeeds  = unclaimedSeeds.filter(w => w.upvoters.length >= 4).length;
 
-  // Seeds = wishes (not a garden stage)
-  const seedCount = wishes.length;
+  const pipeline = {
+    seeds:    wishes.filter(w => !w.fulfilledBy).length,
+    seedling: projects.filter(p => p.stage === "seedling").length,
+    nursery:  projects.filter(p => p.stage === "nursery").length,
+    sprout:   projects.filter(p => p.stage === "sprout").length,
+    bloom:    projects.filter(p => p.stage === "bloom").length,
+    thriving: projects.filter(p => p.stage === "thriving").length,
+  };
 
-  const deptStats = Object.keys(DEPT_ZONES).map(dept=>{
-    const ps = rankMode==="builtBy"
-      ? projects.filter(p=>p.builtBy===dept)
-      : projects.filter(p=>p.builtFor===dept);
-    const sc = ps.reduce((s,p)=>s+STAGE_ORDER[p.stage],0);
-    const la = ps.filter(p=>p.stage==="bloom"||p.stage==="thriving").length;
-    return {dept,total:ps.length,launched:la,score:sc};
-  }).sort((a,b)=>b.score-a.score);
+  // lastUpdated = days since last update; ascending sort puts lowest (most recent) at [0] ✓
+  const spotlight = projects
+    .filter(p => p.stage === "thriving")
+    .sort((a, b) => a.lastUpdated - b.lastUpdated)[0] || null;
+
+  const activityFeed = getActivityFeed(projects, wishes);
+
+  const topBuilders = (() => {
+    const map = {};
+    for (const p of projects) {
+      if (p.stage === "seedling") continue;
+      const key = p.builderEmail || p.builder;
+      if (!map[key]) map[key] = { name: p.builder || p.builderEmail, email: p.builderEmail, count: 0 };
+      map[key].count++;
+    }
+    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 4);
+  })();
+
+  const topSeeds = wishes
+    .filter(w => w.upvoters.length > 0)
+    .sort((a, b) => b.upvoters.length - a.upvoters.length)
+    .slice(0, 3);
+
+  const toolCounts = getToolCounts(projects);
+
+  const deptCoverage = Object.keys(DEPT_ZONES).map(dept => ({
+    dept,
+    count: projects.filter(p => p.builtBy === dept).length,
+  })).sort((a, b) => b.count - a.count);
+
+  // Action zone data
+  const myProjects    = projects.filter(p => p.builderEmail === authUser?.email);
+  const nurseryQueue  = projects.filter(p => p.stage === "nursery")
+    .sort((a, b) => {
+      const aMs = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+      const bMs = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+      return aMs - bMs; // ASC — oldest first
+    });
+  const stalePlants   = projects
+    .filter(p => p.lastUpdated > 30)
+    .sort((a, b) => b.lastUpdated - a.lastUpdated);
+  const seedsToClaim  = wishes
+    .filter(w => !w.claimedBy && !w.fulfilledBy)
+    .sort((a, b) => b.upvoters.length - a.upvoters.length)
+    .slice(0, 3);
+
+  const healthPct = Math.round(
+    (projects.filter(p => p.stage === "bloom" || p.stage === "thriving").length /
+      Math.max(projects.length, 1)) * 100
+  );
+
+  // ── CountUp animation (200ms delay, 600ms duration) ─────────────────────────
+  useEffect(() => {
+    const targets = { ...pipeline };
+    const steps = 600 / 16;
+    const cur = { seeds: 0, seedling: 0, nursery: 0, sprout: 0, bloom: 0, thriving: 0 };
+    let timerRef = null;
+    const delay = setTimeout(() => {
+      timerRef = setInterval(() => {
+        let done = true;
+        const next = { ...cur };
+        for (const key of Object.keys(targets)) {
+          const step = targets[key] / steps;
+          next[key] = Math.min(cur[key] + step, targets[key]);
+          if (next[key] < targets[key]) done = false;
+          cur[key] = next[key];
+        }
+        setCounts({
+          seeds: Math.round(next.seeds), seedling: Math.round(next.seedling),
+          nursery: Math.round(next.nursery), sprout: Math.round(next.sprout),
+          bloom: Math.round(next.bloom), thriving: Math.round(next.thriving),
+        });
+        if (done) clearInterval(timerRef);
+      }, 16);
+    }, 200);
+    return () => { clearTimeout(delay); if (timerRef) clearInterval(timerRef); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Bar grow animation (300ms delay) ─────────────────────────────────────────
+  useEffect(() => {
+    const t = setTimeout(() => setBarsReady(true), 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ── Hero greeting ────────────────────────────────────────────────────────────
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
+
+  // ── Dot color map for activity feed ─────────────────────────────────────────
+  const FEED_DOTS = {
+    thriving: C.kangkong500,
+    approved: C.blueberry500,
+    nursery:  C.mango500,
+    seed:     C.ubas500,
+    claimed:  C.mushroom300,
+  };
+
+  const ageLabel = (days) => days === 0 ? "today" : days === 1 ? "1d ago" : `${days}d ago`;
+
+  // ── Tile config ──────────────────────────────────────────────────────────────
+  const TILE_CFG = [
+    { key:"seeds",    label:"Seeds",    sub:"Ideas waiting to be built",  bg:C.mushroom50,  border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateWishlist?.() },
+    { key:"seedling", label:"Seedling", sub:STAGE_DESC.seedling,          bg:C.white,       border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateGarden?.("board","seedling") },
+    { key:"nursery",  label:"Nursery",  sub:STAGE_DESC.nursery,           bg:C.mango50,     border:C.mango500,   countColor:C.mango600,   nav:()=>onNavigateGarden?.("board","nursery") },
+    { key:"sprout",   label:"Sprout",   sub:STAGE_DESC.sprout,            bg:C.white,       border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateGarden?.("board","sprout") },
+    { key:"bloom",    label:"Bloom",    sub:STAGE_DESC.bloom,             bg:C.white,       border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateGarden?.("board","bloom") },
+    { key:"thriving", label:"Thriving", sub:STAGE_DESC.thriving,          bg:C.kangkong50,  border:C.kangkong200, countColor:C.kangkong700, nav:()=>onNavigateGarden?.("board","thriving") },
+  ];
 
   return (
-    <div style={{padding:"28px 32px",background:C.mushroom50,minHeight:"100%",overflowY:"auto"}}>
-      <div style={{marginBottom:28}}>
-        <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>AI Program Overview</div>
-        <div style={{fontFamily:FF,fontSize:14,color:C.mushroom500}}>
-          Live snapshot of Sprout's AI ecosystem &middot; {projects.length} active projects
+    <div style={{ padding:"28px 32px", background:C.mushroom100, minHeight:"100%", overflowY:"auto", fontFamily:FF }}>
+      <style>{OVERVIEW_KF}</style>
+
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom:20, animation:"fadeUp 0.4s ease both" }}>
+        <div style={{ fontSize:19, fontWeight:700, color:C.mushroom900, letterSpacing:"-0.01em", marginBottom:3 }}>
+          {greeting}, {firstName}
+        </div>
+        <div style={{ fontSize:12, color:C.mushroom500 }}>
+          Live snapshot of Sprout&rsquo;s AI ecosystem &middot; {projects.length} active plants across PH &amp; TH
         </div>
       </div>
 
-      {/* Key metrics — 6 tiles: Seeds + 5 pipeline stages */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>
-        {[
-          {label:"Seeds",    value:seedCount,                                                 sub:"Ideas waiting to be built",  tone:"neutral",    plant:<WishSeed size={28} color={C.mushroom500}/>,  nav:()=>onNavigateWishlist?.()},
-          {label:"Seedling", value:projects.filter(p=>p.stage==="seedling").length,           sub:STAGE_DESC.seedling,  tone:"neutral",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","seedling")},
-          {label:"Nursery",  value:projects.filter(p=>p.stage==="nursery").length,            sub:STAGE_DESC.nursery,   tone:"pending",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","nursery")},
-          {label:"Sprout",   value:projects.filter(p=>p.stage==="sprout").length,             sub:STAGE_DESC.sprout,    tone:"plain",      plant:<PlantGrowing size={32}/>,                  nav:()=>onNavigateGarden?.("board","sprout")},
-          {label:"Bloom",    value:projects.filter(p=>p.stage==="bloom").length,              sub:STAGE_DESC.bloom,     tone:"success",    plant:<PlantBlooming size={32}/>,                 nav:()=>onNavigateGarden?.("board","bloom")},
-          {label:"Thriving", value:projects.filter(p=>p.stage==="thriving").length,           sub:STAGE_DESC.thriving,  tone:"info",       plant:<PlantTree size={32}/>,                     nav:()=>onNavigateGarden?.("board","thriving")},
-        ].map((s,i) => (
-          <Card key={i} tone={s.tone} hoverable onClick={s.nav} style={{textAlign:"center",padding:"14px 10px",cursor:"pointer"}}>
-            <div style={{display:"flex",justifyContent:"center",marginBottom:6}}>{s.plant}</div>
-            <div style={{fontFamily:FF,fontSize:26,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
-            <div style={{fontFamily:FF,fontSize:11,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
-            <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
-            <div style={{fontFamily:FF,fontSize:10,color:C.kangkong500,marginTop:5,fontWeight:600}}>View all →</div>
-          </Card>
-        ))}
-      </div>
+      {/* ── PIPELINE_TILES_PLACEHOLDER ── Task 3 fills this section */}
+      {/* PIPELINE_TILES_PLACEHOLDER */}
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
-        {spotlight&&(
-          <Card tone="success" style={{gridColumn:"1/-1"}} hoverable onClick={()=>onSelectProject(spotlight)}>
-            <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
-              <PlantBlooming size={64} wilting={false}/>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:FF,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1.2,color:C.kangkong600,marginBottom:4}}>Project Spotlight</div>
-                <div style={{fontFamily:FF,fontSize:20,fontWeight:700,color:C.mushroom900,marginBottom:6}}>{spotlight.name}</div>
-                <div style={{fontFamily:FF,fontSize:13,color:C.mushroom600,lineHeight:1.5,marginBottom:8}}>{spotlight.description}</div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <StageBadge stage={spotlight.stage}/>
-                  <CapBadge cap={spotlight.capability}/>
-                  <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500,display:"flex",alignItems:"center",gap:4}}>
-                    Built by <strong style={{color:getDeptColor(spotlight.builtBy)}}>{spotlight.builtBy}</strong>{spotlight.country&&<>&nbsp;<CountryBadge country={spotlight.country}/></>}
-                    &nbsp;→ for <strong style={{color:getDeptColor(spotlight.builtFor)}}>{spotlight.builtFor}</strong>
-                  </span>
-                </div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:FF,fontSize:36,fontWeight:800,color:C.kangkong600,lineHeight:1}}>{spotlight.impactNum}</div>
-                <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:2}}>{spotlight.impact}</div>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Rankings with toggle */}
-        <Card tone="plain" style={{gridColumn:"1/2"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontFamily:FF,fontWeight:700,fontSize:14,color:C.mushroom800,display:"flex",alignItems:"center",gap:6}}>
-              <IcoImpact size={16} color={C.kangkong600}/> Rankings
-            </div>
-            <div style={{display:"flex",background:C.mushroom100,borderRadius:DS.radius.md,padding:2,gap:1}}>
-              {[{k:"builtBy",l:"Built By"},{k:"builtFor",l:"Built For"},{k:"builder",l:"Builder"}].map(opt=>(
-                <button key={opt.k} onClick={()=>setRankMode(opt.k)} style={{
-                  padding:"4px 11px",border:"none",cursor:"pointer",
-                  fontFamily:FF,fontSize:11,fontWeight:600,
-                  borderRadius:DS.radius.sm,transition:"all 0.15s",
-                  background:rankMode===opt.k?C.white:"transparent",
-                  color:rankMode===opt.k?C.kangkong600:C.mushroom500,
-                  boxShadow:rankMode===opt.k?DS.shadow.sm:"none",
-                }}>{opt.l}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{fontFamily:FF,fontSize:11,color:C.mushroom400,marginBottom:12,fontStyle:"italic"}}>
-            {rankMode==="builtBy" ? "Which team owns/creates the most AI projects"
-             : rankMode==="builtFor" ? "Which team benefits most from AI projects"
-             : "Which Farmer has built the most AI projects"}
-          </div>
-
-          {rankMode==="builder" ? (()=>{
-            // Build per-person stats
-            const builderMap = {};
-            projects.forEach(p => {
-              if (!p.builder) return;
-              if (!builderMap[p.builder]) builderMap[p.builder] = {name:p.builder, total:0, launched:0, team:p.builtBy, country:p.country};
-              builderMap[p.builder].total++;
-              if (p.stage==="bloom"||p.stage==="thriving") builderMap[p.builder].launched++;
-            });
-            const builders = Object.values(builderMap).sort((a,b)=>b.total-a.total);
-            const maxTotal = builders[0]?.total||1;
-            return builders.slice(0,6).map((b,i)=>{
-              const dc = DEPT_COLORS[b.team]||C.mushroom400;
-              return (
-                <div key={b.name} style={{marginBottom:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400,minWidth:16}}>{["1st","2nd","3rd"][i]||i+1}</span>
-                      <div style={{width:24,height:24,borderRadius:"50%",background:dc,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                        <span style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.white}}>{b.name.split(" ").map(w=>w[0]).join("").slice(0,2)}</span>
-                      </div>
-                      <div>
-                        <span style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom800}}>{b.name}</span>
-                        <span style={{fontFamily:FF,fontSize:10,color:dc,marginLeft:6,fontWeight:600}}>{b.team}</span>
-                        <CountryBadge country={b.country}/>
-                      </div>
-                    </div>
-                    <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{b.launched} launched · {b.total} total</span>
-                  </div>
-                  <ProgressBar value={(b.total/maxTotal)*100} color={dc} height={6}/>
-                </div>
-              );
-            });
-          })()
-          : deptStats.slice(0,6).map((d,i)=>{
-            const dc=DEPT_COLORS[d.dept];
-            const maxScore=deptStats[0].score||1;
-            return (
-              <div key={d.dept} style={{marginBottom:14}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400,minWidth:16}}>{["1st","2nd","3rd"][i]||i+1}</span>
-                    <div style={{width:8,height:8,borderRadius:"50%",background:dc}}/>
-                    <span style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom800}}>{d.dept}</span>
-                  </div>
-                  <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{d.launched} launched · {d.total} total</span>
-                </div>
-                <ProgressBar value={(d.score/maxScore)*100} color={dc} height={6}/>
-              </div>
-            );
-          })}
-        </Card>
-
-        <Card tone="plain" style={{gridColumn:"2/3"}}>
-          <div style={{fontFamily:FF,fontWeight:700,fontSize:14,color:C.mushroom800,marginBottom:16,display:"flex",alignItems:"center",gap:6}}>
-            <IcoImpact size={16} color={C.kangkong600}/> Impact Highlights
-          </div>
-          {totalImpacts.slice(0,5).map(p=>{
-            const dc=getDeptColor(p.builtBy);
-            return (
-              <div key={p.id} onClick={()=>onSelectProject(p)} style={{
-                display:"flex",alignItems:"center",gap:12,marginBottom:10,
-                padding:"10px 12px",borderRadius:DS.radius.lg,
-                background:C.mushroom50,border:"1px solid "+C.mushroom200,
-                borderLeft:"3px solid "+dc,cursor:"pointer",transition:"all 0.15s",
-              }}
-                onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
-                onMouseOut={e=>e.currentTarget.style.background=C.mushroom50}
-              >
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom900}}>{p.name}</div>
-                  <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>
-                    {p.builtBy} → {p.builtFor}
-                  </div>
-                </div>
-                <div style={{fontFamily:FF,fontSize:18,fontWeight:800,color:dc}}>{p.impactNum}</div>
-              </div>
-            );
-          })}
-        </Card>
-      </div>
-
-      {/* Tools in Use */}
-      {(() => {
-        const counts = TOOLS
-          .map(t => ({tool:t, count:projects.filter(p=>p.toolUsed?.includes(t)).length}))
-          .filter(x=>x.count>0)
-          .sort((a,b)=>b.count-a.count);
-        const max = counts[0]?.count||1;
-        if(!counts.length) return null;
-        return (
-          <Card tone="plain">
-            <div style={{fontFamily:FF,fontWeight:700,fontSize:14,color:C.mushroom800,marginBottom:16,display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:15}}>⚒</span> Tools in Use
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:"10px 24px"}}>
-              {counts.map(({tool,count})=>(
-                <div key={tool}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700}}>{tool}</span>
-                    <span style={{fontFamily:FF,fontSize:11,color:C.mushroom400}}>{count} project{count!==1?"s":""}</span>
-                  </div>
-                  <div style={{height:6,background:C.mushroom100,borderRadius:DS.radius.full,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:(count/max*100)+"%",background:C.kangkong400,borderRadius:DS.radius.full}}/>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        );
-      })()}
+      {/* ── BODY_PLACEHOLDER ── Tasks 4-8 fill this section */}
+      {/* BODY_PLACEHOLDER */}
 
     </div>
   );
@@ -4362,7 +4299,7 @@ export default function SproutAIGarden() {
       {/* ── Main content + Detail Panel ── */}
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-          {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
+          {view==="dashboard" && <OverviewDashboard projects={projects} wishes={wishes} authUser={authUser} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
           {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish}/>}
           {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
