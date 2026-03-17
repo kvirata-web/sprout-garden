@@ -3721,65 +3721,70 @@ export default function SproutAIGarden() {
     const timeout = setTimeout(() => setAuthLoading(false), 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      clearTimeout(timeout);
+      // Do NOT clear the timeout here — let it always fire as a guaranteed safety net.
+      // If this callback throws or hangs for any reason, the 5s fallback still unblocks the UI.
+      try {
+        if (!session) {
+          setAuthUser(null);
+          setAuthLoading(false);
+          setAuthError("");
+          return;
+        }
 
-      if (!session) {
-        setAuthUser(null);
+        const email   = session.user?.email;
+        if (!email) { setAuthLoading(false); return; }
+
+        const domain  = email.split("@")[1];
+        const country = COUNTRY_MAP[domain];
+
+        if (!country) {
+          supabase.auth.signOut();
+          setAuthError("Only @sprout.ph and @sproutsolutions.io accounts can access Grove.");
+          setAuthLoading(false);
+          return;
+        }
+
+        const meta        = session.user.user_metadata || {};
+        const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
+        const displayName = email.split("@")[0];
+
+        // Immediately unblock the UI — no DB await before this line
+        setAuthUser({ email, firstName, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false });
         setAuthLoading(false);
-        setAuthError("");
-        return;
-      }
 
-      const email   = session.user.email;
-      const domain  = email.split("@")[1];
-      const country = COUNTRY_MAP[domain];
-
-      if (!country) {
-        // Non-Sprout account — sign out and show error (fire-and-forget)
-        supabase.auth.signOut();
-        setAuthError("Only @sprout.ph and @sproutsolutions.io accounts can access Grove.");
-        setAuthLoading(false);
-        return;
-      }
-
-      const meta        = session.user.user_metadata || {};
-      const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
-      const displayName = email.split("@")[0];
-
-      // Immediately unblock the UI with a minimal profile — no DB await here
-      setAuthUser({ email, firstName, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false });
-      setAuthLoading(false);
-
-      // Enrich with real DB profile in the background (non-blocking)
-      supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
-        .then(async ({ data: existing }) => {
-          if (existing) {
-            if (!existing.first_name && firstName) {
-              await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
+        // Enrich with real DB profile in the background (non-blocking)
+        supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
+          .then(async ({ data: existing }) => {
+            if (existing) {
+              if (!existing.first_name && firstName) {
+                await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
+              }
+              setAuthUser({
+                email: existing.email,
+                firstName: existing.first_name || firstName || null,
+                displayName: existing.display_name || displayName,
+                country: existing.country,
+                isAdmin: existing.is_admin || false,
+                isApprover: existing.is_approver || false,
+                hasDismissedWelcome: existing.has_dismissed_welcome || false,
+              });
+            } else {
+              await supabase.from("profiles").insert({
+                id: session.user.id,
+                email,
+                display_name: displayName,
+                first_name: firstName,
+                country,
+                is_admin: false,
+                is_approver: false,
+              });
             }
-            setAuthUser({
-              email: existing.email,
-              firstName: existing.first_name || firstName || null,
-              displayName: existing.display_name || displayName,
-              country: existing.country,
-              isAdmin: existing.is_admin || false,
-              isApprover: existing.is_approver || false,
-              hasDismissedWelcome: existing.has_dismissed_welcome || false,
-            });
-          } else {
-            // First login — create profile row
-            await supabase.from("profiles").insert({
-              id: session.user.id,
-              email,
-              display_name: displayName,
-              first_name: firstName,
-              country,
-              is_admin: false,
-              is_approver: false,
-            });
-          }
-        })
-        .catch(e => console.warn("Profile load/create error:", e));
+          })
+          .catch(e => console.warn("Profile load/create error:", e));
+      } catch (e) {
+        console.error("Auth state change error:", e);
+        setAuthLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
