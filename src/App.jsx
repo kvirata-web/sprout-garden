@@ -795,7 +795,7 @@ const Badge = ({label,tone="neutral",size="sm"}) => {
 };
 
 const StageBadge = ({stage}) => {
-  const sc = STAGE_COLORS[stage];
+  const sc = STAGE_COLORS[stage] || STAGE_COLORS.seedling;
   return (
     <span style={{
       display:"inline-flex",alignItems:"center",gap:6,
