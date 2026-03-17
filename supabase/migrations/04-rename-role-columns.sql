@@ -15,7 +15,8 @@ RETURNS boolean AS $$
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Drop stale is_execom() function (column it referenced no longer exists after rename)
+-- Drop the policy that depends on is_execom() FIRST, then drop the function
+DROP POLICY IF EXISTS "Own or admin update" ON projects;
 DROP FUNCTION IF EXISTS is_execom();
 
 -- Recreate is_approver() helper (previously is_execom())
@@ -28,9 +29,7 @@ RETURNS boolean AS $$
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Update the projects RLS policy that called is_execom()
--- (Policy "Own or admin update" was created in migration 03)
-DROP POLICY IF EXISTS "Own or admin update" ON projects;
+-- Recreate the policy using the new function names
 CREATE POLICY "Own or admin update" ON projects
   FOR UPDATE USING (
     auth.email() = builder_email
