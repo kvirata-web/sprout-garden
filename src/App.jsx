@@ -1286,8 +1286,51 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
             </div>{/* end action zone flex */}
           </div>{/* end action zone section */}
 
-          {/* ── ACTIVITY_FEED_PLACEHOLDER ── Task 5 fills this */}
-          {/* ACTIVITY_FEED_PLACEHOLDER */}
+          {/* ── Activity feed ────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.15s both" }}>
+  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:8 }}>
+    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500 }}>
+      What&rsquo;s Happening
+    </div>
+    <div style={{ fontSize:9, color:C.mushroom400 }}>Loaded just now</div>
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, overflow:"hidden" }}>
+    {activityFeed.length === 0 ? (
+      <div style={{ padding:"14px", fontSize:12, color:C.mushroom400 }}>No recent activity yet.</div>
+    ) : activityFeed.map((ev, i) => (
+      <div key={ev.id}
+        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+        style={{
+          display:"flex", alignItems:"center", gap:10, padding:"8px 12px",
+          borderBottom: i < activityFeed.length - 1 ? `0.5px solid ${C.mushroom100}` : "none",
+          transition:"all 0.15s",
+          animation:`slideIn 0.25s ease ${i * 0.05}s both`,
+        }}
+      >
+        <div style={{ width:7, height:7, borderRadius:"50%", background:FEED_DOTS[ev.type] || C.mushroom300, flexShrink:0 }}/>
+        <div style={{ flex:1, fontSize:12, color:C.mushroom800, lineHeight:1.4 }}>{ev.text}</div>
+        <div style={{ fontSize:10, color:C.mushroom400, flexShrink:0 }}>{ageLabel(ev.age)}</div>
+      </div>
+    ))}
+  </div>
+
+  {/* Seeds nudge */}
+  {seedCount > 0 && (
+    <div
+      onMouseEnter={e => { e.currentTarget.style.background="#f3f0ff"; e.currentTarget.style.transform="translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background=C.ubas100; e.currentTarget.style.transform="none"; }}
+      onClick={() => onNavigateWishlist?.()}
+      style={{ marginTop:8, padding:"10px 14px", background:C.ubas100, border:`0.5px solid ${C.ubas400}`, borderRadius:DS.radius.md, display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", transition:"all 0.15s" }}
+    >
+      <span style={{ fontSize:11, color:C.mushroom700 }}>
+        <strong style={{ color:C.ubas500 }}>{seedCount}</strong> Seeds unclaimed
+        {highVoteSeeds > 0 && ` — ${highVoteSeeds} with 4+ upvotes`}
+      </span>
+      <span style={{ fontSize:11, fontWeight:600, color:C.ubas500 }}>Browse Seeds →</span>
+    </div>
+  )}
+</div>
 
           {/* ── TOOLS_PLACEHOLDER ── Task 7 fills this */}
           {/* TOOLS_PLACEHOLDER */}
