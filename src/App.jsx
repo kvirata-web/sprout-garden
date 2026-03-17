@@ -2658,69 +2658,104 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
 
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
-function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGarden, onReviewNursery, firstName, isApprover}) {
-  const greeting = firstName ? `Welcome, ${firstName}!` : "Welcome to Grove";
+function WelcomeModal({ onExplore, onDismissPermanently, firstName, isApprover, country }) {
+  const roleName  = isApprover ? "Approver" : "Planter";
+  const roleEmoji = isApprover ? "🌿" : "🌱";
+  const teamLabel = country === "PH" ? "PH team" : "TH team";
+  const nudge     = isApprover ? "Review plants in the Nursery" : "Claim a seed to build";
+
+  const stageRows = [
+    { key:"seedling", emoji:"🌱", label:"Seedling", desc:"Someone is actively building",      bg:STAGE_COLORS.seedling.bg, text:STAGE_COLORS.seedling.text },
+    { key:"nursery",  emoji:"🌿", label:"Nursery",  desc:"Under leadership review",           bg:STAGE_COLORS.nursery.bg,  text:STAGE_COLORS.nursery.text  },
+    { key:"sprout",   emoji:"🌿", label:"Sprout",   desc:"Approved, actively developing",     bg:STAGE_COLORS.sprout.bg,   text:STAGE_COLORS.sprout.text   },
+    { key:"bloom",    emoji:"🌸", label:"Bloom",    desc:"Live, in user testing",             bg:STAGE_COLORS.bloom.bg,    text:STAGE_COLORS.bloom.text    },
+    { key:"thriving", emoji:"🌳", label:"Thriving", desc:"Delivering measurable value",       bg:STAGE_COLORS.thriving.bg, text:STAGE_COLORS.thriving.text },
+  ];
+
   return (
-    <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.6)",backdropFilter:"blur(8px)"}}>
-      <div style={{background:C.white,borderRadius:DS.radius.xl,padding:36,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
-        {/* Header */}
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:36,marginBottom:12,lineHeight:1}}>🌿</div>
-          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>{greeting}</div>
-          <div style={{fontFamily:FF,fontSize:14,color:C.mushroom600,lineHeight:1.6}}>
-            AI tools are being built across Sprout — but no one knows what exists. Grove fixes that.
+    <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.65)",backdropFilter:"blur(8px)"}}>
+      <div style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,overflow:"hidden",animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
+
+        {/* ── Dark green header ── */}
+        <div style={{background:"#14532d",padding:"28px 24px 24px",position:"relative",textAlign:"center"}}>
+          {/* Skip — session-only dismiss */}
+          <button onClick={onExplore}
+            style={{position:"absolute",top:14,right:16,background:"none",border:"none",color:"rgba(255,255,255,0.65)",fontFamily:FF,fontSize:13,cursor:"pointer",padding:"4px 8px",borderRadius:DS.radius.sm,transition:"color 0.15s"}}
+            onMouseOver={e=>e.currentTarget.style.color="#fff"}
+            onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,0.65)"}
+          >Skip</button>
+          {/* Logo */}
+          <div style={{fontSize:32,marginBottom:10,lineHeight:1}}>🌿</div>
+          {/* Grove + Beta pill */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}}>
+            <span style={{fontFamily:FF,fontSize:26,fontWeight:800,color:"#fff"}}>Grove</span>
+            <span style={{fontFamily:FF,fontSize:11,fontWeight:600,background:"rgba(255,255,255,0.18)",color:"rgba(255,255,255,0.88)",borderRadius:DS.radius.full,padding:"3px 9px",letterSpacing:0.3}}>Beta</span>
+          </div>
+          {/* Tagline */}
+          <div style={{fontFamily:FF,fontSize:13,color:"rgba(255,255,255,0.80)",lineHeight:1.65,maxWidth:340,margin:"0 auto"}}>
+            Every thriving AI tool started as a seed. Grove is where Sprout plants, tends, and grows its AI work — together.
           </div>
         </div>
-        {/* Action cards */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
-          {/* Card 1: Plant a Seed */}
-          <button onClick={onPlantSeed} style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
-            onMouseOver={e=>{e.currentTarget.style.background=C.kangkong100;e.currentTarget.style.borderColor=C.kangkong400;}}
-            onMouseOut={e=>{e.currentTarget.style.background=C.kangkong50;e.currentTarget.style.borderColor=C.kangkong200;}}
-          >
-            <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌱</span>
-            <div>
-              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong700,marginBottom:3}}>Plant a Seed</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Submit an AI idea you think Sprout needs. The team can vote on it, someone can claim it, and it might get built.</div>
+
+        {/* ── Body ── */}
+        <div style={{padding:"20px 24px 24px"}}>
+
+          {/* Role pill */}
+          <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:C.mushroom100,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.full,padding:"8px 16px",flexWrap:"wrap",justifyContent:"center"}}>
+              <span style={{fontSize:15}}>{roleEmoji}</span>
+              <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom800}}>{roleName}</span>
+              <span style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>· {teamLabel}</span>
+              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400}}>· {nudge}</span>
             </div>
-          </button>
-          {/* Card 2: Add to the Garden */}
-          <button onClick={onAddToGarden} style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
-            onMouseOver={e=>{e.currentTarget.style.background=C.mushroom100;e.currentTarget.style.borderColor=C.mushroom300;}}
-            onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom200;}}
-          >
-            <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌾</span>
-            <div>
-              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to the Garden</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Log an AI tool you're building or already shipped. Don't let good work go unseen.</div>
+          </div>
+
+          {/* Section label */}
+          <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mushroom500,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}}>How ideas grow</div>
+
+          {/* Stage list */}
+          <div style={{border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg,overflow:"hidden",marginBottom:16}}>
+            {/* Seed row */}
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:C.mushroom50,borderBottom:"1px solid "+C.mushroom200}}>
+              <span style={{fontSize:15,flexShrink:0}}>🌰</span>
+              <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,flexShrink:0}}>Seed</span>
+              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom500,flex:1}}>An idea for a project or tool</span>
+              <span style={{display:"flex",alignItems:"center",gap:3,fontFamily:FF,fontSize:11,color:C.blueberry500,flexShrink:0,opacity:0.85}}>overlap check 🔍</span>
             </div>
-          </button>
-          {/* Card 3: Review plants — Approver only */}
-          {isApprover && (
-            <button onClick={onReviewNursery} style={{background:C.mango50,border:"1.5px solid "+C.mango200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
-              onMouseOver={e=>{e.currentTarget.style.background=C.mango100;e.currentTarget.style.borderColor=C.mango400;}}
-              onMouseOut={e=>{e.currentTarget.style.background=C.mango50;e.currentTarget.style.borderColor=C.mango200;}}
-            >
-              <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌿</span>
-              <div>
-                <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mango600,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>IN THE NURSERY</div>
-                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mango700,marginBottom:3}}>Review plants</div>
-                <div style={{fontFamily:FF,fontSize:12,color:C.mango600,lineHeight:1.55}}>You have plants waiting for your decision. Don't leave builders hanging.</div>
+            {/* Project stage rows */}
+            {stageRows.map((s, i) => (
+              <div key={s.key} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:s.bg,borderBottom:i < stageRows.length-1 ? "1px solid rgba(0,0,0,0.06)" : "none"}}>
+                <span style={{fontSize:15,flexShrink:0}}>{s.emoji}</span>
+                <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:s.text,flexShrink:0}}>{s.label}</span>
+                <span style={{fontFamily:FF,fontSize:12,color:s.text,opacity:0.8}}>{s.desc}</span>
               </div>
-            </button>
-          )}
-        </div>
-        <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center",marginBottom:20}}>
-          Start by exploring what's already growing — or plant your first seed.
-        </div>
-        {/* Buttons */}
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          <button onClick={onExplore} style={{width:"100%",padding:"11px 0",borderRadius:DS.radius.lg,background:C.kangkong500,border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",transition:"background 0.15s"}}>
-            Start exploring
-          </button>
-          <button onClick={onDismissPermanently} style={{width:"100%",padding:"10px 0",borderRadius:DS.radius.lg,background:"none",border:"1.5px solid "+C.mushroom200,color:C.mushroom500,fontFamily:FF,fontSize:13,fontWeight:500,cursor:"pointer",transition:"all 0.15s"}}>
-            Got it, don't show again
-          </button>
+            ))}
+          </div>
+
+          {/* Builder nudge card */}
+          <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,padding:"12px 14px",marginBottom:20,display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>🌱</span>
+            <span style={{fontFamily:FF,fontSize:12,color:C.kangkong700,lineHeight:1.6}}>You don't need to be an engineer to build. Anyone at Sprout can claim a seed and start growing it.</span>
+          </div>
+
+          {/* Beta note + primary CTA */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:10}}>
+            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,lineHeight:1.5,flex:1}}>
+              Grove is in Beta. Hit <strong style={{color:C.mushroom700}}>?</strong> for help or to learn more about each stage.
+            </div>
+            <button onClick={onExplore}
+              style={{flexShrink:0,padding:"10px 20px",borderRadius:DS.radius.lg,background:"#14532d",border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"background 0.15s"}}
+              onMouseOver={e=>e.currentTarget.style.background="#0f3d21"}
+              onMouseOut={e=>e.currentTarget.style.background="#14532d"}
+            >Take me in →</button>
+          </div>
+
+          {/* Don't show again */}
+          <button onClick={onDismissPermanently}
+            style={{width:"100%",padding:"9px 0",borderRadius:DS.radius.lg,background:"none",border:"1.5px solid "+C.mushroom200,color:C.mushroom500,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.15s"}}
+            onMouseOver={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom300;}}
+            onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.borderColor=C.mushroom200;}}
+          >Don't show again</button>
         </div>
       </div>
     </div>
@@ -4442,11 +4477,9 @@ export default function SproutAIGarden() {
         <WelcomeModal
           onExplore={() => setWelcomeSeen(true)}
           onDismissPermanently={handleDismissWelcomePermanently}
-          onPlantSeed={() => { setWelcomeSeen(true); setView("wishlist"); setShowAddWish(true); }}
-          onAddToGarden={() => { setWelcomeSeen(true); setView("garden"); setShowForm(true); }}
-          onReviewNursery={() => { setWelcomeSeen(true); setView("garden"); }}
           firstName={authUser.firstName}
           isApprover={authUser.isApprover}
+          country={authUser.country}
         />
       )}
       <HelpPanel
