@@ -627,6 +627,65 @@ function PlantTree({size=88, wilting=false}) {
 const PlantMap = {seedling:PlantSprout,nursery:PlantSprout,sprout:PlantGrowing,bloom:PlantBlooming,thriving:PlantTree};
 const GardenSizes = {seedling:{w:26,h:30},nursery:{w:40,h:46},sprout:{w:58,h:66},bloom:{w:74,h:84},thriving:{w:92,h:104}};
 
+// GardenPlant — Option C solid silhouettes at garden scale, botanical colors for dark bg
+function GardenPlant({stage, size=40, wilting=false}) {
+  const op = wilting ? 0.55 : 1;
+  if (stage === "seedling") return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" opacity={op}>
+      <rect x="7.5" y="9" width="1" height="5" rx="0.5" fill="#5a8040"/>
+      <path d="M8 12.5 Q5.5 11 4.5 8.5 C6.5 8 8 10 8 12Z" fill="#7cb56a"/>
+      <path d="M8 12.5 Q10.5 11 11.5 8.5 C9.5 8 8 10 8 12Z" fill="#7cb56a" opacity="0.8"/>
+    </svg>
+  );
+  if (stage === "nursery") return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" opacity={op}>
+      <path d="M5.5 10.5 L6.5 14.5 L9.5 14.5 L10.5 10.5 Z" fill="#c8925a"/>
+      <rect x="5" y="9" width="6" height="2" rx="1" fill="#b07040"/>
+      <rect x="7.5" y="5" width="1" height="4.5" rx="0.5" fill="#5a8040"/>
+      <path d="M8 9 Q5 7.5 4 5 C6.5 5 8 7 8 8.5Z" fill="#7cb56a"/>
+      <path d="M8 9 Q11 7.5 12 5 C9.5 5 8 7 8 8.5Z" fill="#7cb56a" opacity="0.8"/>
+      <path d="M8 7 Q5.5 5.5 5 3 C7 3.5 8 5.5 8 6.5Z" fill="#7cb56a" opacity="0.7"/>
+      <path d="M8 7 Q10.5 5.5 11 3 C9 3.5 8 5.5 8 6.5Z" fill="#7cb56a" opacity="0.6"/>
+    </svg>
+  );
+  if (stage === "sprout") return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" opacity={op}>
+      <rect x="7.5" y="3.5" width="1" height="11" rx="0.5" fill="#3a8040"/>
+      <path d="M8 12 Q4.5 10 3 7 C5 6.5 7.5 8.5 8 11.5Z" fill="#5db868"/>
+      <path d="M8 12 Q11.5 10 13 7 C11 6.5 8.5 8.5 8 11.5Z" fill="#5db868" opacity="0.85"/>
+      <path d="M8 8.5 Q5 7 4 4.5 C6.5 4.5 8 6 8 8Z" fill="#6dc870" opacity="0.8"/>
+      <path d="M8 8.5 Q11 7 12 4.5 C9.5 4.5 8 6 8 8Z" fill="#6dc870" opacity="0.75"/>
+    </svg>
+  );
+  if (stage === "bloom") return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" opacity={op}>
+      <rect x="7.5" y="9" width="1" height="6" rx="0.5" fill="#3a8040"/>
+      <path d="M8 12 Q5 11 3.5 9 C5.5 8.5 8 10 8 11.5Z" fill="#5db868" opacity="0.75"/>
+      <path d="M8 12 Q11 11 12.5 9 C10.5 8.5 8 10 8 11.5Z" fill="#5db868" opacity="0.65"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill="#d884c8" opacity="0.9" transform="rotate(0 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill="#c870b8" opacity="0.75" transform="rotate(60 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill="#d884c8" opacity="0.9" transform="rotate(120 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill="#c870b8" opacity="0.75" transform="rotate(180 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill="#d884c8" opacity="0.9" transform="rotate(240 8 7)"/>
+      <ellipse cx="8" cy="4.5" rx="2.2" ry="4" fill="#c870b8" opacity="0.75" transform="rotate(300 8 7)"/>
+      <circle cx="8" cy="7" r="2.5" fill="#f5d44a"/>
+      <circle cx="8" cy="7" r="1.5" fill="#e8b830"/>
+    </svg>
+  );
+  if (stage === "thriving") return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" opacity={op}>
+      <rect x="6.5" y="9.5" width="3" height="5.5" rx="1" fill="#8a6045"/>
+      <circle cx="5.5" cy="8.5" r="3.5" fill="#3a7845"/>
+      <circle cx="10.5" cy="8.5" r="3.5" fill="#3a7845"/>
+      <circle cx="8" cy="6.5" r="4.5" fill="#4a9858"/>
+      <circle cx="8" cy="4" r="3" fill="#58b06a"/>
+      <circle cx="6.5" cy="3" r="1.5" fill="#6ac87c" opacity="0.7"/>
+      <circle cx="9.5" cy="3.5" r="1.2" fill="#6ac87c" opacity="0.5"/>
+    </svg>
+  );
+  return null;
+}
+
 // Stage icon (small, inline) — Option C: solid silhouettes, readable at any size
 function SIcoSeedling({size,col}) {
   return (
@@ -2289,9 +2348,8 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
       {projects.map((project,idx)=>{
         const{leftPct,topPct,scale}=plantPos(project);
         const visible=isVisible(project);
-        const Plant=PlantMap[project.stage];
         const wilting=project.lastUpdated>60;
-        const size=GardenSizes[project.stage];
+        const size=GardenSizes[project.stage]||GardenSizes.seedling;
         const isHov=hoverId===project.id;
         const isSel=selected?.id===project.id;
         const dc=getDeptColor(project.builtBy);
@@ -2305,7 +2363,7 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
             {isSel&&<div style={{position:"absolute",inset:-10,borderRadius:"50%",border:"2.5px solid "+dc,boxShadow:"0 0 20px "+dc+"50",animation:"pulse 2s ease-in-out infinite"}}/>}
             {hasRelated&&!isSel&&<div style={{position:"absolute",inset:-8,borderRadius:"50%",border:"2px dashed "+C.carrot500,opacity:0.7,animation:"pulse 2s ease-in-out 0.5s infinite"}}/>}
             {isHov&&visible&&<div style={{position:"absolute",inset:-8,borderRadius:"50%",background:"radial-gradient(circle,"+dc+"20 0%,transparent 70%)",pointerEvents:"none"}}/>}
-            <Plant wilting={wilting} size={size.w}/>
+            <GardenPlant stage={project.stage} size={size.w} wilting={wilting}/>
             {wilting&&<div style={{position:"absolute",top:-4,right:-4}}><IcoStale size={14} color={C.mango500}/></div>}
             <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:7,height:7,borderRadius:"50%",background:dc,border:"1.5px solid white",boxShadow:"0 0 5px "+dc+"90"}}/>
             {isHov&&visible&&(
