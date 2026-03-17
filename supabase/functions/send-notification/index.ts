@@ -30,7 +30,7 @@ serve(async (req) => {
     await Promise.all(execomUsers.map(u => sendEmail(
       u.email,
       `[Grove] ${payload.project_name} submitted for Nursery review`,
-      `<p>Hi ${u.display_name},</p><p><strong>${payload.builder_email}</strong> submitted <strong>${payload.project_name}</strong> for ExCom review.</p><p>Review it in <a href="https://sprout-garden.vercel.app">Grove</a>.</p>`,
+      `<p>Hi ${u.display_name},</p><p><strong>${payload.builder_email}</strong> submitted <strong>${payload.project_name}</strong> for Approver review.</p><p>Review it in <a href="https://sprout-garden.vercel.app">Grove</a>.</p>`,
     )))
   }
 
@@ -41,8 +41,8 @@ serve(async (req) => {
       await supabase.from("notifications").insert({ user_id: builder.id, type, payload, read: false })
       await sendEmail(
         builder.email,
-        `[Grove] ${payload.project_name} approved by ExCom!`,
-        `<p>Hi ${builder.display_name},</p><p>Your project <strong>${payload.project_name}</strong> was approved by ExCom and is now in the Sprout stage. Time to build!</p>`,
+        `[Grove] ${payload.project_name} approved by Approver!`,
+        `<p>Hi ${builder.display_name},</p><p>Your project <strong>${payload.project_name}</strong> was approved by an Approver and is now in the Sprout stage. Time to build!</p>`,
       )
     }
   }
@@ -54,8 +54,8 @@ serve(async (req) => {
       await supabase.from("notifications").insert({ user_id: builder.id, type, payload, read: false })
       await sendEmail(
         builder.email,
-        `[Grove] ${payload.project_name} — ExCom feedback`,
-        `<p>Hi ${builder.display_name},</p><p>ExCom reviewed <strong>${payload.project_name}</strong> and has feedback:</p><blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555">${payload.review_comment}</blockquote><p>Your project is back in the Seedling stage. Address the feedback and resubmit when ready.</p>`,
+        `[Grove] ${payload.project_name} — Approver feedback`,
+        `<p>Hi ${builder.display_name},</p><p>An Approver reviewed <strong>${payload.project_name}</strong> and has feedback:</p><blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555">${payload.review_comment}</blockquote><p>Your project is back in the Seedling stage. Address the feedback and resubmit when ready.</p>`,
       )
     }
   }
