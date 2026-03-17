@@ -132,6 +132,89 @@ const STAGE_COLORS = {
   thriving: {bg:C.blueberry100,    text:C.blueberry500,     border:C.blueberry400,   dot:C.blueberry500},
 };
 
+const STAGE_GUIDE = [
+  {
+    key: "seed", emoji: "🌰", label: "Seed",
+    borderColor: C.mushroom400, textColor: C.mushroom800,
+    desc: "An idea for a project, tool, or solution that could help a team or the whole company. Anyone at Sprout can plant a seed, regardless of their technical background.",
+    gardenBadge: false,
+    callouts: [
+      {
+        id: "overlap",
+        bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
+        icon: "🔍",
+        title: "Overlap detection",
+        body: "When you add a Seed, Grove checks if a similar idea or project already exists. If it does, you'll see a prompt to connect with that builder instead of starting from scratch.",
+      },
+    ],
+  },
+  {
+    key: "seedling", emoji: "🌱", label: "Seedling",
+    borderColor: STAGE_COLORS.seedling.border, textColor: STAGE_COLORS.seedling.text,
+    desc: "Someone has claimed this seed and is actively building it. This is the hands-on stage — experimenting, prototyping, and figuring out what works.",
+    gardenBadge: false,
+    callouts: [
+      {
+        id: "requirements",
+        bg: C.mango100, border: C.mango500, textColor: C.mango700,
+        icon: "📋",
+        title: "What you need at this stage",
+        body: "A working prototype (something people can try) and a short deck explaining what you're building and its impact. Both are required before moving to Nursery.",
+      },
+      {
+        id: "ai-help",
+        bg: C.kangkong100, border: C.kangkong300, textColor: C.kangkong700,
+        icon: "✨",
+        title: "Not sure how to make a deck?",
+        body: "AI can help you put one together quickly. Ask Claude or Gemini to help you structure your idea, how it works, and the impact in a few slides.",
+      },
+      {
+        id: "overlap-seedling",
+        bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
+        icon: "🔍",
+        title: "Overlap detection also runs here",
+        body: "If your project overlaps with another Seedling or Garden project, Grove will surface it so you can reach out and collaborate.",
+      },
+    ],
+  },
+  {
+    key: "nursery", emoji: "🌿", label: "Nursery",
+    borderColor: STAGE_COLORS.nursery.border, textColor: STAGE_COLORS.nursery.text,
+    desc: "Before spending more time building, leadership reviews your prototype and deck. The goal isn't to gatekeep — it's to make sure you get the right guidance, connections, and resources before you invest more time.",
+    gardenBadge: true,
+    callouts: [
+      {
+        id: "feedback",
+        bg: C.mango100, border: C.mango500, textColor: C.mango700,
+        icon: "💬",
+        title: "If leadership needs changes before approving",
+        body: "You'll get feedback directly in Grove. You can update your work and resubmit — your project is never stuck.",
+      },
+    ],
+  },
+  {
+    key: "sprout", emoji: "🌿", label: "Sprout",
+    borderColor: STAGE_COLORS.sprout.border, textColor: STAGE_COLORS.sprout.text,
+    desc: "Approved by leadership. You're now building the full product with momentum, guidance, and company backing behind you.",
+    gardenBadge: true,
+    callouts: [],
+  },
+  {
+    key: "bloom", emoji: "🌸", label: "Bloom",
+    borderColor: STAGE_COLORS.bloom.border, textColor: STAGE_COLORS.bloom.text,
+    desc: "Live and in the hands of real users. The team is testing, gathering feedback, and refining before full rollout.",
+    gardenBadge: true,
+    callouts: [],
+  },
+  {
+    key: "thriving", emoji: "🌳", label: "Thriving",
+    borderColor: STAGE_COLORS.thriving.border, textColor: STAGE_COLORS.thriving.text,
+    desc: "Delivering real, measurable value to Sprout. This is the goal every seed is working towards.",
+    gardenBadge: true,
+    callouts: [],
+  },
+];
+
 const CAP_COLORS = {
   LLM:              {bg:C.ubas100,        text:C.ubas500,        border:C.ubas400},
   "Computer Vision":{bg:C.blueberry100,   text:C.blueberry500,   border:C.blueberry400},
@@ -2658,69 +2741,104 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
 
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
-function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGarden, onReviewNursery, firstName, isApprover}) {
-  const greeting = firstName ? `Welcome, ${firstName}!` : "Welcome to Grove";
+function WelcomeModal({ onExplore, onDismissPermanently, isApprover, country }) {
+  const roleName  = isApprover ? "Approver" : "Planter";
+  const roleEmoji = isApprover ? "🌿" : "🌱";
+  const teamLabel = country === "PH" ? "PH team" : country === "TH" ? "TH team" : "Your team";
+  const nudge     = isApprover ? "Review plants in the Nursery" : "Claim a seed to build";
+
+  const stageRows = [
+    { key:"seedling", emoji:"🌱", label:"Seedling", desc:"Someone is actively building",      bg:STAGE_COLORS.seedling.bg, text:STAGE_COLORS.seedling.text },
+    { key:"nursery",  emoji:"🌿", label:"Nursery",  desc:"Under leadership review",           bg:STAGE_COLORS.nursery.bg,  text:STAGE_COLORS.nursery.text  },
+    { key:"sprout",   emoji:"🌿", label:"Sprout",   desc:"Approved, actively developing",     bg:STAGE_COLORS.sprout.bg,   text:STAGE_COLORS.sprout.text   },
+    { key:"bloom",    emoji:"🌸", label:"Bloom",    desc:"Live, in user testing",             bg:STAGE_COLORS.bloom.bg,    text:STAGE_COLORS.bloom.text    },
+    { key:"thriving", emoji:"🌳", label:"Thriving", desc:"Delivering measurable value",       bg:STAGE_COLORS.thriving.bg, text:STAGE_COLORS.thriving.text },
+  ];
+
   return (
-    <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.6)",backdropFilter:"blur(8px)"}}>
-      <div style={{background:C.white,borderRadius:DS.radius.xl,padding:36,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
-        {/* Header */}
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:36,marginBottom:12,lineHeight:1}}>🌿</div>
-          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>{greeting}</div>
-          <div style={{fontFamily:FF,fontSize:14,color:C.mushroom600,lineHeight:1.6}}>
-            AI tools are being built across Sprout — but no one knows what exists. Grove fixes that.
+    <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.65)",backdropFilter:"blur(8px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,overflow:"hidden",animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
+
+        {/* ── Dark green header ── */}
+        <div style={{background:"#14532d",padding:"28px 24px 24px",position:"relative",textAlign:"center"}}>
+          {/* Skip — session-only dismiss */}
+          <button onClick={onExplore}
+            style={{position:"absolute",top:14,right:16,background:"none",border:"none",color:"rgba(255,255,255,0.65)",fontFamily:FF,fontSize:13,cursor:"pointer",padding:"4px 8px",borderRadius:DS.radius.sm,transition:"color 0.15s"}}
+            onMouseOver={e=>e.currentTarget.style.color="#fff"}
+            onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,0.65)"}
+          >Skip</button>
+          {/* Logo */}
+          <div style={{fontSize:32,marginBottom:10,lineHeight:1}}>🌿</div>
+          {/* Grove + Beta pill */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}}>
+            <span style={{fontFamily:FF,fontSize:26,fontWeight:800,color:"#fff"}}>Grove</span>
+            <span style={{fontFamily:FF,fontSize:11,fontWeight:600,background:"rgba(255,255,255,0.18)",color:"rgba(255,255,255,0.88)",borderRadius:DS.radius.full,padding:"3px 9px",letterSpacing:0.3}}>Beta</span>
+          </div>
+          {/* Tagline */}
+          <div style={{fontFamily:FF,fontSize:13,color:"rgba(255,255,255,0.80)",lineHeight:1.65,maxWidth:340,margin:"0 auto"}}>
+            Every thriving AI tool started as a seed. Grove is where Sprout plants, tends, and grows its AI work — together.
           </div>
         </div>
-        {/* Action cards */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
-          {/* Card 1: Plant a Seed */}
-          <button onClick={onPlantSeed} style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
-            onMouseOver={e=>{e.currentTarget.style.background=C.kangkong100;e.currentTarget.style.borderColor=C.kangkong400;}}
-            onMouseOut={e=>{e.currentTarget.style.background=C.kangkong50;e.currentTarget.style.borderColor=C.kangkong200;}}
-          >
-            <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌱</span>
-            <div>
-              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong700,marginBottom:3}}>Plant a Seed</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Submit an AI idea you think Sprout needs. The team can vote on it, someone can claim it, and it might get built.</div>
+
+        {/* ── Body ── */}
+        <div style={{padding:"20px 24px 24px"}}>
+
+          {/* Role pill */}
+          <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:C.mushroom100,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.full,padding:"8px 16px",flexWrap:"wrap",justifyContent:"center"}}>
+              <span style={{fontSize:15}}>{roleEmoji}</span>
+              <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom800}}>{roleName}</span>
+              <span style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>· {teamLabel}</span>
+              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400}}>· {nudge}</span>
             </div>
-          </button>
-          {/* Card 2: Add to the Garden */}
-          <button onClick={onAddToGarden} style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
-            onMouseOver={e=>{e.currentTarget.style.background=C.mushroom100;e.currentTarget.style.borderColor=C.mushroom300;}}
-            onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom200;}}
-          >
-            <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌾</span>
-            <div>
-              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to the Garden</div>
-              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Log an AI tool you're building or already shipped. Don't let good work go unseen.</div>
+          </div>
+
+          {/* Section label */}
+          <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mushroom500,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}}>How ideas grow</div>
+
+          {/* Stage list */}
+          <div style={{border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg,overflow:"hidden",marginBottom:16}}>
+            {/* Seed row */}
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:C.mushroom50,borderBottom:"1px solid "+C.mushroom200}}>
+              <span style={{fontSize:15,flexShrink:0}}>🌰</span>
+              <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,flexShrink:0}}>Seed</span>
+              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom500,flex:1}}>An idea for a project or tool</span>
+              <span style={{display:"flex",alignItems:"center",gap:3,fontFamily:FF,fontSize:11,color:C.blueberry500,flexShrink:0,opacity:0.85}}>overlap check 🔍</span>
             </div>
-          </button>
-          {/* Card 3: Review plants — Approver only */}
-          {isApprover && (
-            <button onClick={onReviewNursery} style={{background:C.mango50,border:"1.5px solid "+C.mango200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
-              onMouseOver={e=>{e.currentTarget.style.background=C.mango100;e.currentTarget.style.borderColor=C.mango400;}}
-              onMouseOut={e=>{e.currentTarget.style.background=C.mango50;e.currentTarget.style.borderColor=C.mango200;}}
-            >
-              <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌿</span>
-              <div>
-                <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mango600,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>IN THE NURSERY</div>
-                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mango700,marginBottom:3}}>Review plants</div>
-                <div style={{fontFamily:FF,fontSize:12,color:C.mango600,lineHeight:1.55}}>You have plants waiting for your decision. Don't leave builders hanging.</div>
+            {/* Project stage rows */}
+            {stageRows.map((s, i) => (
+              <div key={s.key} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:s.bg,borderBottom:i < stageRows.length-1 ? "1px solid rgba(0,0,0,0.06)" : "none"}}>
+                <span style={{fontSize:15,flexShrink:0}}>{s.emoji}</span>
+                <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:s.text,flexShrink:0}}>{s.label}</span>
+                <span style={{fontFamily:FF,fontSize:12,color:s.text,opacity:0.8}}>{s.desc}</span>
               </div>
-            </button>
-          )}
-        </div>
-        <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center",marginBottom:20}}>
-          Start by exploring what's already growing — or plant your first seed.
-        </div>
-        {/* Buttons */}
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          <button onClick={onExplore} style={{width:"100%",padding:"11px 0",borderRadius:DS.radius.lg,background:C.kangkong500,border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",transition:"background 0.15s"}}>
-            Start exploring
-          </button>
-          <button onClick={onDismissPermanently} style={{width:"100%",padding:"10px 0",borderRadius:DS.radius.lg,background:"none",border:"1.5px solid "+C.mushroom200,color:C.mushroom500,fontFamily:FF,fontSize:13,fontWeight:500,cursor:"pointer",transition:"all 0.15s"}}>
-            Got it, don't show again
-          </button>
+            ))}
+          </div>
+
+          {/* Builder nudge card */}
+          <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,padding:"12px 14px",marginBottom:20,display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>🌱</span>
+            <span style={{fontFamily:FF,fontSize:12,color:C.kangkong700,lineHeight:1.6}}>You don't need to be an engineer to build. Anyone at Sprout can claim a seed and start growing it.</span>
+          </div>
+
+          {/* Beta note + primary CTA */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:10}}>
+            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,lineHeight:1.5,flex:1}}>
+              Grove is in Beta. Hit <strong style={{color:C.mushroom700}}>?</strong> for help or to learn more about each stage.
+            </div>
+            <button onClick={onExplore}
+              style={{flexShrink:0,padding:"10px 20px",borderRadius:DS.radius.lg,background:"#14532d",border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"background 0.15s"}}
+              onMouseOver={e=>e.currentTarget.style.background="#0f3d21"}
+              onMouseOut={e=>e.currentTarget.style.background="#14532d"}
+            >Take me in →</button>
+          </div>
+
+          {/* Don't show again */}
+          <button onClick={onDismissPermanently}
+            style={{width:"100%",padding:"9px 0",borderRadius:DS.radius.lg,background:"none",border:"1.5px solid "+C.mushroom200,color:C.mushroom500,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.15s"}}
+            onMouseOver={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom300;}}
+            onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.borderColor=C.mushroom200;}}
+          >Don't show again</button>
         </div>
       </div>
     </div>
@@ -3426,7 +3544,8 @@ function FirstTimeCountryModal({onSelect}) {
 function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
   view, setView, submitType, setSubmitType, formTitle, setFormTitle,
   formDesc, setFormDesc, editItem, onOpen, onSubmit, onUpvote,
-  onResolve, onDelete, onStartEdit, loading, authUser }) {
+  onResolve, onDelete, onStartEdit, loading, authUser, helpTab, setHelpTab }) {
+
 
   // helpDateLabel is local to avoid conflict with imported daysAgo (which returns a number)
   const helpDateLabel = (ts) => {
@@ -3487,15 +3606,38 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           {/* Panel header */}
           <div style={{padding:"12px 14px 0", borderBottom:"1px solid "+C.mushroom200, flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help</span>
+              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help & Guide</span>
               <button onClick={onClose} style={{width:28,height:28,borderRadius:DS.radius.sm,border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.mushroom500,fontSize:16,fontWeight:300}}
                 onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
                 onMouseOut={e=>e.currentTarget.style.background="none"}
               >✕</button>
             </div>
 
-            {/* + Report and + Ask buttons — hidden during submit/edit */}
+            {/* Top-level tab nav — only in feed view */}
             {view === "feed" && (
+              <div style={{display:"flex",gap:0,marginBottom:8}}>
+                {[
+                  ["stages",       "Stages"],
+                  ["adding-work",  "Adding work"],
+                  ["roles",        "Roles"],
+                  ["faq",          "FAQ"],
+                ].map(([val, label]) => (
+                  <button key={val}
+                    onClick={() => setHelpTab(val)}
+                    style={{
+                      padding:"6px 11px", fontFamily:FF, fontSize:12, fontWeight:500,
+                      border:"none", background:"none", cursor:"pointer",
+                      color: helpTab === val ? C.kangkong700 : C.mushroom500,
+                      borderBottom: helpTab === val ? "2px solid "+C.kangkong600 : "2px solid transparent",
+                      transition:"all 0.15s", whiteSpace:"nowrap",
+                    }}
+                  >{label}</button>
+                ))}
+              </div>
+            )}
+
+            {/* + Report and + Ask buttons — adding-work tab only */}
+            {view === "feed" && helpTab === "adding-work" && (
               <div style={{display:"flex",gap:6,marginBottom:10}}>
                 <button onClick={()=>{setSubmitType("report");setFormTitle("");setFormDesc("");setView("submit");}}
                   style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,background:"none",fontFamily:FF,fontSize:12,fontWeight:500,color:C.mushroom700,cursor:"pointer",transition:"all 0.15s"}}
@@ -3510,8 +3652,8 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
               </div>
             )}
 
-            {/* Filter tabs — only in feed view */}
-            {view === "feed" && (
+            {/* Filter tabs — adding-work tab only */}
+            {view === "feed" && helpTab === "adding-work" && (
               <div style={{display:"flex",gap:0,borderBottom:"1px solid "+C.mushroom200}}>
                 {[["all","All"],["report","Reports"],["ask","Asks"]].map(([val,label])=>(
                   <button key={val} onClick={()=>{setFilter(val);setPage(1);}}
@@ -3524,11 +3666,65 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                 ))}
               </div>
             )}
+            {/* Header bottom border when filter tabs not shown */}
+            {view === "feed" && helpTab !== "adding-work" && (
+              <div style={{borderBottom:"1px solid "+C.mushroom200}}/>
+            )}
           </div>
 
           {/* Panel body */}
           <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
-            {view === "feed" && (
+
+            {/* ── Stages guide ── */}
+            {view === "feed" && helpTab === "stages" && (
+              <div style={{display:"flex",flexDirection:"column",gap:20,paddingBottom:16}}>
+                {STAGE_GUIDE.map(stage => (
+                  <div key={stage.key} style={{borderLeft:"4px solid "+stage.borderColor,paddingLeft:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                      <span style={{fontSize:16}}>{stage.emoji}</span>
+                      <span style={{fontFamily:FF,fontSize:14,fontWeight:700,color:stage.textColor}}>{stage.label}</span>
+                      {stage.gardenBadge && (
+                        <span style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:DS.radius.full,background:stage.borderColor+"22",color:stage.textColor,border:"1px solid "+stage.borderColor}}>
+                          Garden
+                        </span>
+                      )}
+                    </div>
+                    <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,lineHeight:1.65,marginBottom:stage.callouts.length > 0 ? 10 : 0}}>
+                      {stage.desc}
+                    </div>
+                    {stage.callouts.map(callout => (
+                      <div key={callout.id} style={{background:callout.bg,border:"1px solid "+callout.border,borderRadius:DS.radius.md,padding:"10px 12px",marginTop:8}}>
+                        <div style={{display:"flex",gap:7,alignItems:"flex-start"}}>
+                          <span style={{fontSize:13,flexShrink:0,marginTop:1}}>{callout.icon}</span>
+                          <div>
+                            <span style={{fontFamily:FF,fontSize:12,fontWeight:700,color:callout.textColor}}>
+                              {callout.title}
+                            </span>
+                            <span style={{fontFamily:FF,fontSize:12,color:callout.textColor,lineHeight:1.6}}>
+                              {" "}{callout.body}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Empty states for Roles / FAQ ── */}
+            {view === "feed" && (helpTab === "roles" || helpTab === "faq") && (
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
+                <div style={{fontSize:24}}>🌱</div>
+                <div style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom600}}>Coming soon</div>
+                <div style={{fontFamily:FF,fontSize:12,color:C.mushroom400,textAlign:"center"}}>
+                  This section is being planted.
+                </div>
+              </div>
+            )}
+
+            {/* ── Adding work feed (existing content) ── */}
+            {view === "feed" && helpTab === "adding-work" && (
               <>
                 {pageItems.length === 0 ? (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
@@ -3665,7 +3861,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           </div>
 
           {/* Pagination footer — only in feed view, only when multiple pages */}
-          {view === "feed" && totalPages > 1 && (
+          {view === "feed" && helpTab === "adding-work" && totalPages > 1 && (
             <div style={{borderTop:"1px solid "+C.mushroom200,padding:"8px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
               <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}
                 style={{padding:"4px 10px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,fontFamily:FF,fontSize:11,background:"none",cursor:page===1?"default":"pointer",color:page===1?C.mushroom300:C.mushroom600}}>Prev</button>
@@ -3679,8 +3875,6 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
     </>
   );
 }
-
-// ── Main App ──────────────────────────────────────────────────────────────────
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function SproutAIGarden() {
@@ -3706,6 +3900,7 @@ export default function SproutAIGarden() {
 
   // Help panel state
   const [helpOpen,        setHelpOpen]        = useState(false);
+  const [helpTab,         setHelpTab]         = useState("stages");
   const [helpItems,       setHelpItems]       = useState([]);
   const [helpFilter,      setHelpFilter]      = useState("all"); // "all" | "report" | "ask"
   const [helpPage,        setHelpPage]        = useState(1);
@@ -3717,95 +3912,73 @@ export default function SproutAIGarden() {
   const [helpLoading,     setHelpLoading]     = useState(false);
 
   useEffect(() => {
-    // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock after 5s
-    const timeout = setTimeout(() => setAuthLoading(false), 5000);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      clearTimeout(timeout);
-
-      if (!session) {
-        setAuthUser(null);
-        setAuthLoading(false);
-        setAuthError("");
-        return;
-      }
-
-      // Keep loading state — do not render the app until domain validation passes
-      const email  = session.user.email;
-      const domain = email.split("@")[1];
-      const country = COUNTRY_MAP[domain];
-
-      if (!country) {
-        // Non-Sprout account — sign out and show error
-        await supabase.auth.signOut();
-        setAuthError("Only @sprout.ph and @sproutsolutions.io accounts can access Grove.");
-        setAuthLoading(false);
-        return;
-      }
-
-      // Extract first name from Google user metadata
-      const meta      = session.user.user_metadata || {};
-      const firstName = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
-
-      try {
-        const { data: existing } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (existing) {
-          // Update first_name if it was previously null and Google now provides it
-          if (!existing.first_name && firstName) {
-            await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
-          }
-          setAuthUser({
-            email: existing.email,
-            firstName: existing.first_name || firstName || null,
-            displayName: existing.display_name || email.split("@")[0],
-            country: existing.country,
-            isAdmin: existing.is_admin || false,
-            isApprover: existing.is_approver || false,
-            hasDismissedWelcome: existing.has_dismissed_welcome || false,
-          });
-        } else {
-          // First login — create profile row
-          const displayName = email.split("@")[0];
-          await supabase.from("profiles").insert({
-            id: session.user.id,
-            email,
-            display_name: displayName,
-            first_name: firstName,
-            country,
-            is_admin: false,
-            is_approver: false,
-            has_dismissed_welcome: false,
-          });
-          setAuthUser({
-            email,
-            firstName: firstName || null,
-            displayName,
-            country,
-            isAdmin: false,
-            isApprover: false,
-            hasDismissedWelcome: false,
-          });
-        }
-      } catch (e) {
-        console.warn("Profile load/create error:", e);
-        // Fallback: still allow access with minimal profile
-        setAuthUser({
-          email,
-          firstName: firstName || null,
-          displayName: email.split("@")[0],
-          country,
-          isAdmin: false,
-          isApprover: false,
-          hasDismissedWelcome: false,
-        });
-      }
-
+    const timeout = setTimeout(() => {
       setAuthLoading(false);
+    }, 5000);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      try {
+        if (!session) {
+          setAuthUser(null);
+          setAuthLoading(false);
+          setAuthError("");
+          return;
+        }
+
+        const email   = session.user?.email;
+        if (!email) { setAuthLoading(false); return; }
+
+        const domain  = email.split("@")[1];
+        const country = COUNTRY_MAP[domain];
+
+        if (!country) {
+          supabase.auth.signOut();
+          setAuthError("Only @sprout.ph and @sproutsolutions.io accounts can access Grove.");
+          setAuthLoading(false);
+          return;
+        }
+
+        const meta        = session.user.user_metadata || {};
+        const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
+        const displayName = email.split("@")[0];
+
+        // Immediately unblock the UI — no DB await before this line
+        setAuthUser({ email, firstName, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false });
+        setAuthLoading(false);
+
+        // Enrich with real DB profile in the background (non-blocking)
+        supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
+          .then(async ({ data: existing }) => {
+            if (existing) {
+              if (!existing.first_name && firstName) {
+                await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
+              }
+              setAuthUser({
+                email: existing.email,
+                firstName: existing.first_name || firstName || null,
+                displayName: existing.display_name || displayName,
+                country: existing.country,
+                isAdmin: existing.is_admin || false,
+                isApprover: existing.is_approver || false,
+                hasDismissedWelcome: existing.has_dismissed_welcome || false,
+              });
+            } else {
+              await supabase.from("profiles").insert({
+                id: session.user.id,
+                email,
+                display_name: displayName,
+                first_name: firstName,
+                country,
+                is_admin: false,
+                is_approver: false,
+              });
+            }
+          })
+          .catch(e => console.warn("Profile load/create error:", e));
+      } catch (e) {
+        console.error("Auth state change error:", e);
+        setAuthLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -3871,6 +4044,7 @@ export default function SproutAIGarden() {
     setHelpPage(1);
     setHelpFilter("all");
     setHelpView("feed");
+    setHelpTab("stages");
     await loadHelpItems();
   };
 
@@ -4461,11 +4635,8 @@ export default function SproutAIGarden() {
         <WelcomeModal
           onExplore={() => setWelcomeSeen(true)}
           onDismissPermanently={handleDismissWelcomePermanently}
-          onPlantSeed={() => { setWelcomeSeen(true); setView("wishlist"); setShowAddWish(true); }}
-          onAddToGarden={() => { setWelcomeSeen(true); setView("garden"); setShowForm(true); }}
-          onReviewNursery={() => { setWelcomeSeen(true); setView("garden"); }}
-          firstName={authUser.firstName}
           isApprover={authUser.isApprover}
+          country={authUser.country}
         />
       )}
       <HelpPanel
@@ -4493,6 +4664,8 @@ export default function SproutAIGarden() {
         onStartEdit={(item) => { setHelpEditItem(item); setHelpFormTitle(item.title); setHelpFormDesc(item.description || ""); setHelpView("edit"); }}
         loading={helpLoading}
         authUser={authUser}
+        helpTab={helpTab}
+        setHelpTab={setHelpTab}
       />
 
       <style>{`
