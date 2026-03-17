@@ -1941,43 +1941,41 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
             {filtered.map(p => {
-              const dc = getDeptColor(p.builtBy);
-              const sc = STAGE_COLORS[p.stage];
-              const wilting = p.lastUpdated > 30;
-              const related = findRelated(p, projects);
-              const hasOverlap = related.length > 0;
+              const sc  = STAGE_COLORS[p.stage] || STAGE_COLORS.seedling;
+              const cc  = COVER_COLORS[p.builtBy] || COVER_COLORS.default;
+              const dc  = DEPT_COLORS[p.builtFor];
               return (
                 <div key={p.id} onClick={()=>setSelected(p)}
-                  style={{background:C.white,borderRadius:DS.radius.xl,border:"1px solid "+C.mushroom200,overflow:"hidden",cursor:"pointer",transition:"all 0.18s",boxShadow:DS.shadow.sm}}
-                  onMouseOver={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow=DS.shadow.lg;}}
-                  onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=DS.shadow.sm;}}
+                  style={{position:"relative",background:C.white,borderRadius:DS.radius.xl,border:"1px solid "+C.mushroom200,padding:16,cursor:"pointer",transition:"all 0.15s"}}
+                  onMouseOver={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.lg;e.currentTarget.style.borderColor=C.mushroom300;}}
+                  onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=C.mushroom200;}}
                 >
-                  <ProjectImage project={p} height={110} style={{borderBottom:"1px solid "+C.mushroom100}}/>
-                  <div style={{padding:"14px 16px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                      <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:C.mushroom900,lineHeight:1.3,flex:1,display:"flex",alignItems:"center",gap:6}}>
-                        {p.name}
-                        <CountryBadge country={p.country}/>
+                  {/* Stage badge — top-right corner */}
+                  <span style={{position:"absolute",top:14,right:14,display:"inline-flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:DS.radius.full,background:sc.bg,color:sc.text,border:"0.5px solid "+sc.border,fontFamily:FF,fontSize:10,fontWeight:600,whiteSpace:"nowrap"}}>
+                    <span style={{width:6,height:6,borderRadius:"50%",background:sc.dot,flexShrink:0}}/>
+                    {STAGE_LABELS[p.stage]||p.stage}
+                  </span>
+
+                  {/* Name */}
+                  <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:C.mushroom900,lineHeight:1.35,marginBottom:8,paddingRight:80}}>{p.name}</div>
+
+                  {/* Description */}
+                  {p.description&&(
+                    <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.6,marginBottom:12,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{p.description}</div>
+                  )}
+
+                  {/* Divider */}
+                  <div style={{borderTop:"1px solid "+C.mushroom100,margin:"2px 0 10px"}}/>
+
+                  {/* Footer */}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7}}>
+                      <div style={{width:24,height:24,borderRadius:"50%",background:cc.bg,color:cc.text,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:9,fontWeight:700,flexShrink:0}}>
+                        {getInitials(p.builder)}
                       </div>
-                      <div style={{display:"flex",gap:4,marginLeft:8,flexShrink:0}}>
-                        {wilting&&<IcoStale size={14} color={C.mango500}/>}
-                        {hasOverlap&&<IcoWarning size={14} color={C.carrot500}/>}
-                      </div>
+                      <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
                     </div>
-                    <div style={{display:"flex",gap:4,marginBottom:4,flexWrap:"wrap"}}>
-                      <StageBadge stage={p.stage}/>
-                    </div>
-                    {p.toolUsed?.length>0&&(
-                      <div style={{display:"flex",gap:4,marginBottom:6,flexWrap:"wrap"}}>
-                        {p.toolUsed.slice(0,3).map(t=><ToolChip key={t} tool={t}/>)}
-                        {p.toolUsed.length>3&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,alignSelf:"center"}}>+{p.toolUsed.length-3}</span>}
-                      </div>
-                    )}
-                    <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,lineHeight:1.5,marginBottom:10,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{p.description}</div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <span style={{fontFamily:FF,fontSize:11,fontWeight:600,color:dc}}>{p.builtBy}</span>
-                      {p.impact!=="TBD"&&<span style={{fontFamily:FF,fontSize:11,color:C.kangkong600,fontWeight:700,display:"flex",alignItems:"center",gap:3}}><IcoImpact size={11} color={C.kangkong600}/>{p.impactNum}</span>}
-                    </div>
+                    {dc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dc+"18",color:dc,whiteSpace:"nowrap"}}>{p.builtFor}</span>}
                   </div>
                 </div>
               );
