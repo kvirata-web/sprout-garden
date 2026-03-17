@@ -2387,7 +2387,7 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected}) => {
   });
 
   return (
-    <div onClick={()=>setSelected(null)} style={{flex:1,overflowX:"auto",overflowY:"hidden",position:"relative"}}>
+    <div onClick={()=>setSelected(null)} style={{flex:1,height:"100%",overflowX:"auto",overflowY:"hidden",position:"relative"}}>
       <div style={{position:"relative",height:"100%",minWidth:`max(100%, ${N*220}px)`}}>
 
         {/* Sky */}
