@@ -3410,308 +3410,6 @@ function FirstTimeCountryModal({onSelect}) {
   );
 }
 
-function LoginScreen({onLogin, onSignUp, onReset, onUpdatePassword, initialMode="login", error, loading}) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [mode, setMode] = useState(initialMode); // "login" | "signup" | "reset" | "newpassword"
-  const [resetSent, setResetSent] = useState(false);
-  const [resetError, setResetError] = useState("");
-  const [updateError, setUpdateError] = useState("");
-  const [updateDone, setUpdateDone] = useState(false);
-
-  const isDomainValid = isAllowedEmail(email);
-
-  return (
-    <div style={{
-      minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",
-      background:"linear-gradient(135deg, "+C.kangkong800+" 0%, "+C.kangkong600+" 40%, "+C.kangkong400+" 100%)",
-      fontFamily:FF,
-    }}>
-      {/* Background botanical texture */}
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",overflow:"hidden",opacity:0.06}}>
-        <PlantTree size={400} wilting={false}/>
-      </div>
-
-      <div style={{
-        background:C.white,borderRadius:DS.radius.xl,padding:"40px 36px",
-        width:400,maxWidth:"92vw",boxShadow:DS.shadow.xl,
-        border:"1px solid "+C.mushroom200,position:"relative",
-        animation:"slideUp 0.4s cubic-bezier(0.34,1.2,0.64,1)",
-      }}>
-        {/* Logo */}
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{
-            width:56,height:56,borderRadius:14,background:C.kangkong800,
-            display:"flex",alignItems:"center",justifyContent:"center",
-            margin:"0 auto 12px",boxShadow:"0 8px 24px "+C.kangkong800+"50",
-          }}>
-            <IcoGarden size={28} color={C.kangkong200}/>
-          </div>
-          <div style={{fontFamily:FF,fontWeight:800,fontSize:22,color:C.mushroom900,lineHeight:1.1}}>Grove</div>
-          <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginTop:3}}>by Sprout</div>
-        </div>
-
-        {mode==="login" ? (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Welcome back</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Sign in with your <strong>@sprout.ph</strong> or <strong>@sproutsolutions.io</strong> account</div>
-            </div>
-
-            <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Email</label>
-              <input
-                type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                placeholder="yourname@sprout.ph"
-                style={{
-                  width:"100%",padding:"10px 12px",
-                  border:"1.5px solid "+(email&&!isDomainValid?C.tomato500:C.mushroom300),
-                  borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,
-                  color:C.mushroom900,background:C.mushroom50,
-                  outline:"none",boxSizing:"border-box",transition:"border-color 0.15s",
-                }}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=email&&!isDomainValid?C.tomato500:C.mushroom300}
-              />
-              {email&&!isDomainValid&&(
-                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
-                  <IcoWarning size={12} color={C.tomato500}/> Only @sprout.ph and @sproutsolutions.io addresses are allowed
-                </div>
-              )}
-            </div>
-
-            <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Password</label>
-              <input
-                type="password" value={password} onChange={e=>setPassword(e.target.value)}
-                placeholder="••••••••"
-                onKeyDown={e=>e.key==="Enter"&&isDomainValid&&password&&onLogin(email,password)}
-                style={{
-                  width:"100%",padding:"10px 12px",
-                  border:"1.5px solid "+C.mushroom300,
-                  borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,
-                  color:C.mushroom900,background:C.mushroom50,
-                  outline:"none",boxSizing:"border-box",
-                }}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=C.mushroom300}
-              />
-            </div>
-
-            {error&&(
-              <div style={{
-                background:C.tomato100,border:"1px solid "+C.tomato500,
-                borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,
-                fontFamily:FF,fontSize:12,color:C.tomato600,
-                display:"flex",alignItems:"center",gap:8,
-              }}>
-                <IcoWarning size={14} color={C.tomato500}/> {error}
-              </div>
-            )}
-
-            <button
-              onClick={()=>onLogin(email,password)}
-              disabled={!isDomainValid||!password||loading}
-              style={{
-                width:"100%",padding:"11px",
-                background:isDomainValid&&password?C.kangkong600:C.mushroom300,
-                color:C.white,border:"none",borderRadius:DS.radius.lg,
-                cursor:isDomainValid&&password?"pointer":"not-allowed",
-                fontFamily:FF,fontSize:13,fontWeight:700,
-                boxShadow:isDomainValid&&password?"0 4px 16px "+C.kangkong600+"40":"none",
-                transition:"all 0.2s",marginBottom:14,
-              }}
-            >
-              {loading ? "Signing in…" : "Sign In"}
-            </button>
-
-            <div style={{textAlign:"center",display:"flex",justifyContent:"center",gap:16}}>
-              <button onClick={()=>setMode("reset")} style={{
-                background:"none",border:"none",cursor:"pointer",
-                fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,
-              }}>Forgot password?</button>
-              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom300}}>|</span>
-              <button onClick={()=>setMode("signup")} style={{
-                background:"none",border:"none",cursor:"pointer",
-                fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,
-              }}>Create account</button>
-            </div>
-          </>
-        ) : mode==="signup" ? (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Create account</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Use your <strong>@sprout.ph</strong> or <strong>@sproutsolutions.io</strong> email</div>
-            </div>
-
-            <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Work Email</label>
-              <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                placeholder="yourname@sprout.ph"
-                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(email&&!isDomainValid?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=email&&!isDomainValid?C.tomato500:C.mushroom300}
-              />
-              {email&&!isDomainValid&&(
-                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
-                  <IcoWarning size={12} color={C.tomato500}/> Only @sprout.ph and @sproutsolutions.io addresses are allowed
-                </div>
-              )}
-            </div>
-
-            <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Password</label>
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
-                placeholder="••••••••"
-                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=C.mushroom300}
-              />
-            </div>
-
-            <div style={{marginBottom:16}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Confirm Password</label>
-              <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300}
-              />
-              {confirmPassword&&confirmPassword!==password&&(
-                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Passwords do not match</div>
-              )}
-            </div>
-
-            {error&&(
-              <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
-                <IcoWarning size={14} color={C.tomato500}/> {error}
-              </div>
-            )}
-
-            <button
-              onClick={()=>onSignUp(email,password)}
-              disabled={!isDomainValid||!password||password!==confirmPassword||loading}
-              style={{width:"100%",padding:"11px",background:isDomainValid&&password&&password===confirmPassword?C.kangkong600:C.mushroom300,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:isDomainValid&&password&&password===confirmPassword?"pointer":"not-allowed",fontFamily:FF,fontSize:13,fontWeight:700,transition:"all 0.2s",marginBottom:14}}
-            >
-              {loading ? "Creating…" : "Create Account"}
-            </button>
-
-            <div style={{textAlign:"center"}}>
-              <button onClick={()=>{setMode("login");setConfirmPassword("");}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600}}>
-                Already have an account? Sign in
-              </button>
-            </div>
-          </>
-        ) : mode==="newpassword" ? (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Set new password</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Choose a new password for your Sprout account</div>
-            </div>
-
-            {updateDone ? (
-              <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,padding:"14px",marginBottom:16,textAlign:"center",fontFamily:FF,fontSize:13,color:C.kangkong700}}>
-                <IcoCheck size={18} color={C.kangkong500}/><br/>
-                Password updated! <button onClick={()=>setMode("login")} style={{background:"none",border:"none",cursor:"pointer",color:C.kangkong600,fontWeight:700,fontFamily:FF,fontSize:13}}>Sign in</button>
-              </div>
-            ) : (
-              <>
-                <div style={{marginBottom:14}}>
-                  <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>New Password</label>
-                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                    onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                    onBlur={e=>e.target.style.borderColor=C.mushroom300}
-                  />
-                </div>
-                <div style={{marginBottom:16}}>
-                  <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Confirm Password</label>
-                  <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                    onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                    onBlur={e=>e.target.style.borderColor=confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300}
-                  />
-                  {confirmPassword&&confirmPassword!==password&&(
-                    <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Passwords do not match</div>
-                  )}
-                </div>
-                {updateError&&(
-                  <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
-                    <IcoWarning size={14} color={C.tomato500}/> {updateError}
-                  </div>
-                )}
-                <button
-                  onClick={async()=>{
-                    setUpdateError("");
-                    const err = await onUpdatePassword(password);
-                    if (err) setUpdateError(err);
-                    else setUpdateDone(true);
-                  }}
-                  disabled={!password||password!==confirmPassword}
-                  style={{width:"100%",padding:"11px",background:password&&password===confirmPassword?C.kangkong600:C.mushroom300,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:password&&password===confirmPassword?"pointer":"not-allowed",fontFamily:FF,fontSize:13,fontWeight:700,marginBottom:0}}
-                >
-                  Update Password
-                </button>
-              </>
-            )}
-          </>
-        ) : (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:20,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Reset password</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>We'll send a reset link to your Sprout inbox</div>
-            </div>
-
-            {resetSent ? (
-              <div style={{
-                background:C.kangkong50,border:"1px solid "+C.kangkong200,
-                borderRadius:DS.radius.md,padding:"14px",marginBottom:16,textAlign:"center",
-                fontFamily:FF,fontSize:13,color:C.kangkong700,
-              }}>
-                <IcoCheck size={18} color={C.kangkong500}/><br/>
-                Reset link sent! Check your inbox.
-              </div>
-            ) : (
-              <div style={{marginBottom:16}}>
-                <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Email</label>
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                  placeholder="yourname@sprout.ph"
-                  style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}/>
-              </div>
-            )}
-
-            {resetError&&(
-              <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:12,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
-                <IcoWarning size={14} color={C.tomato500}/> {resetError}
-              </div>
-            )}
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setMode("login");setResetSent(false);setResetError("");}} style={{
-                flex:1,padding:"10px",background:C.mushroom100,border:"1px solid "+C.mushroom200,
-                borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom600,fontWeight:600,
-              }}>Back</button>
-              {!resetSent&&(
-                <button onClick={async()=>{setResetError("");const err=await onReset(email);if(err){setResetError(err);}else{setResetSent(true);}}} disabled={!isDomainValid} style={{
-                  flex:2,padding:"10px",background:isDomainValid?C.kangkong600:C.mushroom300,
-                  border:"none",borderRadius:DS.radius.lg,cursor:isDomainValid?"pointer":"not-allowed",
-                  fontFamily:FF,fontSize:13,color:C.white,fontWeight:700,
-                }}>Send Reset Link</button>
-              )}
-            </div>
-          </>
-        )}
-
-        <div style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.mushroom100,textAlign:"center",fontFamily:FF,fontSize:11,color:C.mushroom400}}>
-          Access restricted to <strong>@sprout.ph</strong> and <strong>@sproutsolutions.io</strong> accounts
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Main App ──────────────────────────────────────────────────────────────────
 
 // ── Main App ──────────────────────────────────────────────────────────────────
@@ -3735,93 +3433,121 @@ export default function SproutAIGarden() {
   const [authUser, setAuthUser]     = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError]   = useState("");
-  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
-    // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock the UI after 5s
+    // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock after 5s
     const timeout = setTimeout(() => setAuthLoading(false), 5000);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       clearTimeout(timeout);
-      if (event === "PASSWORD_RECOVERY") {
-        setPasswordRecovery(true);
-        setAuthLoading(false);
-        return;
-      }
+
       if (!session) {
         setAuthUser(null);
         setAuthLoading(false);
+        setAuthError("");
         return;
       }
 
-      // Immediately unblock the UI using session data
-      const domain      = session.user.email.split("@")[1];
-      const country     = COUNTRY_MAP[domain] || "PH";
-      const displayName = session.user.email.split("@")[0];
-      const fallback    = { email: session.user.email, firstName: null, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false };
-      setAuthUser(fallback);
-      setAuthLoading(false);
+      // Keep loading state — do not render the app until domain validation passes
+      const email  = session.user.email;
+      const domain = email.split("@")[1];
+      const country = COUNTRY_MAP[domain];
 
-      // Then sync the real profile from DB in the background
-      supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
-        .then(({ data: existing }) => {
-          if (existing) {
-            setAuthUser({ email: existing.email, firstName: existing.first_name || null, displayName: existing.display_name, country: existing.country, isAdmin: existing.is_admin || false, isApprover: existing.is_approver || false, hasDismissedWelcome: existing.has_dismissed_welcome || false });
-          } else {
-            supabase.from("profiles").insert({
-              id: session.user.id, email: session.user.email,
-              display_name: displayName, first_name: null, country, is_admin: false, is_approver: false,
-            }).catch(e => console.warn("Profile insert error:", e));
+      if (!country) {
+        // Non-Sprout account — sign out and show error
+        await supabase.auth.signOut();
+        setAuthError("Only @sprout.ph and @sproutsolutions.io accounts can access Grove.");
+        setAuthLoading(false);
+        return;
+      }
+
+      // Extract first name from Google user metadata
+      const meta      = session.user.user_metadata || {};
+      const firstName = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
+
+      try {
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (existing) {
+          // Update first_name if it was previously null and Google now provides it
+          if (!existing.first_name && firstName) {
+            await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
           }
-        })
-        .catch(e => console.warn("Profile select error:", e));
+          setAuthUser({
+            email: existing.email,
+            firstName: existing.first_name || firstName || null,
+            displayName: existing.display_name || email.split("@")[0],
+            country: existing.country,
+            isAdmin: existing.is_admin || false,
+            isApprover: existing.is_approver || false,
+            hasDismissedWelcome: existing.has_dismissed_welcome || false,
+          });
+        } else {
+          // First login — create profile row
+          const displayName = email.split("@")[0];
+          await supabase.from("profiles").insert({
+            id: session.user.id,
+            email,
+            display_name: displayName,
+            first_name: firstName,
+            country,
+            is_admin: false,
+            is_approver: false,
+            has_dismissed_welcome: false,
+          });
+          setAuthUser({
+            email,
+            firstName: firstName || null,
+            displayName,
+            country,
+            isAdmin: false,
+            isApprover: false,
+            hasDismissedWelcome: false,
+          });
+        }
+      } catch (e) {
+        console.warn("Profile load/create error:", e);
+        // Fallback: still allow access with minimal profile
+        setAuthUser({
+          email,
+          firstName: firstName || null,
+          displayName: email.split("@")[0],
+          country,
+          isAdmin: false,
+          isApprover: false,
+          hasDismissedWelcome: false,
+        });
+      }
+
+      setAuthLoading(false);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = async (email, password) => {
-    setAuthError("");
-    setAuthLoading(true);
-    const domain = email.split("@")[1];
-    if (!COUNTRY_MAP[domain]) {
-      setAuthError("Only @sprout.ph and @sproutsolutions.io email addresses are allowed.");
-      setAuthLoading(false);
-      return;
-    }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError(error.message);
-    setAuthLoading(false);
-  };
-
-  const handleSignUp = async (email, password) => {
-    setAuthError("");
-    setAuthLoading(true);
-    const domain = email.split("@")[1];
-    if (!COUNTRY_MAP[domain]) {
-      setAuthError("Only @sprout.ph and @sproutsolutions.io email addresses are allowed.");
-      setAuthLoading(false);
-      return;
-    }
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setAuthError(error.message);
-    setAuthLoading(false);
-  };
-
-  const handleReset = async (email) => {
-    const redirectTo = import.meta.env.VITE_APP_URL || window.location.origin;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-    return error ? error.message : null;
-  };
-
-  const handleUpdatePassword = async (newPassword) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) return error.message;
-    setPasswordRecovery(false);
-    return null;
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setAuthUser(null);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setAuthError("");
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    // If error (e.g. provider not enabled), surface it and unblock
+    if (error) {
+      setAuthError(error.message);
+      setAuthLoading(false);
+    }
+    // On success the browser redirects — authLoading stays true until
+    // onAuthStateChange fires after the OAuth callback
   };
 
   const handleDismissWelcomePermanently = async () => {
@@ -4166,7 +3892,40 @@ export default function SproutAIGarden() {
   if (!authUser) {
     return (
       <>
-        <LoginScreen onLogin={handleLogin} onSignUp={handleSignUp} onReset={handleReset} onUpdatePassword={handleUpdatePassword} initialMode={passwordRecovery ? "newpassword" : "login"} error={authError} loading={authLoading}/>
+        <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,"+C.kangkong800+" 0%,"+C.kangkong400+" 100%)"}}>
+          <div style={{background:C.white,borderRadius:DS.radius.xl,padding:"40px 32px",width:340,boxShadow:DS.shadow.xl,display:"flex",flexDirection:"column",alignItems:"center",gap:20}}>
+            {/* Grove mark */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:36,height:36,background:C.kangkong600,borderRadius:DS.radius.md,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🌿</div>
+              <span style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,letterSpacing:"-0.02em"}}>Grove</span>
+            </div>
+            <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500,textAlign:"center"}}>Sprout's AI project tracker</div>
+            {/* Error message */}
+            {authError && (
+              <div style={{width:"100%",background:C.tomato100,border:"1px solid #FFCDD2",borderRadius:DS.radius.sm,padding:"8px 12px",fontFamily:FF,fontSize:12,color:C.tomato600,textAlign:"center"}}>
+                {authError}
+              </div>
+            )}
+            {/* Google sign-in button */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={authLoading}
+              style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"10px 20px",fontFamily:FF,fontSize:13,fontWeight:500,color:C.mushroom900,cursor:"pointer",boxShadow:DS.shadow.sm,opacity:authLoading?0.6:1}}
+            >
+              {/* Google logo SVG */}
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+              </svg>
+              {authLoading ? "Signing in…" : "Sign in with Google"}
+            </button>
+            <div style={{fontFamily:FF,fontSize:11,color:C.mushroom400,textAlign:"center"}}>
+              @sprout.ph and @sproutsolutions.io accounts only
+            </div>
+          </div>
+        </div>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
           @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
