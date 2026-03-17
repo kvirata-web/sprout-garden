@@ -2453,7 +2453,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
           {project.country&&<>&nbsp;<CountryBadge country={project.country} size="lg"/></>}
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          <CapBadge cap={project.capability}/>
+          {project.capability&&<CapBadge cap={project.capability}/>}
           <span style={{fontFamily:FF,fontSize:11,fontWeight:600,color:dc,padding:"2px 8px",background:dc+"18",borderRadius:DS.radius.full}}>{project.builtBy}</span>
           {project.builtFor!==project.builtBy&&(
             <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>→</span>
@@ -2471,7 +2471,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
           {[
-            {l:"Impact",  v:project.impact,                                              icon:<IcoImpact size={12} color={C.kangkong600}/>},
+            {l:"Tools",   v:project.toolUsed?.length?project.toolUsed.join(", "):"—",   icon:<IcoImpact size={12} color={C.kangkong600}/>},
             {l:"Builder",   v:project.builder||"—",                                        icon:<IcoNote size={12} color={C.mushroom500}/>},
             {l:"Updated", v:project.lastUpdated===0?"Today":project.lastUpdated+"d ago", icon:project.lastUpdated>30?<IcoStale size={12} color={C.mango500}/>:<IcoCheck size={12} color={C.kangkong500}/>},
             {l:"Data",    v:(project.dataSources?.length?project.dataSources.join(", "):project.dataSource)||"—", icon:<IcoNote size={12} color={C.mushroom500}/>},
@@ -2482,6 +2482,17 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
             </div>
           ))}
         </div>
+
+        {project.collaboratorEmails?.length>0&&(
+          <div style={{marginBottom:16}}>
+            <div style={{fontFamily:FF,fontSize:9,color:C.mushroom400,textTransform:"uppercase",letterSpacing:0.8,marginBottom:6}}>Collaborators</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              {project.collaboratorEmails.map(email=>(
+                <span key={email} style={{fontFamily:FF,fontSize:11,padding:"2px 8px",borderRadius:DS.radius.full,background:C.mushroom100,color:C.mushroom700,border:"1px solid "+C.mushroom200}}>{email}</span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {project.demoLink&&project.demoLink!=="#"&&(
           <a href={project.demoLink} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,color:C.kangkong600,textDecoration:"none",marginBottom:16}}>
