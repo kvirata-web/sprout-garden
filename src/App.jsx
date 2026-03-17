@@ -114,7 +114,7 @@ const STAGE_LABELS = {
 };
 const STAGE_DESC = {
   seedling: "Being built",
-  nursery:  "Awaiting ExCom review",
+  nursery:  "Awaiting Approver review",
   sprout:   "Approved, in development",
   bloom:    "In user testing",
   thriving: "Live and delivering value",
@@ -1196,7 +1196,7 @@ function ActiveFilterChip({label, onRemove, color, icon}) {
 function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
   const deptColor = DEPT_COLORS[wish.builtFor]||C.mushroom500;
   const isBuilder  = wish.claimedByEmail === authUser?.email;
-  const isGardener = authUser?.isGardener;
+  const isAdmin = authUser?.isAdmin;
   const isClaimed  = !!wish.claimedBy;
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.5)",backdropFilter:"blur(4px)"}} onClick={onClose}>
@@ -1208,7 +1208,7 @@ function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
               {isClaimed&&!wish.fulfilledBy&&<span style={{fontFamily:FF,fontSize:10,fontWeight:700,background:C.wintermelon100,color:C.wintermelon500,border:"1px solid "+C.wintermelon400,borderRadius:DS.radius.full,padding:"2px 8px"}}>🔨 Being built</span>}
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              {(authUser?.email===wish.wisherEmail||isGardener)&&!wish.fulfilledBy&&(
+              {(authUser?.email===wish.wisherEmail||isAdmin)&&!wish.fulfilledBy&&(
                 <button onClick={()=>onEdit(wish)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
               )}
               <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
@@ -1253,7 +1253,7 @@ function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
                     <IcoAdd size={16} color={C.white}/> I'll build this
                   </button>
                 )}
-                {isClaimed&&!isBuilder&&!isGardener&&(
+                {isClaimed&&!isBuilder&&!isAdmin&&(
                   <div style={{padding:"10px 14px",background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center"}}>
                     {wish.claimedBy} is already building this
                   </div>
@@ -1969,7 +1969,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
 
   // Mark notifications read when ExCom opens a Nursery card
   useEffect(() => {
-    if (project.stage === 'nursery' && authUser?.isExcom) {
+    if (project.stage === 'nursery' && authUser?.isApprover) {
       onMarkNotificationsRead?.(project.id);
     }
   }, [project.id]);
@@ -1988,8 +1988,8 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
           <StageBadge stage={project.stage}/>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {(authUser?.email===project.builderEmail||authUser?.isGardener) &&
-              !(project.reviewStatus==='pending' && !authUser?.isGardener) && (
+            {(authUser?.email===project.builderEmail||authUser?.isAdmin) &&
+              !(project.reviewStatus==='pending' && !authUser?.isAdmin) && (
               <button onClick={()=>onEdit(project)} style={{background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"4px 10px",cursor:"pointer",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600}}>Edit</button>
             )}
             <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,borderRadius:DS.radius.sm}}>
@@ -2039,7 +2039,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         )}
 
         {/* ── Seedling: Submission Requirements ──────────────────────────────── */}
-        {project.stage==="seedling" && (authUser?.email===project.builderEmail||authUser?.isGardener) && (
+        {project.stage==="seedling" && (authUser?.email===project.builderEmail||authUser?.isAdmin) && (
           <div style={{marginBottom:16,padding:"12px 14px",background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg}}>
             <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mushroom500,marginBottom:10}}>
               Nursery Submission Requirements
@@ -2082,7 +2082,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
                   <div><strong>Deck:</strong> <a href={deckLink} target="_blank" rel="noreferrer" style={{color:C.kangkong600}}>{deckLink}</a></div>
                 </div>
                 <div style={{fontFamily:FF,fontSize:11,color:C.mango600,marginBottom:10,padding:"6px 8px",background:C.mango100,borderRadius:DS.radius.sm}}>
-                  Once submitted, you won't be able to edit this plant until ExCom makes a decision.
+                  Once submitted, you won't be able to edit this plant until an Approver makes a decision.
                 </div>
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setShowSubmitConfirm(false)} style={{flex:1,padding:"7px",background:C.white,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,cursor:"pointer",color:C.mushroom600}}>Cancel</button>
@@ -2117,14 +2117,14 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
             <div style={{fontFamily:FF,fontSize:12,color:C.mango700,marginBottom:2}}>
               Submitted for review{project.submittedAt ? ` — ${new Date(project.submittedAt).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}` : ""}
             </div>
-            {!authUser?.isExcom && (
-              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,fontStyle:"italic",marginTop:4}}>Under review by ExCom.</div>
+            {!authUser?.isApprover && (
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,fontStyle:"italic",marginTop:4}}>Under review by Approver.</div>
             )}
 
             {/* ExCom decision zone */}
-            {authUser?.isExcom && (
+            {authUser?.isApprover && (
               <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+C.mango200}}>
-                <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>ExCom Decision</div>
+                <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>Approver Decision</div>
                 {!showReworkInput ? (
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>onApproveProject?.(project.id)} style={{flex:1,padding:"8px",background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,fontWeight:600,cursor:"pointer"}}>
@@ -2153,8 +2153,8 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
               </div>
             )}
 
-            {/* Withdraw button — builder or Gardener */}
-            {(authUser?.email===project.builderEmail||authUser?.isGardener)&&(
+            {/* Withdraw button — builder or Admin */}
+            {(authUser?.email===project.builderEmail||authUser?.isAdmin)&&(
               <button onClick={()=>onWithdrawFromNursery?.(project.id)} style={{
                 width:"100%",padding:"7px",marginTop:12,
                 background:"transparent",border:"1px solid "+C.mushroom300,
@@ -2658,22 +2658,22 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
 
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
-function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGarden}) {
+function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGarden, onReviewNursery, firstName, isApprover}) {
+  const greeting = firstName ? `Welcome, ${firstName}!` : "Welcome to Grove";
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.6)",backdropFilter:"blur(8px)"}}>
       <div style={{background:C.white,borderRadius:DS.radius.xl,padding:36,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
-
         {/* Header */}
         <div style={{textAlign:"center",marginBottom:24}}>
           <div style={{fontSize:36,marginBottom:12,lineHeight:1}}>🌿</div>
-          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>Welcome to Grove</div>
+          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>{greeting}</div>
           <div style={{fontFamily:FF,fontSize:14,color:C.mushroom600,lineHeight:1.6}}>
             AI tools are being built across Sprout — but no one knows what exists. Grove fixes that.
           </div>
         </div>
-
-        {/* Contribution cards — clickable */}
+        {/* Action cards */}
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
+          {/* Card 1: Plant a Seed */}
           <button onClick={onPlantSeed} style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
             onMouseOver={e=>{e.currentTarget.style.background=C.kangkong100;e.currentTarget.style.borderColor=C.kangkong400;}}
             onMouseOut={e=>{e.currentTarget.style.background=C.kangkong50;e.currentTarget.style.borderColor=C.kangkong200;}}
@@ -2684,22 +2684,35 @@ function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGard
               <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Submit an AI idea you think Sprout needs. The team can vote on it, someone can claim it, and it might get built.</div>
             </div>
           </button>
+          {/* Card 2: Add to the Garden */}
           <button onClick={onAddToGarden} style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
             onMouseOver={e=>{e.currentTarget.style.background=C.mushroom100;e.currentTarget.style.borderColor=C.mushroom300;}}
             onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom200;}}
           >
             <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌾</span>
             <div>
-              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to Garden</div>
+              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to the Garden</div>
               <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Log an AI tool you're building or already shipped. Don't let good work go unseen.</div>
             </div>
           </button>
+          {/* Card 3: Review plants — Approver only */}
+          {isApprover && (
+            <button onClick={onReviewNursery} style={{background:C.mango50,border:"1.5px solid "+C.mango200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
+              onMouseOver={e=>{e.currentTarget.style.background=C.mango100;e.currentTarget.style.borderColor=C.mango400;}}
+              onMouseOut={e=>{e.currentTarget.style.background=C.mango50;e.currentTarget.style.borderColor=C.mango200;}}
+            >
+              <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌿</span>
+              <div>
+                <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mango600,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>IN THE NURSERY</div>
+                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mango700,marginBottom:3}}>Review plants</div>
+                <div style={{fontFamily:FF,fontSize:12,color:C.mango600,lineHeight:1.55}}>You have plants waiting for your decision. Don't leave builders hanging.</div>
+              </div>
+            </button>
+          )}
         </div>
-
         <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center",marginBottom:20}}>
           Start by exploring what's already growing — or plant your first seed.
         </div>
-
         {/* Buttons */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           <button onClick={onExplore} style={{width:"100%",padding:"11px 0",borderRadius:DS.radius.lg,background:C.kangkong500,border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",transition:"background 0.15s"}}>
@@ -2709,7 +2722,6 @@ function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGard
             Got it, don't show again
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -3200,8 +3212,8 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
               <div style={{fontFamily:FF,fontSize:13,color:C.kangkong200,marginTop:3}}>{authUser.email}</div>
               {/* Role badges */}
               <div style={{marginTop:8,display:"flex",gap:5,flexWrap:"wrap"}}>
-                {authUser.isGardener&&(
-                  <span title="Tends the Garden — promotes seeds, manages stages, oversees the ecosystem" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.kangkong900,background:C.kangkong100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌿 Gardener</span>
+                {authUser.isAdmin&&(
+                  <span title="Tends the Garden — promotes seeds, manages stages, oversees the ecosystem" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.kangkong900,background:C.kangkong100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌿 Admin</span>
                 )}
                 {claimedSeeds.length>0&&(
                   <span title="Claims seeds and builds AI projects in the Garden" style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mango600,background:C.mango100,borderRadius:DS.radius.full,padding:"2px 10px",cursor:"default"}}>🌾 Farmer</span>
@@ -3359,7 +3371,7 @@ const DEMO_USER = {
   email: "demo@sprout.ph",
   displayName: "Demo User",
   photoURL: `https://ui-avatars.com/api/?name=Demo+User&background=1f6e1f&color=fff&size=128`,
-  isGardener: false,
+  isAdmin: false,
   country: "PH",
 };
 
@@ -3367,7 +3379,7 @@ const DEMO_USER_TH = {
   email: "demo@sproutsolutions.io",
   displayName: "Demo User TH",
   photoURL: `https://ui-avatars.com/api/?name=Demo+TH&background=1a5276&color=fff&size=128`,
-  isGardener: false,
+  isAdmin: false,
   country: "TH",
 };
 
@@ -3375,7 +3387,7 @@ const ADMIN_USER = {
   email: "kvirata@sprout.ph",
   displayName: "VK Virata",
   photoURL: `https://ui-avatars.com/api/?name=VK+Virata&background=0e380e&color=d6f0d6&size=128`,
-  isGardener: true,
+  isAdmin: true,
   country: "PH",
 };
 
@@ -3410,305 +3422,261 @@ function FirstTimeCountryModal({onSelect}) {
   );
 }
 
-function LoginScreen({onLogin, onSignUp, onReset, onUpdatePassword, initialMode="login", error, loading}) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [mode, setMode] = useState(initialMode); // "login" | "signup" | "reset" | "newpassword"
-  const [resetSent, setResetSent] = useState(false);
-  const [resetError, setResetError] = useState("");
-  const [updateError, setUpdateError] = useState("");
-  const [updateDone, setUpdateDone] = useState(false);
+// ── Help Panel ────────────────────────────────────────────────────────────────
+function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
+  view, setView, submitType, setSubmitType, formTitle, setFormTitle,
+  formDesc, setFormDesc, editItem, onOpen, onSubmit, onUpvote,
+  onResolve, onDelete, onStartEdit, loading, authUser }) {
 
-  const isDomainValid = isAllowedEmail(email);
+  // helpDateLabel is local to avoid conflict with imported daysAgo (which returns a number)
+  const helpDateLabel = (ts) => {
+    const d = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+    if (d === 0) return "Today";
+    if (d === 1) return "Yesterday";
+    return `${d} days ago`;
+  };
+
+  const ITEMS_PER_PAGE = 10;
+
+  const filtered = items.filter(i =>
+    filter === "all" ? true :
+    filter === "report" ? i.type === "report" : i.type === "ask"
+  );
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const pageItems  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const submitterName = (email) => {
+    if (email === authUser?.email && authUser?.firstName) return authUser.firstName;
+    return email.split("@")[0];
+  };
 
   return (
-    <div style={{
-      minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",
-      background:"linear-gradient(135deg, "+C.kangkong800+" 0%, "+C.kangkong600+" 40%, "+C.kangkong400+" 100%)",
-      fontFamily:FF,
-    }}>
-      {/* Background botanical texture */}
-      <div style={{position:"fixed",inset:0,pointerEvents:"none",overflow:"hidden",opacity:0.06}}>
-        <PlantTree size={400} wilting={false}/>
-      </div>
+    <>
+      {/* FAB */}
+      <button
+        onClick={open ? onClose : onOpen}
+        style={{
+          position:"fixed", bottom:20, right:20, width:40, height:40,
+          borderRadius:"50%", background:C.kangkong700, border:"none",
+          cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+          boxShadow:"0 2px 8px rgba(0,0,0,0.18)",
+          zIndex:50, transition:"transform 0.15s, background 0.15s",
+        }}
+        onMouseOver={e=>{e.currentTarget.style.background=C.kangkong800;e.currentTarget.style.transform="scale(1.05)";}}
+        onMouseOut={e=>{e.currentTarget.style.background=C.kangkong700;e.currentTarget.style.transform="scale(1)";}}
+        title="Help"
+      >
+        {/* Question mark icon */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+          <circle cx="12" cy="17" r="0.5" fill="white" stroke="white" strokeWidth="1.5"/>
+        </svg>
+      </button>
 
-      <div style={{
-        background:C.white,borderRadius:DS.radius.xl,padding:"40px 36px",
-        width:400,maxWidth:"92vw",boxShadow:DS.shadow.xl,
-        border:"1px solid "+C.mushroom200,position:"relative",
-        animation:"slideUp 0.4s cubic-bezier(0.34,1.2,0.64,1)",
-      }}>
-        {/* Logo */}
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{
-            width:56,height:56,borderRadius:14,background:C.kangkong800,
-            display:"flex",alignItems:"center",justifyContent:"center",
-            margin:"0 auto 12px",boxShadow:"0 8px 24px "+C.kangkong800+"50",
-          }}>
-            <IcoGarden size={28} color={C.kangkong200}/>
+      {/* Panel */}
+      {open && (
+        <div style={{
+          position:"fixed", top:0, right:0, width:320, height:"100vh",
+          background:C.white, borderLeft:"1px solid "+C.mushroom200,
+          zIndex:55, display:"flex", flexDirection:"column",
+          transform:"translateX(0)", animation:"slideInPanel 0.22s cubic-bezier(0.4,0,0.2,1)",
+          boxShadow:"-4px 0 20px rgba(0,0,0,0.08)",
+        }}>
+
+          {/* Panel header */}
+          <div style={{padding:"12px 14px 0", borderBottom:"1px solid "+C.mushroom200, flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help</span>
+              <button onClick={onClose} style={{width:28,height:28,borderRadius:DS.radius.sm,border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.mushroom500,fontSize:16,fontWeight:300}}
+                onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
+                onMouseOut={e=>e.currentTarget.style.background="none"}
+              >✕</button>
+            </div>
+
+            {/* + Report and + Ask buttons — hidden during submit/edit */}
+            {view === "feed" && (
+              <div style={{display:"flex",gap:6,marginBottom:10}}>
+                <button onClick={()=>{setSubmitType("report");setFormTitle("");setFormDesc("");setView("submit");}}
+                  style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,background:"none",fontFamily:FF,fontSize:12,fontWeight:500,color:C.mushroom700,cursor:"pointer",transition:"all 0.15s"}}
+                  onMouseOver={e=>{e.currentTarget.style.background=C.tomato100;e.currentTarget.style.color=C.tomato600;e.currentTarget.style.borderColor="#FFCDD2";}}
+                  onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.color=C.mushroom700;e.currentTarget.style.borderColor=C.mushroom200;}}
+                >+ Report</button>
+                <button onClick={()=>{setSubmitType("ask");setFormTitle("");setFormDesc("");setView("submit");}}
+                  style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,background:"none",fontFamily:FF,fontSize:12,fontWeight:500,color:C.mushroom700,cursor:"pointer",transition:"all 0.15s"}}
+                  onMouseOver={e=>{e.currentTarget.style.background=C.blueberry100;e.currentTarget.style.color=C.blueberry500;e.currentTarget.style.borderColor="#BBDEFB";}}
+                  onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.color=C.mushroom700;e.currentTarget.style.borderColor=C.mushroom200;}}
+                >+ Ask</button>
+              </div>
+            )}
+
+            {/* Filter tabs — only in feed view */}
+            {view === "feed" && (
+              <div style={{display:"flex",gap:0,borderBottom:"1px solid "+C.mushroom200}}>
+                {[["all","All"],["report","Reports"],["ask","Asks"]].map(([val,label])=>(
+                  <button key={val} onClick={()=>{setFilter(val);setPage(1);}}
+                    style={{padding:"6px 12px",fontFamily:FF,fontSize:12,fontWeight:500,border:"none",background:"none",cursor:"pointer",
+                      color:filter===val?C.kangkong600:C.mushroom500,
+                      borderBottom:filter===val?"2px solid "+C.kangkong600:"2px solid transparent",
+                      transition:"all 0.15s",
+                    }}
+                  >{label}</button>
+                ))}
+              </div>
+            )}
           </div>
-          <div style={{fontFamily:FF,fontWeight:800,fontSize:22,color:C.mushroom900,lineHeight:1.1}}>Grove</div>
-          <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",marginTop:3}}>by Sprout</div>
-        </div>
 
-        {mode==="login" ? (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Welcome back</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Sign in with your <strong>@sprout.ph</strong> or <strong>@sproutsolutions.io</strong> account</div>
-            </div>
-
-            <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Email</label>
-              <input
-                type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                placeholder="yourname@sprout.ph"
-                style={{
-                  width:"100%",padding:"10px 12px",
-                  border:"1.5px solid "+(email&&!isDomainValid?C.tomato500:C.mushroom300),
-                  borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,
-                  color:C.mushroom900,background:C.mushroom50,
-                  outline:"none",boxSizing:"border-box",transition:"border-color 0.15s",
-                }}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=email&&!isDomainValid?C.tomato500:C.mushroom300}
-              />
-              {email&&!isDomainValid&&(
-                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
-                  <IcoWarning size={12} color={C.tomato500}/> Only @sprout.ph and @sproutsolutions.io addresses are allowed
-                </div>
-              )}
-            </div>
-
-            <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Password</label>
-              <input
-                type="password" value={password} onChange={e=>setPassword(e.target.value)}
-                placeholder="••••••••"
-                onKeyDown={e=>e.key==="Enter"&&isDomainValid&&password&&onLogin(email,password)}
-                style={{
-                  width:"100%",padding:"10px 12px",
-                  border:"1.5px solid "+C.mushroom300,
-                  borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,
-                  color:C.mushroom900,background:C.mushroom50,
-                  outline:"none",boxSizing:"border-box",
-                }}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=C.mushroom300}
-              />
-            </div>
-
-            {error&&(
-              <div style={{
-                background:C.tomato100,border:"1px solid "+C.tomato500,
-                borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,
-                fontFamily:FF,fontSize:12,color:C.tomato600,
-                display:"flex",alignItems:"center",gap:8,
-              }}>
-                <IcoWarning size={14} color={C.tomato500}/> {error}
-              </div>
-            )}
-
-            <button
-              onClick={()=>onLogin(email,password)}
-              disabled={!isDomainValid||!password||loading}
-              style={{
-                width:"100%",padding:"11px",
-                background:isDomainValid&&password?C.kangkong600:C.mushroom300,
-                color:C.white,border:"none",borderRadius:DS.radius.lg,
-                cursor:isDomainValid&&password?"pointer":"not-allowed",
-                fontFamily:FF,fontSize:13,fontWeight:700,
-                boxShadow:isDomainValid&&password?"0 4px 16px "+C.kangkong600+"40":"none",
-                transition:"all 0.2s",marginBottom:14,
-              }}
-            >
-              {loading ? "Signing in…" : "Sign In"}
-            </button>
-
-            <div style={{textAlign:"center",display:"flex",justifyContent:"center",gap:16}}>
-              <button onClick={()=>setMode("reset")} style={{
-                background:"none",border:"none",cursor:"pointer",
-                fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,
-              }}>Forgot password?</button>
-              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom300}}>|</span>
-              <button onClick={()=>setMode("signup")} style={{
-                background:"none",border:"none",cursor:"pointer",
-                fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,
-              }}>Create account</button>
-            </div>
-          </>
-        ) : mode==="signup" ? (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Create account</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Use your <strong>@sprout.ph</strong> or <strong>@sproutsolutions.io</strong> email</div>
-            </div>
-
-            <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Work Email</label>
-              <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                placeholder="yourname@sprout.ph"
-                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(email&&!isDomainValid?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=email&&!isDomainValid?C.tomato500:C.mushroom300}
-              />
-              {email&&!isDomainValid&&(
-                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
-                  <IcoWarning size={12} color={C.tomato500}/> Only @sprout.ph and @sproutsolutions.io addresses are allowed
-                </div>
-              )}
-            </div>
-
-            <div style={{marginBottom:14}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Password</label>
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
-                placeholder="••••••••"
-                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=C.mushroom300}
-              />
-            </div>
-
-            <div style={{marginBottom:16}}>
-              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Confirm Password</label>
-              <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                onBlur={e=>e.target.style.borderColor=confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300}
-              />
-              {confirmPassword&&confirmPassword!==password&&(
-                <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Passwords do not match</div>
-              )}
-            </div>
-
-            {error&&(
-              <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
-                <IcoWarning size={14} color={C.tomato500}/> {error}
-              </div>
-            )}
-
-            <button
-              onClick={()=>onSignUp(email,password)}
-              disabled={!isDomainValid||!password||password!==confirmPassword||loading}
-              style={{width:"100%",padding:"11px",background:isDomainValid&&password&&password===confirmPassword?C.kangkong600:C.mushroom300,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:isDomainValid&&password&&password===confirmPassword?"pointer":"not-allowed",fontFamily:FF,fontSize:13,fontWeight:700,transition:"all 0.2s",marginBottom:14}}
-            >
-              {loading ? "Creating…" : "Create Account"}
-            </button>
-
-            <div style={{textAlign:"center"}}>
-              <button onClick={()=>{setMode("login");setConfirmPassword("");}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600}}>
-                Already have an account? Sign in
-              </button>
-            </div>
-          </>
-        ) : mode==="newpassword" ? (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Set new password</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Choose a new password for your Sprout account</div>
-            </div>
-
-            {updateDone ? (
-              <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,padding:"14px",marginBottom:16,textAlign:"center",fontFamily:FF,fontSize:13,color:C.kangkong700}}>
-                <IcoCheck size={18} color={C.kangkong500}/><br/>
-                Password updated! <button onClick={()=>setMode("login")} style={{background:"none",border:"none",cursor:"pointer",color:C.kangkong600,fontWeight:700,fontFamily:FF,fontSize:13}}>Sign in</button>
-              </div>
-            ) : (
+          {/* Panel body */}
+          <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
+            {view === "feed" && (
               <>
-                <div style={{marginBottom:14}}>
-                  <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>New Password</label>
-                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                    onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                    onBlur={e=>e.target.style.borderColor=C.mushroom300}
-                  />
-                </div>
-                <div style={{marginBottom:16}}>
-                  <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Confirm Password</label>
-                  <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+(confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300),borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}
-                    onFocus={e=>e.target.style.borderColor=C.kangkong500}
-                    onBlur={e=>e.target.style.borderColor=confirmPassword&&confirmPassword!==password?C.tomato500:C.mushroom300}
-                  />
-                  {confirmPassword&&confirmPassword!==password&&(
-                    <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Passwords do not match</div>
-                  )}
-                </div>
-                {updateError&&(
-                  <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:16,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
-                    <IcoWarning size={14} color={C.tomato500}/> {updateError}
+                {pageItems.length === 0 ? (
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="9" stroke={C.mushroom300} strokeWidth="1.5"/>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke={C.mushroom300} strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="12" cy="17" r="0.5" fill={C.mushroom300} stroke={C.mushroom300} strokeWidth="1"/>
+                    </svg>
+                    <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Nothing here yet.</div>
+                    <div style={{fontFamily:FF,fontSize:12,color:C.mushroom400,textAlign:"center"}}>Be the first to submit a report or ask a question.</div>
                   </div>
+                ) : (
+                  pageItems.map(item => {
+                    const isSettled = item.status === "resolved" || item.status === "answered";
+                    const isOwn     = item.submitted_by === authUser?.email;
+                    const hasVoted  = item.upvoters?.includes(authUser?.email);
+                    const canEdit   = isOwn && !isSettled;
+                    return (
+                      <div key={item.id} style={{padding:"10px 0",borderBottom:"1px solid "+C.mushroom100,opacity:isSettled?0.5:1}}>
+                        <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                          {/* Type dot */}
+                          <div style={{width:6,height:6,borderRadius:"50%",marginTop:5,flexShrink:0,background:item.type==="report"?C.tomato600:C.blueberry500}}/>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontFamily:FF,fontSize:13,fontWeight:500,color:C.mushroom900,lineHeight:1.4,marginBottom:4}}>{item.title}</div>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:4}}>
+                              <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{submitterName(item.submitted_by)} · {helpDateLabel(item.created_at)}</span>
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                {/* Upvote button */}
+                                <button
+                                  onClick={()=>!isOwn&&onUpvote(item)}
+                                  disabled={isOwn}
+                                  style={{display:"flex",alignItems:"center",gap:3,padding:"2px 6px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,background:hasVoted?C.kangkong50:"none",color:hasVoted?C.kangkong700:C.mushroom500,fontFamily:FF,fontSize:11,cursor:isOwn?"default":"pointer",transition:"all 0.15s",}}
+                                >
+                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1L9 9H1L5 1Z" fill={hasVoted?C.kangkong700:C.mushroom400}/></svg>
+                                  {item.upvoters?.length || 0}
+                                </button>
+                                {/* Status pill */}
+                                <span style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:DS.radius.full,background:isSettled?C.kangkong100:C.mango100,color:isSettled?C.kangkong700:C.mango700,}}>
+                                  {item.status}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Admin + Edit actions */}
+                            <div style={{display:"flex",gap:6,marginTop:6}}>
+                              {canEdit && (
+                                <button onClick={()=>onStartEdit(item)}
+                                  style={{fontFamily:FF,fontSize:11,color:C.mushroom500,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Edit</button>
+                              )}
+                              {authUser?.isAdmin && !isSettled && (
+                                <button onClick={()=>onResolve(item)}
+                                  style={{fontFamily:FF,fontSize:11,color:C.kangkong600,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>
+                                  {item.type==="report"?"Mark resolved":"Mark answered"}
+                                </button>
+                              )}
+                              {authUser?.isAdmin && (
+                                <button onClick={()=>onDelete(item)}
+                                  style={{fontFamily:FF,fontSize:11,color:C.tomato600,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Delete</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
-                <button
-                  onClick={async()=>{
-                    setUpdateError("");
-                    const err = await onUpdatePassword(password);
-                    if (err) setUpdateError(err);
-                    else setUpdateDone(true);
-                  }}
-                  disabled={!password||password!==confirmPassword}
-                  style={{width:"100%",padding:"11px",background:password&&password===confirmPassword?C.kangkong600:C.mushroom300,color:C.white,border:"none",borderRadius:DS.radius.lg,cursor:password&&password===confirmPassword?"pointer":"not-allowed",fontFamily:FF,fontSize:13,fontWeight:700,marginBottom:0}}
-                >
-                  Update Password
-                </button>
               </>
             )}
-          </>
-        ) : (
-          <>
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:FF,fontSize:20,fontWeight:700,color:C.mushroom900,marginBottom:4}}>Reset password</div>
-              <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>We'll send a reset link to your Sprout inbox</div>
-            </div>
 
-            {resetSent ? (
-              <div style={{
-                background:C.kangkong50,border:"1px solid "+C.kangkong200,
-                borderRadius:DS.radius.md,padding:"14px",marginBottom:16,textAlign:"center",
-                fontFamily:FF,fontSize:13,color:C.kangkong700,
-              }}>
-                <IcoCheck size={18} color={C.kangkong500}/><br/>
-                Reset link sent! Check your inbox.
-              </div>
-            ) : (
-              <div style={{marginBottom:16}}>
-                <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>Email</label>
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                  placeholder="yourname@sprout.ph"
-                  style={{width:"100%",padding:"10px 12px",border:"1.5px solid "+C.mushroom300,borderRadius:DS.radius.lg,fontFamily:FF,fontSize:13,color:C.mushroom900,background:C.mushroom50,outline:"none",boxSizing:"border-box"}}/>
+            {(view === "submit" || view === "edit") && (
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {/* Back button */}
+                <button onClick={()=>setView("feed")}
+                  style={{display:"flex",alignItems:"center",gap:4,fontFamily:FF,fontSize:12,color:C.mushroom500,background:"none",border:"none",cursor:"pointer",padding:0,alignSelf:"flex-start"}}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6L8 10" stroke={C.mushroom500} strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  Back to Help
+                </button>
+                <div style={{fontFamily:FF,fontSize:14,fontWeight:600,color:C.mushroom900}}>
+                  {view==="edit" ? "Edit your submission" : submitType==="report" ? "Submit a report" : "Ask a question"}
+                </div>
+                {/* Type toggle — only on new submit */}
+                {view === "submit" && (
+                  <div style={{display:"flex",gap:6}}>
+                    {[["report","Report"],["ask","Ask"]].map(([val,label])=>(
+                      <button key={val} onClick={()=>setSubmitType(val)}
+                        style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.15s",
+                          border: submitType===val
+                            ? (val==="report"?"1px solid #FFCDD2":"1px solid #BBDEFB")
+                            : "1px solid "+C.mushroom200,
+                          background: submitType===val
+                            ? (val==="report"?C.tomato100:C.blueberry100)
+                            : "none",
+                          color: submitType===val
+                            ? (val==="report"?C.tomato600:C.blueberry500)
+                            : C.mushroom500,
+                        }}
+                      >{label}</button>
+                    ))}
+                  </div>
+                )}
+                {/* Submitter strip */}
+                <div style={{display:"flex",alignItems:"center",gap:8,background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,padding:"6px 10px"}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",background:C.kangkong200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:10,fontWeight:700,color:C.kangkong700,flexShrink:0}}>
+                    {(authUser?.firstName||authUser?.displayName||"?")[0].toUpperCase()}
+                  </div>
+                  <span style={{fontFamily:FF,fontSize:11,color:C.mushroom600}}>Submitting as {authUser?.firstName||authUser?.displayName||authUser?.email}</span>
+                </div>
+                {/* Title field */}
+                <input
+                  value={formTitle}
+                  onChange={e=>setFormTitle(e.target.value)}
+                  placeholder="Brief description..."
+                  style={{width:"100%",padding:"8px 10px",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:13,color:C.mushroom900,outline:"none"}}
+                />
+                {/* Description field */}
+                <textarea
+                  value={formDesc}
+                  onChange={e=>setFormDesc(e.target.value)}
+                  placeholder="Steps to reproduce, or more context... (optional)"
+                  rows={4}
+                  style={{width:"100%",padding:"8px 10px",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:13,color:C.mushroom900,outline:"none",resize:"vertical"}}
+                />
+                {/* Submit button */}
+                <button
+                  onClick={onSubmit}
+                  disabled={!formTitle.trim()||loading}
+                  style={{width:"100%",padding:"10px 0",borderRadius:DS.radius.md,background:formTitle.trim()?C.kangkong700:"#ccc",border:"none",color:C.white,fontFamily:FF,fontSize:13,fontWeight:600,cursor:formTitle.trim()?"pointer":"default",transition:"background 0.15s"}}
+                  onMouseOver={e=>{if(formTitle.trim())e.currentTarget.style.background=C.kangkong800;}}
+                  onMouseOut={e=>{if(formTitle.trim())e.currentTarget.style.background=C.kangkong700;}}
+                >
+                  {loading ? "Submitting…" : view==="edit" ? "Save changes" : "Submit"}
+                </button>
               </div>
             )}
+          </div>
 
-            {resetError&&(
-              <div style={{background:C.tomato100,border:"1px solid "+C.tomato500,borderRadius:DS.radius.md,padding:"10px 14px",marginBottom:12,fontFamily:FF,fontSize:12,color:C.tomato600,display:"flex",alignItems:"center",gap:8}}>
-                <IcoWarning size={14} color={C.tomato500}/> {resetError}
-              </div>
-            )}
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setMode("login");setResetSent(false);setResetError("");}} style={{
-                flex:1,padding:"10px",background:C.mushroom100,border:"1px solid "+C.mushroom200,
-                borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom600,fontWeight:600,
-              }}>Back</button>
-              {!resetSent&&(
-                <button onClick={async()=>{setResetError("");const err=await onReset(email);if(err){setResetError(err);}else{setResetSent(true);}}} disabled={!isDomainValid} style={{
-                  flex:2,padding:"10px",background:isDomainValid?C.kangkong600:C.mushroom300,
-                  border:"none",borderRadius:DS.radius.lg,cursor:isDomainValid?"pointer":"not-allowed",
-                  fontFamily:FF,fontSize:13,color:C.white,fontWeight:700,
-                }}>Send Reset Link</button>
-              )}
+          {/* Pagination footer — only in feed view, only when multiple pages */}
+          {view === "feed" && totalPages > 1 && (
+            <div style={{borderTop:"1px solid "+C.mushroom200,padding:"8px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+              <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}
+                style={{padding:"4px 10px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,fontFamily:FF,fontSize:11,background:"none",cursor:page===1?"default":"pointer",color:page===1?C.mushroom300:C.mushroom600}}>Prev</button>
+              <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{page} of {totalPages}</span>
+              <button onClick={()=>setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages}
+                style={{padding:"4px 10px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,fontFamily:FF,fontSize:11,background:"none",cursor:page===totalPages?"default":"pointer",color:page===totalPages?C.mushroom300:C.mushroom600}}>Next</button>
             </div>
-          </>
-        )}
-
-        <div style={{marginTop:24,paddingTop:16,borderTop:"1px solid "+C.mushroom100,textAlign:"center",fontFamily:FF,fontSize:11,color:C.mushroom400}}>
-          Access restricted to <strong>@sprout.ph</strong> and <strong>@sproutsolutions.io</strong> accounts
+          )}
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
@@ -3735,93 +3703,133 @@ export default function SproutAIGarden() {
   const [authUser, setAuthUser]     = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError]   = useState("");
-  const [passwordRecovery, setPasswordRecovery] = useState(false);
+
+  // Help panel state
+  const [helpOpen,        setHelpOpen]        = useState(false);
+  const [helpItems,       setHelpItems]       = useState([]);
+  const [helpFilter,      setHelpFilter]      = useState("all"); // "all" | "report" | "ask"
+  const [helpPage,        setHelpPage]        = useState(1);
+  const [helpView,        setHelpView]        = useState("feed"); // "feed" | "submit" | "edit"
+  const [helpSubmitType,  setHelpSubmitType]  = useState("report"); // pre-selected type in submit form
+  const [helpEditItem,    setHelpEditItem]    = useState(null); // item being edited
+  const [helpFormTitle,   setHelpFormTitle]   = useState("");
+  const [helpFormDesc,    setHelpFormDesc]    = useState("");
+  const [helpLoading,     setHelpLoading]     = useState(false);
 
   useEffect(() => {
-    // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock the UI after 5s
+    // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock after 5s
     const timeout = setTimeout(() => setAuthLoading(false), 5000);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       clearTimeout(timeout);
-      if (event === "PASSWORD_RECOVERY") {
-        setPasswordRecovery(true);
-        setAuthLoading(false);
-        return;
-      }
+
       if (!session) {
         setAuthUser(null);
         setAuthLoading(false);
+        setAuthError("");
         return;
       }
 
-      // Immediately unblock the UI using session data
-      const domain      = session.user.email.split("@")[1];
-      const country     = COUNTRY_MAP[domain] || "PH";
-      const displayName = session.user.email.split("@")[0];
-      const fallback    = { email: session.user.email, displayName, country, isGardener: false, isExcom: false };
-      setAuthUser(fallback);
-      setAuthLoading(false);
+      // Keep loading state — do not render the app until domain validation passes
+      const email  = session.user.email;
+      const domain = email.split("@")[1];
+      const country = COUNTRY_MAP[domain];
 
-      // Then sync the real profile from DB in the background
-      supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
-        .then(({ data: existing }) => {
-          if (existing) {
-            setAuthUser({ email: existing.email, displayName: existing.display_name, country: existing.country, isGardener: existing.is_gardener, isExcom: existing.is_execom || false, hasDismissedWelcome: existing.has_dismissed_welcome || false });
-          } else {
-            supabase.from("profiles").insert({
-              id: session.user.id, email: session.user.email,
-              display_name: displayName, country, is_gardener: false,
-            }).catch(e => console.warn("Profile insert error:", e));
+      if (!country) {
+        // Non-Sprout account — sign out and show error
+        await supabase.auth.signOut();
+        setAuthError("Only @sprout.ph and @sproutsolutions.io accounts can access Grove.");
+        setAuthLoading(false);
+        return;
+      }
+
+      // Extract first name from Google user metadata
+      const meta      = session.user.user_metadata || {};
+      const firstName = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
+
+      try {
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (existing) {
+          // Update first_name if it was previously null and Google now provides it
+          if (!existing.first_name && firstName) {
+            await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
           }
-        })
-        .catch(e => console.warn("Profile select error:", e));
+          setAuthUser({
+            email: existing.email,
+            firstName: existing.first_name || firstName || null,
+            displayName: existing.display_name || email.split("@")[0],
+            country: existing.country,
+            isAdmin: existing.is_admin || false,
+            isApprover: existing.is_approver || false,
+            hasDismissedWelcome: existing.has_dismissed_welcome || false,
+          });
+        } else {
+          // First login — create profile row
+          const displayName = email.split("@")[0];
+          await supabase.from("profiles").insert({
+            id: session.user.id,
+            email,
+            display_name: displayName,
+            first_name: firstName,
+            country,
+            is_admin: false,
+            is_approver: false,
+            has_dismissed_welcome: false,
+          });
+          setAuthUser({
+            email,
+            firstName: firstName || null,
+            displayName,
+            country,
+            isAdmin: false,
+            isApprover: false,
+            hasDismissedWelcome: false,
+          });
+        }
+      } catch (e) {
+        console.warn("Profile load/create error:", e);
+        // Fallback: still allow access with minimal profile
+        setAuthUser({
+          email,
+          firstName: firstName || null,
+          displayName: email.split("@")[0],
+          country,
+          isAdmin: false,
+          isApprover: false,
+          hasDismissedWelcome: false,
+        });
+      }
+
+      setAuthLoading(false);
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = async (email, password) => {
-    setAuthError("");
-    setAuthLoading(true);
-    const domain = email.split("@")[1];
-    if (!COUNTRY_MAP[domain]) {
-      setAuthError("Only @sprout.ph and @sproutsolutions.io email addresses are allowed.");
-      setAuthLoading(false);
-      return;
-    }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError(error.message);
-    setAuthLoading(false);
-  };
-
-  const handleSignUp = async (email, password) => {
-    setAuthError("");
-    setAuthLoading(true);
-    const domain = email.split("@")[1];
-    if (!COUNTRY_MAP[domain]) {
-      setAuthError("Only @sprout.ph and @sproutsolutions.io email addresses are allowed.");
-      setAuthLoading(false);
-      return;
-    }
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setAuthError(error.message);
-    setAuthLoading(false);
-  };
-
-  const handleReset = async (email) => {
-    const redirectTo = import.meta.env.VITE_APP_URL || window.location.origin;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-    return error ? error.message : null;
-  };
-
-  const handleUpdatePassword = async (newPassword) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) return error.message;
-    setPasswordRecovery(false);
-    return null;
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setAuthUser(null);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setAuthError("");
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    // If error (e.g. provider not enabled), surface it and unblock
+    if (error) {
+      setAuthError(error.message);
+      setAuthLoading(false);
+    }
+    // On success the browser redirects — authLoading stays true until
+    // onAuthStateChange fires after the OAuth callback
   };
 
   const handleDismissWelcomePermanently = async () => {
@@ -3848,6 +3856,82 @@ export default function SproutAIGarden() {
     if (!authUser) return;
     loadNotifications().then(data => setNotifications(data));
   }, [authUser?.email]);
+
+  // ── Help panel data loading & mutations ──────────────────────────────────────
+  const loadHelpItems = async () => {
+    const { data, error } = await supabase
+      .from("help_items")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) setHelpItems(data);
+  };
+
+  const handleHelpOpen = async () => {
+    setHelpOpen(true);
+    setHelpPage(1);
+    setHelpFilter("all");
+    setHelpView("feed");
+    await loadHelpItems();
+  };
+
+  const handleHelpSubmit = async () => {
+    if (!helpFormTitle.trim() || !authUser) return;
+    setHelpLoading(true);
+    const isEdit = helpView === "edit" && helpEditItem;
+    if (isEdit) {
+      const { error } = await supabase
+        .from("help_items")
+        .update({ title: helpFormTitle.trim(), description: helpFormDesc.trim() || null })
+        .eq("id", helpEditItem.id);
+      if (!error) await loadHelpItems();
+    } else {
+      const newItem = {
+        type: helpSubmitType,
+        title: helpFormTitle.trim(),
+        description: helpFormDesc.trim() || null,
+        submitted_by: authUser.email,
+        status: helpSubmitType === "report" ? "open" : "unanswered",
+      };
+      const { error } = await supabase.from("help_items").insert(newItem);
+      if (!error) await loadHelpItems();
+    }
+    setHelpFormTitle("");
+    setHelpFormDesc("");
+    setHelpEditItem(null);
+    setHelpView("feed");
+    setHelpFilter("all");
+    setHelpPage(1);
+    setHelpLoading(false);
+  };
+
+  const handleHelpUpvote = async (item) => {
+    if (!authUser || item.submitted_by === authUser.email) return;
+    const alreadyVoted = item.upvoters?.includes(authUser.email);
+    const newUpvoters = alreadyVoted
+      ? item.upvoters.filter(e => e !== authUser.email)
+      : [...(item.upvoters || []), authUser.email];
+    const { error } = await supabase
+      .from("help_items")
+      .update({ upvoters: newUpvoters })
+      .eq("id", item.id);
+    if (!error) await loadHelpItems();
+  };
+
+  const handleHelpResolve = async (item) => {
+    if (!authUser?.isAdmin) return;
+    const newStatus = item.type === "report" ? "resolved" : "answered";
+    const { error } = await supabase
+      .from("help_items")
+      .update({ status: newStatus, resolved_by: authUser.email, resolved_at: new Date().toISOString() })
+      .eq("id", item.id);
+    if (!error) await loadHelpItems();
+  };
+
+  const handleHelpDelete = async (item) => {
+    if (!authUser?.isAdmin) return;
+    const { error } = await supabase.from("help_items").delete().eq("id", item.id);
+    if (!error) setHelpItems(prev => prev.filter(i => i.id !== item.id));
+  };
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -3899,8 +3983,8 @@ export default function SproutAIGarden() {
   };
 
   const handleMoveStage = (project, dirOrStage) => {
-    // Permission: must be builder or Gardener
-    if (!authUser || (authUser.email !== project.builderEmail && !authUser.isGardener)) return;
+    // Permission: must be builder or Admin
+    if (!authUser || (authUser.email !== project.builderEmail && !authUser.isAdmin)) return;
 
     let next;
     if (typeof dirOrStage === "string") {
@@ -3915,10 +3999,10 @@ export default function SproutAIGarden() {
     if (next === 'nursery') return;
 
     // Nursery exit is ExCom-only (handled by approveProject/needsRework handlers)
-    if (project.stage === 'nursery' && !authUser.isGardener) return;
+    if (project.stage === 'nursery' && !authUser.isAdmin) return;
 
-    // Non-Gardeners: adjacent stages only
-    if (!authUser.isGardener) {
+    // Non-Admins: adjacent stages only
+    if (!authUser.isAdmin) {
       const curOrder = STAGE_ORDER[project.stage];
       const nextOrder = STAGE_ORDER[next];
       if (Math.abs(nextOrder - curOrder) > 1) return;
@@ -3992,7 +4076,7 @@ export default function SproutAIGarden() {
     const now = new Date().toISOString();
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
-    const newMilestones = [...(project.milestones || []), "Approved by ExCom — " + new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})];
+    const newMilestones = [...(project.milestones || []), "Approved by Approver — " + new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})];
     const { error } = await supabase.from("projects").update({
       stage: "sprout",
       review_status: "approved",
@@ -4114,8 +4198,8 @@ export default function SproutAIGarden() {
   const handleUnclaimSeed = async (wishId) => {
     const wish = wishes.find(w => w.id === wishId);
     if (!wish || !wish.fulfilledBy) return;
-    // Only builder or Gardener can un-claim
-    if (authUser.email !== wish.claimedByEmail && !authUser.isGardener) return;
+    // Only builder or Admin can un-claim
+    if (authUser.email !== wish.claimedByEmail && !authUser.isAdmin) return;
     // Cannot un-claim if the Plant is in Nursery
     const plant = projects.find(p => p.id === wish.fulfilledBy);
     if (plant?.stage === "nursery") return;
@@ -4135,7 +4219,7 @@ export default function SproutAIGarden() {
     }).eq("id", wishId);
     if (wishError) {
       console.error("handleUnclaimSeed wish clear:", wishError);
-      alert("Plant removed, but there was an error releasing the Seed. A Gardener can fix this.");
+      alert("Plant removed, but there was an error releasing the Seed. An Admin can fix this.");
       return;
     }
     setWishes(prev => prev.map(w => w.id === wishId
@@ -4166,7 +4250,40 @@ export default function SproutAIGarden() {
   if (!authUser) {
     return (
       <>
-        <LoginScreen onLogin={handleLogin} onSignUp={handleSignUp} onReset={handleReset} onUpdatePassword={handleUpdatePassword} initialMode={passwordRecovery ? "newpassword" : "login"} error={authError} loading={authLoading}/>
+        <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,"+C.kangkong800+" 0%,"+C.kangkong400+" 100%)"}}>
+          <div style={{background:C.white,borderRadius:DS.radius.xl,padding:"40px 32px",width:340,boxShadow:DS.shadow.xl,display:"flex",flexDirection:"column",alignItems:"center",gap:20}}>
+            {/* Grove mark */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:36,height:36,background:C.kangkong600,borderRadius:DS.radius.md,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🌿</div>
+              <span style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,letterSpacing:"-0.02em"}}>Grove</span>
+            </div>
+            <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500,textAlign:"center"}}>Sprout's AI project tracker</div>
+            {/* Error message */}
+            {authError && (
+              <div style={{width:"100%",background:C.tomato100,border:"1px solid #FFCDD2",borderRadius:DS.radius.sm,padding:"8px 12px",fontFamily:FF,fontSize:12,color:C.tomato600,textAlign:"center"}}>
+                {authError}
+              </div>
+            )}
+            {/* Google sign-in button */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={authLoading}
+              style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:C.white,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"10px 20px",fontFamily:FF,fontSize:13,fontWeight:500,color:C.mushroom900,cursor:"pointer",boxShadow:DS.shadow.sm,opacity:authLoading?0.6:1}}
+            >
+              {/* Google logo SVG */}
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+              </svg>
+              {authLoading ? "Signing in…" : "Sign in with Google"}
+            </button>
+            <div style={{fontFamily:FF,fontSize:11,color:C.mushroom400,textAlign:"center"}}>
+              @sprout.ph and @sproutsolutions.io accounts only
+            </div>
+          </div>
+        </div>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
           @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -4259,8 +4376,8 @@ export default function SproutAIGarden() {
               <UserAvatar user={authUser} size={26}/>
               {authUser.country&&<CountryBadge country={authUser.country}/>}
               <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700,maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{authUser.displayName||authUser.email.split("@")[0]}</span>
-              {authUser.isGardener&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Gardener</span>}
-              {authUser.isExcom&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>ExCom</span>}
+              {authUser.isAdmin&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Admin</span>}
+              {authUser.isApprover&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Approver</span>}
               <svg width={12} height={12} viewBox="0 0 12 12" fill="none" style={{flexShrink:0,transition:"transform 0.2s",transform:profileOpen?"rotate(180deg)":"rotate(0deg)"}}>
                 <path d="M3 4.5 L6 7.5 L9 4.5" stroke={C.mushroom500} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -4346,14 +4463,44 @@ export default function SproutAIGarden() {
           onDismissPermanently={handleDismissWelcomePermanently}
           onPlantSeed={() => { setWelcomeSeen(true); setView("wishlist"); setShowAddWish(true); }}
           onAddToGarden={() => { setWelcomeSeen(true); setView("garden"); setShowForm(true); }}
+          onReviewNursery={() => { setWelcomeSeen(true); setView("garden"); }}
+          firstName={authUser.firstName}
+          isApprover={authUser.isApprover}
         />
       )}
+      <HelpPanel
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        onOpen={handleHelpOpen}
+        items={helpItems}
+        filter={helpFilter}
+        setFilter={setHelpFilter}
+        page={helpPage}
+        setPage={setHelpPage}
+        view={helpView}
+        setView={setHelpView}
+        submitType={helpSubmitType}
+        setSubmitType={setHelpSubmitType}
+        formTitle={helpFormTitle}
+        setFormTitle={setHelpFormTitle}
+        formDesc={helpFormDesc}
+        setFormDesc={setHelpFormDesc}
+        editItem={helpEditItem}
+        onSubmit={handleHelpSubmit}
+        onUpvote={handleHelpUpvote}
+        onResolve={handleHelpResolve}
+        onDelete={handleHelpDelete}
+        onStartEdit={(item) => { setHelpEditItem(item); setHelpFormTitle(item.title); setHelpFormDesc(item.description || ""); setHelpView("edit"); }}
+        loading={helpLoading}
+        authUser={authUser}
+      />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
         @keyframes sway{0%,100%{transform:translate(-50%,-50%) rotate(-0.8deg)}50%{transform:translate(-50%,-50%) rotate(0.8deg)}}
         @keyframes slideInRight{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes slideInPanel{from{transform:translateX(100%)}to{transform:translateX(0)}}
         @keyframes pulse{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.1);opacity:0.3}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         ::-webkit-scrollbar{width:5px;height:5px}
