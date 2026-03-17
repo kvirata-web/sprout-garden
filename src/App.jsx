@@ -1025,8 +1025,8 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
 
   // ── Hero greeting ────────────────────────────────────────────────────────────
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const firstName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
+  const greeting = (hour >= 6 && hour < 12) ? "Good morning" : (hour >= 12 && hour < 17) ? "Good afternoon" : "Good evening";
+  const firstName = authUser?.displayName?.trim() || authUser?.email?.split("@")[0] || "";
 
   // ── Dot color map for activity feed ─────────────────────────────────────────
   const FEED_DOTS = {
