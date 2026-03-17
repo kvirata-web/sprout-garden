@@ -1063,8 +1063,52 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
         </div>
       </div>
 
-      {/* ── PIPELINE_TILES_PLACEHOLDER ── Task 3 fills this section */}
-      {/* PIPELINE_TILES_PLACEHOLDER */}
+      {/* ── Pipeline tiles ───────────────────────────────────────────────── */}
+      <div style={{
+        display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:6, marginBottom:20,
+        animation:"fadeUp 0.4s ease 0.05s both",
+      }}>
+        {TILE_CFG.map((t, i) => {
+          const isHov = hoverTile === i;
+          const isClk = clickTile === i;
+          return (
+            <div
+              key={t.key}
+              onMouseEnter={() => setHoverTile(i)}
+              onMouseLeave={() => setHoverTile(null)}
+              onClick={() => {
+                setClickTile(i);
+                setTimeout(() => { setClickTile(null); t.nav(); }, 120);
+              }}
+              style={{
+                background: t.bg,
+                border: `0.5px solid ${isHov ? (t.key==="nursery" ? C.mango500 : C.kangkong200) : t.border}`,
+                borderRadius: 9,
+                padding: "12px 10px",
+                cursor: "pointer",
+                textAlign: "center",
+                transform: isClk ? "scale(0.97)" : isHov ? "translateY(-2px)" : "none",
+                boxShadow: isHov ? DS.shadow.sm : "none",
+                transition: "all 0.18s ease",
+                userSelect: "none",
+              }}
+            >
+              <div style={{ fontSize:20, fontWeight:600, color:t.countColor, lineHeight:1 }}>
+                {counts[t.key]}
+              </div>
+              <div style={{ fontSize:10, fontWeight:600, color:C.mushroom700, marginTop:3 }}>
+                {t.label}
+              </div>
+              <div style={{ fontSize:9, color:C.mushroom400, marginTop:2, lineHeight:1.4 }}>
+                {t.sub}
+              </div>
+              <div style={{ fontSize:9, fontWeight:600, color:C.kangkong500, marginTop:5, opacity:isHov?1:0, transition:"opacity 0.18s" }}>
+                View all →
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* ── BODY_PLACEHOLDER ── Tasks 4-8 fill this section */}
       {/* BODY_PLACEHOLDER */}
