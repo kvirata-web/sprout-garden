@@ -228,31 +228,37 @@ const DEPT_COLORS = {
   LDU:C.blueberry500, SolCon:C.blueberry500,
   Sales:C.carrot500, RevOps:C.carrot500,
   Implementation:C.kangkong500, MPS:C.kangkong500,
-  "Customer Advocacy":C.ubas500, "Customer Success Management":C.ubas500,
+  CA:C.ubas500, CSM:C.ubas500,
   Alliance:C.wintermelon500,
-  Aurora:C.blueberry500, Prometheus:C.tomato500,
-  Legal:C.mushroom600, "People Ops":C.ubas500,
-  Finance:C.wintermelon500, Execom:C.mushroom700,
+  "Prd - Aurora":C.blueberry500, "Eng - Aurora":C.blueberry400,
+  "Prd - Prometheus":C.tomato500, "Eng - Prometheus":C.tomato600,
+  Data:C.wintermelon400, DevOps:C.kangkong600,
+  Legal:C.mushroom600, PeopleOps:C.ubas500,
+  Finance:C.wintermelon500, ExCom:C.mushroom700,
 };
 
 const DEPT_ZONES = {
-  Marketing:                    {x:1,  y:1,  w:23, h:17},
-  "Product Marketing":          {x:26, y:1,  w:23, h:17},
-  LDU:                          {x:51, y:1,  w:23, h:17},
-  SolCon:                       {x:76, y:1,  w:23, h:17},
-  Sales:                        {x:1,  y:21, w:23, h:17},
-  RevOps:                       {x:26, y:21, w:23, h:17},
-  Implementation:               {x:51, y:21, w:23, h:17},
-  MPS:                          {x:76, y:21, w:23, h:17},
-  "Customer Advocacy":          {x:1,  y:41, w:23, h:17},
-  "Customer Success Management":{x:26, y:41, w:23, h:17},
-  Alliance:                     {x:51, y:41, w:23, h:17},
-  Aurora:                       {x:76, y:41, w:23, h:17},
-  Prometheus:                   {x:1,  y:61, w:23, h:17},
-  Legal:                        {x:26, y:61, w:23, h:17},
-  "People Ops":                 {x:51, y:61, w:23, h:17},
-  Finance:                      {x:76, y:61, w:23, h:17},
-  Execom:                       {x:26, y:81, w:47, h:17},
+  Marketing:          {x:1,  y:1,  w:23, h:17},
+  "Product Marketing":{x:26, y:1,  w:23, h:17},
+  LDU:                {x:51, y:1,  w:23, h:17},
+  SolCon:             {x:76, y:1,  w:23, h:17},
+  Sales:              {x:1,  y:21, w:23, h:17},
+  RevOps:             {x:26, y:21, w:23, h:17},
+  Implementation:     {x:51, y:21, w:23, h:17},
+  MPS:                {x:76, y:21, w:23, h:17},
+  CA:                 {x:1,  y:41, w:23, h:17},
+  CSM:                {x:26, y:41, w:23, h:17},
+  Alliance:           {x:51, y:41, w:23, h:17},
+  "Prd - Aurora":     {x:76, y:41, w:23, h:17},
+  "Eng - Aurora":     {x:1,  y:61, w:23, h:17},
+  "Prd - Prometheus": {x:26, y:61, w:23, h:17},
+  "Eng - Prometheus": {x:51, y:61, w:23, h:17},
+  Data:               {x:76, y:61, w:23, h:17},
+  DevOps:             {x:1,  y:81, w:23, h:17},
+  Legal:              {x:26, y:81, w:23, h:17},
+  PeopleOps:          {x:51, y:81, w:23, h:17},
+  Finance:            {x:76, y:81, w:23, h:17},
+  ExCom:              {x:1,  y:101,w:23, h:17},
 };
 
 const CAPABILITIES = ["All","LLM","Computer Vision","Automation","Prediction","NLP"];
@@ -775,24 +781,28 @@ function StageIcon({stage, size=16, color}) {
 // ── ProjectImage — auto-generated card cover ──────────────────────────────────
 // Cover bg derived from dept; initials from project name; tool badge bottom-right
 const COVER_COLORS = {
-  Marketing:                    {bg:"#FFF8E1", text:"#F57F17"},
-  "Product Marketing":          {bg:"#FFF8E1", text:"#F57F17"},
-  Sales:                        {bg:"#E3F2FD", text:"#1565C0"},
-  RevOps:                       {bg:"#FBE9E7", text:"#BF360C"},
-  LDU:                          {bg:"#F3E5F5", text:"#6A1B9A"},
-  SolCon:                       {bg:"#E8EAF6", text:"#283593"},
-  Implementation:               {bg:"#E0F2F1", text:"#00695C"},
-  MPS:                          {bg:"#E0F2F1", text:"#00695C"},
-  "Customer Advocacy":          {bg:"#E8EAF6", text:"#283593"},
-  "Customer Success Management":{bg:"#E8EAF6", text:"#283593"},
-  Alliance:                     {bg:"#E8F5E9", text:"#2D7D32"},
-  Aurora:                       {bg:"#E3F2FD", text:"#1565C0"},
-  Prometheus:                   {bg:"#FCE4EC", text:"#C2185B"},
-  Legal:                        {bg:"#EFEBE9", text:"#4E342E"},
-  "People Ops":                 {bg:"#F3E5F5", text:"#6A1B9A"},
-  Finance:                      {bg:"#FCE4EC", text:"#C2185B"},
-  Execom:                       {bg:"#EFEBE9", text:"#4E342E"},
-  default:                      {bg:"#EEEDE9", text:"#9A9890"},
+  Marketing:          {bg:"#FFF8E1", text:"#F57F17"},
+  "Product Marketing":{bg:"#FFF8E1", text:"#F57F17"},
+  Sales:              {bg:"#E3F2FD", text:"#1565C0"},
+  RevOps:             {bg:"#FBE9E7", text:"#BF360C"},
+  LDU:                {bg:"#F3E5F5", text:"#6A1B9A"},
+  SolCon:             {bg:"#E8EAF6", text:"#283593"},
+  Implementation:     {bg:"#E0F2F1", text:"#00695C"},
+  MPS:                {bg:"#E0F2F1", text:"#00695C"},
+  CA:                 {bg:"#E8EAF6", text:"#283593"},
+  CSM:                {bg:"#E8EAF6", text:"#283593"},
+  Alliance:           {bg:"#E8F5E9", text:"#2D7D32"},
+  "Prd - Aurora":     {bg:"#E3F2FD", text:"#1565C0"},
+  "Eng - Aurora":     {bg:"#E3F2FD", text:"#1565C0"},
+  "Prd - Prometheus": {bg:"#FCE4EC", text:"#C2185B"},
+  "Eng - Prometheus": {bg:"#FCE4EC", text:"#C2185B"},
+  Data:               {bg:"#E0F2F1", text:"#00695C"},
+  DevOps:             {bg:"#E8F5E9", text:"#2D7D32"},
+  Legal:              {bg:"#EFEBE9", text:"#4E342E"},
+  PeopleOps:          {bg:"#F3E5F5", text:"#6A1B9A"},
+  Finance:            {bg:"#FCE4EC", text:"#C2185B"},
+  ExCom:              {bg:"#EFEBE9", text:"#4E342E"},
+  default:            {bg:"#EEEDE9", text:"#9A9890"},
 };
 
 // Darken a hex color by reducing lightness (simple approach: blend with black)
@@ -2849,7 +2859,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 
   const toggleUpvote = (wishId) => onUpvote(wishId);
 
-  const DEPTS = ["All","Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","Customer Advocacy","Customer Success Management","Alliance","Aurora","Prometheus","Legal","People Ops","Finance","Execom"];
+  const DEPTS = ["All","Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","CA","CSM","Alliance","Prd - Aurora","Eng - Aurora","Prd - Prometheus","Eng - Prometheus","Data","DevOps","Legal","PeopleOps","Finance","ExCom"];
 
   return (
     <div style={{flex:1,overflow:"auto",padding:"28px 32px",background:C.mushroom50}}>
@@ -3096,7 +3106,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 // ── Add Wish Modal ────────────────────────────────────────────────────────────
 function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
   const isEditing = !!existing;
-  const DEPTS = ["Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","Customer Advocacy","Customer Success Management","Alliance","Aurora","Prometheus","Legal","People Ops","Finance","Execom"];
+  const DEPTS = ["Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","CA","CSM","Alliance","Prd - Aurora","Eng - Aurora","Prd - Prometheus","Eng - Prometheus","Data","DevOps","Legal","PeopleOps","Finance","ExCom"];
   const [form,setForm] = useState({
     title: existing?.title||"",
     why: existing?.why||"",
