@@ -173,13 +173,7 @@ const DEPT_ZONES = {
 };
 
 const CAPABILITIES = ["All","LLM","Computer Vision","Automation","Prediction","NLP"];
-const AREAS = [
-  "Hiring & Recruitment","Onboarding","Learning & Development",
-  "Performance & Goals","Payroll & Compensation","People Operations",
-  "Employee Experience","Customer & Client Work","Internal Operations",
-  "Product & Engineering","Other"
-];
-const TOOLS = ["Claude Chat","Claude Code","Cowork","ChatGPT","Copilot","Cursor","Zapier / Make","Other"];
+const TOOLS =["Claude Chat","Claude Code","Cowork","ChatGPT","Copilot","Cursor","Zapier / Make","Other"];
 
 const INITIAL_PROJECTS = [
   // 🇵🇭 Philippines
@@ -641,38 +635,69 @@ function StageIcon({stage, size=16}) {
   return null;
 }
 
-// ── ProjectImage — inline SVG, no external dependency ────────────────────────
-const CAP_ICONS = {
-  "LLM":             "💬", "Computer Vision": "👁️", "Automation": "⚙️",
-  "Prediction":      "📈", "NLP":             "📝",
+// ── ProjectImage — auto-generated card cover ──────────────────────────────────
+// Cover bg derived from dept; initials from project name; tool badge bottom-right
+const COVER_COLORS = {
+  Marketing:                    {bg:"#FFF8E1", text:"#F57F17"},
+  "Product Marketing":          {bg:"#FFF8E1", text:"#F57F17"},
+  Sales:                        {bg:"#E3F2FD", text:"#1565C0"},
+  RevOps:                       {bg:"#FBE9E7", text:"#BF360C"},
+  LDU:                          {bg:"#F3E5F5", text:"#6A1B9A"},
+  SolCon:                       {bg:"#E8EAF6", text:"#283593"},
+  Implementation:               {bg:"#E0F2F1", text:"#00695C"},
+  MPS:                          {bg:"#E0F2F1", text:"#00695C"},
+  "Customer Advocacy":          {bg:"#E8EAF6", text:"#283593"},
+  "Customer Success Management":{bg:"#E8EAF6", text:"#283593"},
+  Alliance:                     {bg:"#E8F5E9", text:"#2D7D32"},
+  Aurora:                       {bg:"#E3F2FD", text:"#1565C0"},
+  Prometheus:                   {bg:"#FCE4EC", text:"#C2185B"},
+  Legal:                        {bg:"#EFEBE9", text:"#4E342E"},
+  "People Ops":                 {bg:"#F3E5F5", text:"#6A1B9A"},
+  Finance:                      {bg:"#FCE4EC", text:"#C2185B"},
+  Execom:                       {bg:"#EFEBE9", text:"#4E342E"},
+  default:                      {bg:"#EEEDE9", text:"#9A9890"},
 };
+
+// Darken a hex color by reducing lightness (simple approach: blend with black)
+const darkenHex = (hex, amount=0.12) => {
+  const n = parseInt(hex.replace('#',''), 16);
+  const r = Math.round(((n>>16)&0xff) * (1-amount));
+  const g = Math.round(((n>>8) &0xff) * (1-amount));
+  const b = Math.round(( n     &0xff) * (1-amount));
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+};
+
+const getInitials = (name="") => name.trim().split(/\s+/).slice(0,2).map(w=>w[0]||"").join("").toUpperCase() || "??";
+
 const ProjectImage = ({project, width="100%", height=120, style={}}) => {
-  const sc   = STAGE_COLORS[project.stage] || STAGE_COLORS.sprout;
-  const icon = CAP_ICONS[project.capability] || "🤖";
-  const dc   = DEPT_COLORS[project.builtBy]  || C.kangkong500;
-  const id   = `grad-${project.id}`;
+  const cc    = COVER_COLORS[project.builtBy] || COVER_COLORS.default;
+  const bgEnd = darkenHex(cc.bg, 0.12);
+  const id    = `grad-${project.id || "preview"}`;
+  const initials = getInitials(project.name);
+  const tool  = project.toolUsed?.[0] || null;
+  const fontSize = Math.round(Math.min(height * 0.32, 52));
   return (
     <svg width={width} height={height} viewBox={`0 0 400 ${height}`} xmlns="http://www.w3.org/2000/svg"
       style={{display:"block",flexShrink:0,...style}}>
       <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%"   stopColor={sc.bg}/>
-          <stop offset="100%" stopColor={sc.border}/>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor={cc.bg}/>
+          <stop offset="100%" stopColor={bgEnd}/>
         </linearGradient>
       </defs>
       <rect width="400" height={height} fill={`url(#${id})`}/>
-      {/* subtle dot grid */}
-      {Array.from({length:8}).map((_,row)=>Array.from({length:16}).map((_,col)=>(
-        <circle key={`${row}-${col}`} cx={col*28+14} cy={row*28+14} r={1.5} fill={sc.dot} opacity={0.25}/>
-      )))}
-      {/* left accent bar */}
-      <rect x="0" y="0" width="4" height={height} fill={dc}/>
-      {/* capability icon */}
+      {/* initials */}
       <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle"
-        fontSize={Math.round(height*0.38)} style={{userSelect:"none"}}>{icon}</text>
-      {/* stage label bottom-right */}
-      <text x="390" y={height-8} textAnchor="end" fontSize="11" fontFamily="Rubik,sans-serif"
-        fontWeight="700" fill={sc.dot} opacity={0.8}>{STAGE_LABELS[project.stage]}</text>
+        fontSize={fontSize} fontFamily="Rubik,sans-serif" fontWeight="700"
+        fill={cc.text} opacity={0.9} style={{userSelect:"none"}}>{initials}</text>
+      {/* tool badge bottom-right */}
+      {tool&&(
+        <>
+          <rect x="316" y={height-26} width={78} height={18} rx="9" fill="white" opacity={0.85}/>
+          <text x="355" y={height-14} textAnchor="middle" fontSize="9" fontFamily="Rubik,sans-serif"
+            fontWeight="600" fill={cc.text} opacity={0.9}>{tool.length>10?tool.slice(0,10)+"…":tool}</text>
+        </>
+      )}
     </svg>
   );
 };
@@ -2734,20 +2759,12 @@ function ModalField({label, k, type="text", ph, opts, form, onChange}) {
   );
 }
 
-// ── SectionHeader — numbered section label ────────────────────────────────────
-function SectionHeader({number, title, subtitle}) {
+// ── SectionHeader — uppercase label + rule divider ───────────────────────────
+function SectionHeader({title}) {
   return (
-    <div style={{display:"flex",alignItems:"center",gap:8,margin:"20px 0 14px"}}>
-      <div style={{
-        width:22, height:22, borderRadius:"50%",
-        background:C.kangkong600, color:C.white,
-        display:"flex",alignItems:"center",justifyContent:"center",
-        fontFamily:FF, fontSize:11, fontWeight:700, flexShrink:0,
-      }}>{number}</div>
-      <div>
-        <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900}}>{title}</div>
-        {subtitle&&<div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{subtitle}</div>}
-      </div>
+    <div style={{margin:"22px 0 14px"}}>
+      <div style={{fontFamily:FF,fontSize:10,fontWeight:600,letterSpacing:1,textTransform:"uppercase",color:C.mushroom500,marginBottom:6}}>{title}</div>
+      <div style={{height:1,background:C.mushroom100}}/>
     </div>
   );
 }
@@ -2779,27 +2796,134 @@ function StoryQ({k, label, hint, form, onChange, ph}) {
   );
 }
 
+// ── CollaboratorInput — tag-input with profiles search ────────────────────────
+// Must be defined outside AddProjectModal to prevent focus loss on re-render
+function CollaboratorInput({selected, onChange, selfEmail}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!query.trim() || query.length < 2) { setResults([]); setOpen(false); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      const { data } = await supabase.from("profiles")
+        .select("email, display_name, first_name")
+        .or(`display_name.ilike.%${query}%,email.ilike.%${query}%`)
+        .limit(8);
+      setResults((data||[]).filter(p => p.email !== selfEmail && !selected.includes(p.email)));
+      setOpen(true);
+      setSearching(false);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const add = (profile) => {
+    if (selected.length >= 10) return;
+    onChange([...selected, profile.email]);
+    setQuery(""); setResults([]); setOpen(false);
+  };
+
+  const remove = (email) => onChange(selected.filter(e => e !== email));
+
+  const getChipName = (email) => email.split("@")[0];
+  const getInitialsFromEmail = (email) => email.slice(0,2).toUpperCase();
+
+  return (
+    <div style={{marginBottom:12}}>
+      <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>
+        Collaborators <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional, max 10)</span>
+      </label>
+      <div style={{
+        minHeight:40, padding:"6px 8px", borderRadius:DS.radius.md,
+        border:"1.5px solid "+C.mushroom300, background:C.mushroom50,
+        display:"flex", flexWrap:"wrap", gap:6, alignItems:"center",
+        boxSizing:"border-box", position:"relative",
+      }}>
+        {selected.map(email => (
+          <span key={email} style={{
+            display:"inline-flex", alignItems:"center", gap:4,
+            background:C.kangkong50, border:"1px solid "+C.kangkong100,
+            color:C.kangkong700, borderRadius:DS.radius.full,
+            padding:"2px 8px 2px 4px", fontFamily:FF, fontSize:11, fontWeight:600,
+          }}>
+            <span style={{
+              width:18, height:18, borderRadius:"50%", background:C.kangkong200,
+              color:C.kangkong700, display:"inline-flex", alignItems:"center",
+              justifyContent:"center", fontSize:9, fontWeight:700,
+            }}>{getInitialsFromEmail(email)}</span>
+            {getChipName(email)}
+            <button onClick={()=>remove(email)} style={{
+              background:"none", border:"none", cursor:"pointer", padding:0,
+              color:C.kangkong400, fontFamily:FF, fontSize:12, lineHeight:1,
+            }}>×</button>
+          </span>
+        ))}
+        <input
+          value={query} onChange={e=>setQuery(e.target.value)}
+          placeholder={selected.length===0 ? "Search by name or email…" : ""}
+          style={{
+            flex:1, minWidth:100, border:"none", outline:"none",
+            background:"transparent", fontFamily:FF, fontSize:13,
+            color:C.mushroom800, padding:"2px 0",
+          }}
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div style={{
+          position:"absolute", zIndex:200, background:C.white,
+          border:"1.5px solid "+C.mushroom200, borderRadius:DS.radius.md,
+          boxShadow:DS.shadow.md, width:"calc(100% - 56px)", maxHeight:200, overflowY:"auto",
+        }}>
+          {results.map(p => (
+            <div key={p.email} onClick={()=>add(p)} style={{
+              padding:"8px 12px", cursor:"pointer", display:"flex",
+              alignItems:"center", gap:10,
+              borderBottom:"1px solid "+C.mushroom100,
+            }}
+              onMouseOver={e=>e.currentTarget.style.background=C.mushroom50}
+              onMouseOut={e=>e.currentTarget.style.background="transparent"}
+            >
+              <span style={{
+                width:28, height:28, borderRadius:"50%", background:C.kangkong100,
+                color:C.kangkong700, display:"inline-flex", alignItems:"center",
+                justifyContent:"center", fontSize:11, fontWeight:700, flexShrink:0,
+              }}>{(p.display_name||p.email).slice(0,2).toUpperCase()}</span>
+              <div>
+                <div style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom900}}>{p.display_name||p.email}</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{p.email}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {searching && <div style={{fontFamily:FF,fontSize:11,color:C.mushroom400,marginTop:4}}>Searching…</div>}
+      {selected.length >= 10 && <div style={{fontFamily:FF,fontSize:11,color:C.mango600,marginTop:4}}>Maximum 10 collaborators reached.</div>}
+    </div>
+  );
+}
+
 // ── Add Project Modal (with AI Summarizer + Duplicate Detector) ───────────────
 const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existing=null, authUser=null}) => {
   const isEditing = !!existing;
   const DEPTS = Object.keys(DEPT_ZONES);
   const [form, setForm] = useState({
-    name:        existing?.name        || prefill?.title   || "",
-    description: existing?.description || prefill?.why     || "",
-    builtBy:     existing?.builtBy     || "Marketing",
-    builtFor:    existing?.builtFor    || prefill?.builtFor || "Marketing",
-    area:        existing?.area        || existing?.problemSpace || "",
+    name:               existing?.name        || prefill?.title    || "",
+    description:        existing?.description || prefill?.why      || "",
+    builtBy:            existing?.builtBy     || "Marketing",
+    builtFor:           existing?.builtFor    || prefill?.builtFor || "Marketing",
     problem:"", built:"", betterNow:"",
-    builder:     existing?.builder     || authUser?.displayName || "",
-    impact:      existing?.impact      || "",
-    stage:       existing?.stage       || STAGES[0],
-    dataSource:  existing?.dataSource  || "",
-    demoLink:    existing?.demoLink    || "",
-    imageUrl:    existing?.imageUrl    || "",
-    toolUsed:    existing?.toolUsed    || [],
+    builder:            existing?.builder     || authUser?.displayName || "",
+    stage:              existing?.stage       || STAGES[0],
+    dataSource:         existing?.dataSource  || "",
+    demoLink:           existing?.demoLink    || "",
+    toolUsed:           existing?.toolUsed    || [],
+    collaboratorEmails: existing?.collaboratorEmails || [],
   });
 
-  // AI states
+  // AI / story states
+  const [storyExpanded, setStoryExpanded] = useState(false);
   const [aiSummarizing, setAiSummarizing] = useState(false);
   const [aiSummaryDone, setAiSummaryDone] = useState(false);
   const [aiSummaryError, setAiSummaryError] = useState(null);
@@ -2811,7 +2935,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
   const setField = (k,v) => {
     setForm(p=>({...p,[k]:v}));
     setAiSummaryDone(false);
-    if (["name","description","area","problem","built","betterNow","builtFor"].includes(k)) {
+    if (["name","description","problem","built","betterNow","builtFor"].includes(k)) {
       setAiOverlaps(null);
       setAiOverlapChecked(false);
     }
@@ -2826,8 +2950,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     try {
       const summary = await generateProjectSummary({
         name: form.name, builtBy: form.builtBy, builtFor: form.builtFor,
-        area: form.area, problem: form.problem, built: form.built,
-        betterNow: form.betterNow, impact: form.impact,
+        problem: form.problem, built: form.built, betterNow: form.betterNow,
       });
       setForm(p=>({...p, description:summary}));
       setAiSummaryDone(true);
@@ -2841,33 +2964,30 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
   const doAdd = () => {
     onAdd({
       ...form,
-      problemSpace: form.area,
+      problemSpace: "",
       capability: "",
       id:Date.now(), lastUpdated:0, notes:[],
       zx:35+Math.random()*25, zy:35+Math.random()*25,
       milestones:[STAGE_LABELS[form.stage]+" — "+new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})],
       impactNum:"TBD", interestedUsers:[],
-      imageUrl: form.imageUrl||"",
     });
     onClose();
   };
 
   const doSave = () => {
-    onSave({...existing, ...form, problemSpace: form.area, capability: ""});
+    onSave({...existing, ...form, problemSpace: "", capability: ""});
     onClose();
   };
 
   const submit = async () => {
-    if (!form.name.trim() || submitting) return;
+    if (!form.name.trim() || !form.toolUsed.length || submitting) return;
     if (isEditing) { doSave(); return; }
     if (aiOverlapChecked && aiOverlaps?.length > 0) { doAdd(); return; }
     setSubmitting(true);
     setAiChecking(true);
-    const candidates = projects.filter(p =>
-      p.area === form.area || p.problemSpace === form.area
-    );
+    const candidates = projects.filter(p => p.builtFor === form.builtFor);
     const overlaps = await detectDuplicates(
-      {...form, problemSpace: form.area, capability: ""},
+      {...form, problemSpace: "", capability: ""},
       candidates
     );
     setAiOverlaps(overlaps);
@@ -2877,17 +2997,22 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     if (overlaps.length === 0) { doAdd(); }
   };
 
+  const previewProject = {
+    id:"preview", name:form.name, builtBy:form.builtBy, builtFor:form.builtFor,
+    stage:form.stage, toolUsed:form.toolUsed, capability:"",
+  };
+
   return (
     <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.55)",backdropFilter:"blur(6px)"}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,padding:28,maxWidth:520,width:"92%",maxHeight:"92vh",overflowY:"auto",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,padding:28,maxWidth:540,width:"92%",maxHeight:"92vh",overflowY:"auto",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1)"}}>
 
         {/* Header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
           <div>
             <div style={{fontFamily:FF,fontSize:18,fontWeight:700,color:C.mushroom900,display:"flex",alignItems:"center",gap:8}}>
-              <IcoGarden size={24} color={C.kangkong600}/> {isEditing?"Edit Project":"Add to Garden"}
+              <IcoGarden size={24} color={C.kangkong600}/> {isEditing?"Edit Project":"Add to the Garden"}
             </div>
-            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:2}}>{isEditing?"Update your project details":"Plant a new AI project in the ecosystem"}</div>
+            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:2}}>{isEditing?"Update your project details":"Log a project you're working on or have shipped"}</div>
           </div>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
         </div>
@@ -2899,25 +3024,45 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
           </div>
         )}
 
-        {/* ── Section 1: About the Project ── */}
-        <SectionHeader number="1" title="About the project" subtitle="Who built it, and for whom?"/>
+        {/* ── Section 1: The project ── */}
+        <SectionHeader title="The project"/>
 
         <ModalField label="Project Name *" k="name" ph="e.g. SmartSort AI" form={form} onChange={setField}/>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <ModalField label="Built By (your team)" k="builtBy" type="select" opts={DEPTS} form={form} onChange={setField}/>
-          <ModalField label="Built For (beneficiary)" k="builtFor" type="select" opts={DEPTS} form={form} onChange={setField}/>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <ModalField label="Area (Optional)" k="area" type="select" opts={["", ...AREAS]} form={form} onChange={setField}/>
-          <ModalField label="Builder" k="builder" ph="e.g. Priya Mehta" form={form} onChange={setField}/>
+          <ModalField label="Your team" k="builtBy" type="select" opts={DEPTS} form={form} onChange={setField}/>
+          <ModalField label="For" k="builtFor" type="select" opts={DEPTS} form={form} onChange={setField}/>
         </div>
 
-        {/* Tool Used */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          {/* You — read-only */}
+          <div style={{marginBottom:12}}>
+            <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>You</label>
+            <div style={{
+              padding:"8px 10px",borderRadius:DS.radius.md,
+              border:"1.5px solid "+C.mushroom200,background:C.mushroom50,
+              fontFamily:FF,fontSize:13,color:C.mushroom400,
+              boxSizing:"border-box",minHeight:36,
+            }}>{form.builder||authUser?.displayName||"—"}</div>
+          </div>
+          {/* Collaborators */}
+          <div style={{position:"relative"}}>
+            <CollaboratorInput
+              selected={form.collaboratorEmails}
+              onChange={v=>setField("collaboratorEmails",v)}
+              selfEmail={authUser?.email||""}
+            />
+          </div>
+        </div>
+
+        {/* Tools you're using */}
         <div style={{marginBottom:14}}>
           <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
-            Tool Used <span style={{color:C.tomato500,fontWeight:400}}>*</span>
+            Tools you're using <span style={{color:C.tomato500,fontWeight:400}}>*</span>
           </label>
+          {!form.toolUsed.length&&(
+            <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginBottom:4}}>Select at least one tool</div>
+          )}
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {TOOLS.map(t=>{
               const active = form.toolUsed.includes(t);
@@ -2937,65 +3082,95 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
           </div>
         </div>
 
-        {/* ── Section 2: Tell the Story ── */}
-        <SectionHeader number="2" title="Tell the story" subtitle="Help your team understand the impact"/>
+        {/* ── Section 2: About the project ── */}
+        <SectionHeader title="About the project"/>
 
-        <StoryQ k="problem" label="What was the problem?" hint="1-2 sentences" form={form} onChange={setField} ph="What challenge or pain point existed before?"/>
-        <StoryQ k="built" label="What did you build?" hint="1-2 sentences" form={form} onChange={setField} ph="Describe what you created or automated."/>
-        <StoryQ k="betterNow" label="What's better now?" hint="1-2 sentences" form={form} onChange={setField} ph="What changed for the team or customers?"/>
+        {/* Story expander */}
+        <div style={{marginBottom:12}}>
+          <button
+            onClick={()=>setStoryExpanded(p=>!p)}
+            style={{
+              width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between",
+              padding:"9px 12px", borderRadius:DS.radius.md,
+              border:"1px solid "+C.mushroom200, background:C.white,
+              cursor:"pointer", fontFamily:FF, fontSize:12, fontWeight:600,
+              color:C.blueberry500, transition:"all 0.15s",
+            }}
+          >
+            <span>✦ Help me write this — answer 3 quick questions</span>
+            <span style={{fontSize:10,color:C.mushroom400,transition:"transform 0.2s",display:"inline-block",transform:storyExpanded?"rotate(180deg)":"none"}}>▾</span>
+          </button>
 
-        {/* AI Summarize button */}
-        <button
-          onClick={handleSummarize}
-          disabled={!canSummarize||aiSummarizing}
-          style={{
-            display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
-            marginBottom:10,padding:"7px 12px",borderRadius:DS.radius.md,
-            border:"1.5px solid "+(aiSummaryDone?C.kangkong400:C.ubas400),
-            background:aiSummaryDone?C.kangkong50:C.ubas50,
-            color:aiSummaryDone?C.kangkong600:C.ubas600,
-            fontFamily:FF,fontSize:12,fontWeight:700,
-            cursor:canSummarize&&!aiSummarizing?"pointer":"not-allowed",
-            opacity:canSummarize?1:0.5,transition:"all 0.15s",
-          }}
-        >
-          {aiSummarizing
-            ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:12}}>⟳</span> Writing summary…</>
-            : aiSummaryDone
-            ? <><IcoCheck size={12} color={C.kangkong500}/> Regenerate summary from answers above</>
-            : <>✦ Craft my summary from these answers</>
-          }
-        </button>
+          {storyExpanded&&(
+            <div style={{background:C.mushroom50,border:"1px solid "+C.mushroom200,borderTop:"none",borderRadius:"0 0 "+DS.radius.md+" "+DS.radius.md,padding:"14px 12px"}}>
+              <StoryQ k="problem" label="What problem are you solving?" hint="" form={form} onChange={setField} ph="What challenge or gap existed before?"/>
+              <StoryQ k="built" label="What are you building?" hint="" form={form} onChange={setField} ph="Describe what you're creating or automating…"/>
+              <StoryQ k="betterNow" label="What will be better?" hint="" form={form} onChange={setField} ph="What changes for the team or customers?"/>
 
-        {/* Description textarea */}
+              <button
+                onClick={handleSummarize}
+                disabled={!canSummarize||aiSummarizing}
+                style={{
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
+                  marginTop:4,padding:"7px 12px",borderRadius:DS.radius.md,
+                  border:"1.5px solid "+(aiSummaryDone?C.kangkong400:C.blueberry400||"#63b3ed"),
+                  background:aiSummaryDone?C.kangkong50:C.blueberry100||"#ebf8ff",
+                  color:aiSummaryDone?C.kangkong600:C.blueberry500||"#3182ce",
+                  fontFamily:FF,fontSize:12,fontWeight:700,
+                  cursor:canSummarize&&!aiSummarizing?"pointer":"not-allowed",
+                  opacity:canSummarize?1:0.5,transition:"all 0.15s",
+                }}
+              >
+                {aiSummarizing
+                  ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:12}}>⟳</span> Writing description…</>
+                  : aiSummaryDone
+                  ? <><IcoCheck size={12} color={C.kangkong500}/> Regenerate description from answers</>
+                  : <>✦ Craft my description from these answers</>
+                }
+              </button>
+              {aiSummaryError&&(
+                <div style={{fontFamily:FF,fontSize:11,color:C.tomato600,marginTop:6,background:C.tomato50,border:"1px solid "+C.tomato200,borderRadius:DS.radius.md,padding:"6px 10px"}}>
+                  AI failed: {aiSummaryError}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Description textarea — always visible */}
         <div style={{marginBottom:12}}>
           <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>Description</label>
           <textarea rows={3} value={form.description} onChange={e=>setField("description",e.target.value)}
-            placeholder="AI-generated summary will appear here — or write your own…"
+            placeholder="Describe your project — or use the helper above to generate a draft…"
             style={{...modalInputStyle,resize:"vertical",lineHeight:1.6}}/>
           {aiSummaryDone&&(
             <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,marginTop:5,display:"flex",alignItems:"center",gap:4}}>
               <IcoCheck size={11} color={C.kangkong500}/> AI-generated — feel free to edit before saving
             </div>
           )}
-          {aiSummaryError&&(
-            <div style={{fontFamily:FF,fontSize:11,color:C.tomato600,marginTop:5,background:C.tomato50,border:"1px solid "+C.tomato200,borderRadius:DS.radius.md,padding:"6px 10px"}}>
-              AI failed: {aiSummaryError}
-            </div>
-          )}
         </div>
 
-        {/* ── Section 3: Impact & Link ── */}
-        <SectionHeader number="3" title="Impact & link"/>
-
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <ModalField label="Expected Impact" k="impact" ph="e.g. Saves 2 hrs/week" form={form} onChange={setField}/>
-          <ModalField label="Demo Link" k="demoLink" ph="https://..." form={form} onChange={setField}/>
+        {/* Project link */}
+        <div style={{marginBottom:12}}>
+          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>
+            Project link <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span>
+          </label>
+          <div style={{position:"relative"}}>
+            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
+              <IcoLink size={13} color={C.mushroom400}/>
+            </span>
+            <input type="text" value={form.demoLink} onChange={e=>setField("demoLink",e.target.value)}
+              placeholder="Prototype, internal tool, or live product — whatever you have"
+              style={{...modalInputStyle,paddingLeft:30}}/>
+          </div>
         </div>
 
-        {/* Stage selector — 4 tiles */}
+        {/* ── Section 3: Stage ── */}
+        <SectionHeader title="Stage"/>
+
+        {/* Stage selector */}
         <div style={{marginBottom:16}}>
-          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Starting Stage</label>
+          <label style={{display:"block",fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700,marginBottom:8}}>Where is this project right now?</label>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
             {STAGES.filter(s => s !== 'nursery').map(s=>{
               const sc = STAGE_COLORS[s];
@@ -3019,21 +3194,29 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
           </div>
         </div>
 
-        {/* Image URL field */}
-        <div style={{marginBottom:16}}>
-          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>Project Image URL <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span></label>
-          <input type="text" value={form.imageUrl} onChange={e=>setField("imageUrl",e.target.value)}
-            placeholder="https://..."
-            style={{...modalInputStyle}}
-          />
-          {form.imageUrl&&(
-            <div style={{marginTop:8,borderRadius:DS.radius.lg,overflow:"hidden",border:"1px solid "+C.mushroom200,height:120}}>
-              <img src={form.imageUrl} alt="Preview" onError={e=>{e.target.style.display="none"}} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+        {/* ── Preview ── */}
+        <SectionHeader title="Preview"/>
+        <div style={{
+          borderRadius:DS.radius.lg,border:"1px solid "+C.mushroom200,
+          overflow:"hidden",marginBottom:16,background:C.white,
+          boxShadow:DS.shadow.sm,
+        }}>
+          <ProjectImage project={previewProject} height={110} style={{borderBottom:"1px solid "+C.mushroom100}}/>
+          <div style={{padding:"12px 14px"}}>
+            <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:form.name?C.mushroom900:C.mushroom400,marginBottom:6,fontStyle:form.name?"normal":"italic"}}>
+              {form.name||"Your project name will appear here"}
             </div>
-          )}
+            <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+              <StageBadge stage={form.stage}/>
+              {form.toolUsed.slice(0,2).map(t=>(
+                <span key={t} style={{fontFamily:FF,fontSize:10,fontWeight:600,color:C.mushroom600,background:C.mushroom100,borderRadius:DS.radius.full,padding:"2px 8px"}}>{t}</span>
+              ))}
+              {form.builtBy&&<span style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginLeft:2}}>{form.builtBy} → {form.builtFor}</span>}
+            </div>
+          </div>
         </div>
 
-        {/* AI Duplicate Check — auto-runs on submit */}
+        {/* AI Duplicate Check result */}
         {aiOverlapChecked&&(
           <div style={{
             background:aiOverlaps?.length===0?C.kangkong50:C.mango100,
@@ -3066,9 +3249,10 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
           </div>
         )}
 
-        {(() => {
+        {/* Submit */}
+        {(()=>{
           const hasOverlaps = aiOverlapChecked && aiOverlaps?.length > 0;
-          const canSubmit = form.name.trim() && !submitting;
+          const canSubmit = !!(form.name.trim() && form.toolUsed.length && !submitting);
           const bg = !canSubmit ? C.mushroom300 : hasOverlaps ? C.mango500 : C.kangkong500;
           const shadow = canSubmit ? "0 4px 16px "+(hasOverlaps?C.mango500:C.kangkong500)+"40" : "none";
           return (
@@ -3086,7 +3270,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
                 ? <><IcoWarning size={16} color={C.white}/> Save anyway</>
                 : isEditing
                 ? <><IcoCheck size={16} color={C.white}/> Save changes</>
-                : <><IcoAdd size={16} color={C.white}/> Add to Garden</>
+                : <><IcoAdd size={16} color={C.white}/> Add to the Garden</>
               }
             </button>
           );
