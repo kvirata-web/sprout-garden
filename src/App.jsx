@@ -257,6 +257,12 @@ const DEPT_ZONES = {
 
 const CAPABILITIES = ["All","LLM","Computer Vision","Automation","Prediction","NLP"];
 const TOOLS =["Claude Chat","Claude Code","Cowork","ChatGPT","Copilot","Cursor","Zapier / Make","Other"];
+const DATA_SOURCES = [
+  "HubSpot","NetSuite","Sprout HR","Sprout Payroll",
+  "Google Drive/Docs","Product Analytics/Pendo/Userpilot","Databricks","Zendesk",
+  "Website","Jira","Notion/Confluence","Meeting Transcripts",
+  "Survey Responses","Others",
+];
 
 const INITIAL_PROJECTS = [
   // 🇵🇭 Philippines
@@ -908,6 +914,36 @@ const SproutLogo = () => (
   </div>
 );
 
+const GroveLogo = ({ theme = "dark", size = 32 }) => {
+  const THEMES = {
+    dark:  { bg: C.kangkong800, icon: C.kangkong100, vein: C.kangkong800 },
+    white: { bg: null,          icon: "#ffffff",      vein: "rgba(255,255,255,0.3)" },
+    gray:  { bg: C.mushroom200, icon: C.mushroom500,  vein: C.mushroom200 },
+    green: { bg: null,          icon: "rgba(255,255,255,0.92)", vein: "rgba(255,255,255,0.25)" },
+  };
+  const t  = THEMES[theme] || THEMES.dark;
+  const br = Math.round(size * 0.25) + "px";
+  const ic = Math.round(size * 0.6);
+  const svg = (
+    <svg width={ic} height={ic} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 2C10 2 3.5 6 3.5 12.5C3.5 16.3 6.4 19 10 19C13.6 19 16.5 16.3 16.5 12.5C16.5 6 10 2 10 2Z" fill={t.icon}/>
+      <path d="M10 8V18" stroke={t.vein} strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  );
+  if (t.bg) {
+    return (
+      <div style={{width:size,height:size,background:t.bg,borderRadius:br,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        {svg}
+      </div>
+    );
+  }
+  return (
+    <div style={{width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+      {svg}
+    </div>
+  );
+};
+
 // ── Duplicate Detector ────────────────────────────────────────────────────────
 // ── Related projects — score-based matching ───────────────────────────────────
 const STOP_WORDS = new Set([
@@ -943,25 +979,29 @@ const findRelated = (project, allProjects) => {
     .map(p => {
       let score = 0;
       const reasons = [];
-      const projArea = project.area || project.problemSpace;
-      const pArea = p.area || p.problemSpace;
 
-      if (projArea && pArea && pArea === projArea) {
-        score += 2;
-        reasons.push("Same area");
-      }
       if (countOverlap(project.description, p.description) >= 2) {
-        score += 2;
+        score += 3;
         reasons.push("Similar description");
+      }
+      if (countOverlap(project.name, p.name) >= 1) {
+        score += 1;
+        reasons.push("Similar name");
       }
       if (project.builtFor && p.builtFor === project.builtFor) {
         score += 1;
         reasons.push("Same team");
       }
+      const projSources = project.dataSources || [];
+      const pSources    = p.dataSources || [];
+      if (projSources.length && pSources.some(s => projSources.includes(s))) {
+        score += 3;
+        reasons.push("Shared data sources");
+      }
 
       return {...p, score, matchReason: reasons.join(" · ")};
     })
-    .filter(p => p.score >= 2)
+    .filter(p => p.score >= 3)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 };
@@ -978,35 +1018,43 @@ const getActivityFeed = (projects, wishes) => {
   const events = [];
   for (const p of projects) {
     const mils = p.milestones || [];
-    if (!mils.length) continue;
-    const last = mils[mils.length - 1] || "";
+    const last = (mils[mils.length - 1] || "").toLowerCase();
+    const builder = p.builder || p.builderEmail;
     let type, text;
     if (p.stage === "thriving") {
       type = "thriving";
-      text = `${p.name} moved to Thriving by ${p.builder || p.builderEmail}`;
-    } else if (last.toLowerCase().includes("approved")) {
-      type = "approved";
-      text = `${p.name} approved — now in Sprout`;
-    } else if (p.stage === "nursery" || last.toLowerCase().includes("nursery")) {
+      text = `${p.name} moved to Thriving`;
+    } else if (p.stage === "nursery" || last.includes("nursery")) {
       type = "nursery";
-      text = `${p.name} submitted to Nursery by ${p.builder || p.builderEmail}`;
-    } else if (last.toLowerCase().includes("claimed")) {
-      type = "claimed";
-      text = `${p.name} claimed — now Seedling`;
+      text = `${p.name} submitted to Nursery by ${builder}`;
+    } else if (last.includes("approved")) {
+      type = "approved";
+      text = `${p.name} approved, now in Sprout`;
+    } else if (p.stage === "bloom") {
+      type = "bloom";
+      text = `${p.name} moved to Bloom`;
+    } else if (p.stage === "sprout") {
+      type = "sprout";
+      text = `${p.name} moved to Sprout`;
     } else {
-      continue;
+      type = "added";
+      text = `${p.name} added by ${builder}`;
     }
     events.push({ type, text, age: p.lastUpdated, id: "p" + p.id });
   }
   for (const w of wishes) {
-    if (!w.fulfilledBy) {
-      events.push({
-        type: "seed",
-        text: `New Seed: ${w.title} — ${w.upvoters.length} upvotes`,
-        age: w.createdDaysAgo,
-        id: w.id,
-      });
+    let type, text;
+    if (w.fulfilledBy) {
+      type = "fulfilled";
+      text = `Seed fulfilled: ${w.title}`;
+    } else if (w.claimedBy) {
+      type = "claimed";
+      text = `${w.title} claimed by ${w.claimedBy}`;
+    } else {
+      type = "seed";
+      text = `New Seed: ${w.title} — ${w.upvoters.length} upvotes`;
     }
+    events.push({ type, text, age: w.createdDaysAgo, id: w.id });
   }
   // age = "days ago" integer; ascending sort (lowest age first) = newest events first ✓
   return events.sort((a, b) => a.age - b.age).slice(0, 10);
@@ -1138,11 +1186,15 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
 
   // ── Dot color map for activity feed ─────────────────────────────────────────
   const FEED_DOTS = {
-    thriving: C.kangkong500,
-    approved: C.blueberry500,
-    nursery:  C.mango500,
-    seed:     C.ubas500,
-    claimed:  C.mushroom300,
+    thriving:  C.blueberry500,
+    approved:  C.blueberry400,
+    nursery:   C.mango500,
+    bloom:     C.kangkong500,
+    sprout:    C.wintermelon400,
+    added:     C.mushroom400,
+    seed:      C.ubas500,
+    claimed:   C.mushroom300,
+    fulfilled: C.wintermelon500,
   };
 
   const ageLabel = (days) => days === 0 ? "today" : days === 1 ? "1d ago" : `${days}d ago`;
@@ -2547,7 +2599,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
             {l:"Impact",  v:project.impact,                                              icon:<IcoImpact size={12} color={C.kangkong600}/>},
             {l:"Builder",   v:project.owner,                                               icon:<IcoNote size={12} color={C.mushroom500}/>},
             {l:"Updated", v:project.lastUpdated===0?"Today":project.lastUpdated+"d ago", icon:project.lastUpdated>30?<IcoStale size={12} color={C.mango500}/>:<IcoCheck size={12} color={C.kangkong500}/>},
-            {l:"Data",    v:project.dataSource||"—",                                     icon:<IcoNote size={12} color={C.mushroom500}/>},
+            {l:"Data",    v:(project.dataSources?.length?project.dataSources.join(", "):project.dataSource)||"—", icon:<IcoNote size={12} color={C.mushroom500}/>},
           ].map(item=>(
             <div key={item.l} style={{background:C.mushroom50,borderRadius:DS.radius.md,padding:"8px 10px",border:"1px solid "+C.mushroom200}}>
               <div style={{fontFamily:FF,fontSize:9,color:C.mushroom400,textTransform:"uppercase",letterSpacing:0.8,marginBottom:2}}>{item.l}</div>
@@ -2740,26 +2792,6 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
             :<>I'm working on something similar</>
           }
         </button>
-
-        <div style={{marginBottom:16}}>
-          <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mushroom500,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
-            <IcoTimeline size={13} color={C.mushroom400}/> Growth Timeline
-          </div>
-          <div style={{position:"relative",paddingLeft:18}}>
-            <div style={{position:"absolute",left:5,top:6,bottom:6,width:2,background:C.mushroom200,borderRadius:1}}/>
-            {(project.milestones||[]).map((m,i)=>(
-              <div key={i} style={{position:"relative",marginBottom:8,display:"flex",alignItems:"flex-start"}}>
-                <div style={{
-                  position:"absolute",left:-18,top:3,width:10,height:10,borderRadius:"50%",
-                  background:i===project.milestones.length-1?C.kangkong500:C.mushroom200,
-                  border:"2px solid "+(i===project.milestones.length-1?C.kangkong500:C.mushroom300),
-                  boxShadow:i===project.milestones.length-1?"0 0 8px "+C.kangkong500+"60":"none",
-                }}/>
-                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600,lineHeight:1.4,fontWeight:i===project.milestones.length-1?600:400}}>{m}</div>
-              </div>
-            ))}
-          </div>
-        </div>
 
         <div>
           <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mushroom500,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
@@ -3209,7 +3241,9 @@ function WelcomeModal({ onExplore, onDismissPermanently, isApprover, country }) 
             onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,0.65)"}
           >Skip</button>
           {/* Logo */}
-          <div style={{fontSize:32,marginBottom:10,lineHeight:1}}>🌿</div>
+          <div style={{marginBottom:10,display:"flex",justifyContent:"center"}}>
+            <GroveLogo theme="green" size={40} />
+          </div>
           {/* Grove + Beta pill */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}}>
             <span style={{fontFamily:FF,fontSize:26,fontWeight:800,color:"#fff"}}>Grove</span>
@@ -3463,6 +3497,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     builder:            existing?.builder     || authUser?.displayName || "",
     stage:              existing?.stage       || STAGES[0],
     dataSource:         existing?.dataSource  || "",
+    dataSources:        existing?.dataSources || [],
     demoLink:           existing?.demoLink    || "",
     toolUsed:           existing?.toolUsed    || [],
     collaboratorEmails: existing?.collaboratorEmails || [],
@@ -3481,7 +3516,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
   const setField = (k,v) => {
     setForm(p=>({...p,[k]:v}));
     setAiSummaryDone(false);
-    if (["name","description","problem","built","betterNow","builtFor"].includes(k)) {
+    if (["name","description","problem","built","betterNow","builtFor","dataSources"].includes(k)) {
       setAiOverlaps(null);
       setAiOverlapChecked(false);
     }
@@ -3622,6 +3657,30 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
                   transition:"all 0.15s",
                 }}>
                   {active&&<span style={{marginRight:3}}>✓</span>}{t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Data sources */}
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
+            Data sources <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span>
+          </label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {DATA_SOURCES.map(s=>{
+              const active = form.dataSources.includes(s);
+              return (
+                <button key={s} onClick={()=>setField("dataSources", active ? form.dataSources.filter(x=>x!==s) : [...form.dataSources,s])} style={{
+                  padding:"5px 12px",borderRadius:DS.radius.full,cursor:"pointer",
+                  fontFamily:FF,fontSize:11,fontWeight:600,
+                  border:"1.5px solid "+(active?C.blueberry400:C.mushroom300),
+                  background:active?C.blueberry50:C.white,
+                  color:active?C.blueberry600:C.mushroom600,
+                  transition:"all 0.15s",
+                }}>
+                  {active&&<span style={{marginRight:3}}>✓</span>}{s}
                 </button>
               );
             })}
@@ -4543,7 +4602,7 @@ export default function SproutAIGarden() {
         const displayName = email.split("@")[0];
 
         // Immediately unblock the UI — no DB await before this line
-        setAuthUser({ email, firstName, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false });
+        setAuthUser({ email, firstName, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false, profileLoaded: false });
         setAuthLoading(false);
 
         // Enrich with real DB profile in the background (non-blocking)
@@ -4561,6 +4620,7 @@ export default function SproutAIGarden() {
                 isAdmin: existing.is_admin || false,
                 isApprover: existing.is_approver || false,
                 hasDismissedWelcome: existing.has_dismissed_welcome || false,
+                profileLoaded: true,
               });
             } else {
               await supabase.from("profiles").insert({
@@ -4572,6 +4632,7 @@ export default function SproutAIGarden() {
                 is_admin: false,
                 is_approver: false,
               });
+              setAuthUser(prev => ({...prev, profileLoaded: true}));
             }
           })
           .catch(e => console.warn("Profile load/create error:", e));
@@ -4737,7 +4798,6 @@ export default function SproutAIGarden() {
     if (error) { console.error("addProject:", error); return; }
     const saved = toProject(data);
     setProjects(prev => [...prev, saved]);
-    if (!authUser?.hasDismissedWelcome) handleDismissWelcomePermanently();
   };
 
   const handleUpdateProject = async (updated) => {
@@ -4906,7 +4966,6 @@ export default function SproutAIGarden() {
     const { data, error } = await supabase.from("wishes").insert(row).select().single();
     if (error) { console.error("handleAddWish:", error); return; }
     setWishes(prev => [toWish(data), ...prev]);
-    if (!authUser?.hasDismissedWelcome) handleDismissWelcomePermanently();
   };
 
   const handleUpvote = (wishId) => {
@@ -5089,7 +5148,7 @@ export default function SproutAIGarden() {
       {/* ── Top Navbar ── */}
       <div style={{padding:"0 24px",zIndex:30,position:"relative",background:C.white,borderBottom:"1px solid "+C.mushroom200,display:"flex",alignItems:"center",justifyContent:"space-between",height:56,flexShrink:0,boxShadow:DS.shadow.sm}}>
 
-        <button onClick={()=>{setView("dashboard");setSelected(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center"}}><SproutLogo/></button>
+        <button onClick={()=>{setView("dashboard");setSelected(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center"}}><GroveLogo/></button>
 
         {/* Nav tabs */}
         <div style={{display:"flex",gap:2,background:C.mushroom100,borderRadius:DS.radius.lg,padding:3}}>
@@ -5231,7 +5290,7 @@ export default function SproutAIGarden() {
       {profileModal==="profile"&&<ProfileModal authUser={authUser} projects={projects} wishes={wishes} onClose={()=>setProfileModal(null)}/>}
       {profileModal==="about"&&<AboutModal onClose={()=>setProfileModal(null)}/>}
 
-      {authUser && !authUser.hasDismissedWelcome && !welcomeSeen && !dataLoading && (
+      {authUser && authUser.profileLoaded && !authUser.hasDismissedWelcome && !welcomeSeen && !dataLoading && (
         <WelcomeModal
           onExplore={() => setWelcomeSeen(true)}
           onDismissPermanently={handleDismissWelcomePermanently}
