@@ -858,6 +858,65 @@ const findRelated = (project, allProjects) => {
     .slice(0, 3);
 };
 
+// ── Overview Dashboard helpers ────────────────────────────────────────────────
+
+const OVERVIEW_KF = `
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes ovPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+`;
+
+const getActivityFeed = (projects, wishes) => {
+  const events = [];
+  for (const p of projects) {
+    const mils = p.milestones || [];
+    if (!mils.length) continue;
+    const last = mils[mils.length - 1] || "";
+    let type, text;
+    if (p.stage === "thriving") {
+      type = "thriving";
+      text = `${p.name} moved to Thriving by ${p.builder || p.builderEmail}`;
+    } else if (last.toLowerCase().includes("approved")) {
+      type = "approved";
+      text = `${p.name} approved — now in Sprout`;
+    } else if (p.stage === "nursery" || last.toLowerCase().includes("nursery")) {
+      type = "nursery";
+      text = `${p.name} submitted to Nursery by ${p.builder || p.builderEmail}`;
+    } else if (last.toLowerCase().includes("claimed")) {
+      type = "claimed";
+      text = `${p.name} claimed — now Seedling`;
+    } else {
+      continue;
+    }
+    events.push({ type, text, age: p.lastUpdated, id: "p" + p.id });
+  }
+  for (const w of wishes) {
+    if (!w.fulfilledBy) {
+      events.push({
+        type: "seed",
+        text: `New Seed: ${w.title} — ${w.upvoters.length} upvotes`,
+        age: w.createdDaysAgo,
+        id: w.id,
+      });
+    }
+  }
+  // age = "days ago" integer; ascending sort (lowest age first) = newest events first ✓
+  return events.sort((a, b) => a.age - b.age).slice(0, 10);
+};
+
+const getToolCounts = (projects) => {
+  const counts = {};
+  for (const p of projects) {
+    for (const tool of (p.toolUsed || [])) {
+      counts[tool] = (counts[tool] || 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .map(([tool, count]) => ({ tool, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+};
+
 // ── Executive Dashboard ───────────────────────────────────────────────────────
 const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden, onNavigateWishlist}) => {
   const [rankMode, setRankMode] = useState("builtBy"); // "builtBy" | "builtFor"
