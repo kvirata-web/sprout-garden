@@ -2658,22 +2658,22 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
 
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
-function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGarden}) {
+function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGarden, onReviewNursery, firstName, isApprover}) {
+  const greeting = firstName ? `Welcome, ${firstName}!` : "Welcome to Grove";
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.6)",backdropFilter:"blur(8px)"}}>
       <div style={{background:C.white,borderRadius:DS.radius.xl,padding:36,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
-
         {/* Header */}
         <div style={{textAlign:"center",marginBottom:24}}>
           <div style={{fontSize:36,marginBottom:12,lineHeight:1}}>🌿</div>
-          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>Welcome to Grove</div>
+          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,marginBottom:8}}>{greeting}</div>
           <div style={{fontFamily:FF,fontSize:14,color:C.mushroom600,lineHeight:1.6}}>
             AI tools are being built across Sprout — but no one knows what exists. Grove fixes that.
           </div>
         </div>
-
-        {/* Contribution cards — clickable */}
+        {/* Action cards */}
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
+          {/* Card 1: Plant a Seed */}
           <button onClick={onPlantSeed} style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
             onMouseOver={e=>{e.currentTarget.style.background=C.kangkong100;e.currentTarget.style.borderColor=C.kangkong400;}}
             onMouseOut={e=>{e.currentTarget.style.background=C.kangkong50;e.currentTarget.style.borderColor=C.kangkong200;}}
@@ -2684,22 +2684,35 @@ function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGard
               <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,lineHeight:1.55}}>Submit an AI idea you think Sprout needs. The team can vote on it, someone can claim it, and it might get built.</div>
             </div>
           </button>
+          {/* Card 2: Add to the Garden */}
           <button onClick={onAddToGarden} style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
             onMouseOver={e=>{e.currentTarget.style.background=C.mushroom100;e.currentTarget.style.borderColor=C.mushroom300;}}
             onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom200;}}
           >
             <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌾</span>
             <div>
-              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to Garden</div>
+              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,marginBottom:3}}>Add to the Garden</div>
               <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.55}}>Log an AI tool you're building or already shipped. Don't let good work go unseen.</div>
             </div>
           </button>
+          {/* Card 3: Review plants — Approver only */}
+          {isApprover && (
+            <button onClick={onReviewNursery} style={{background:C.mango50,border:"1.5px solid "+C.mango200,borderRadius:DS.radius.lg,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",textAlign:"left",transition:"all 0.15s",width:"100%"}}
+              onMouseOver={e=>{e.currentTarget.style.background=C.mango100;e.currentTarget.style.borderColor=C.mango400;}}
+              onMouseOut={e=>{e.currentTarget.style.background=C.mango50;e.currentTarget.style.borderColor=C.mango200;}}
+            >
+              <span style={{fontSize:20,lineHeight:1,flexShrink:0,marginTop:1}}>🌿</span>
+              <div>
+                <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mango600,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>IN THE NURSERY</div>
+                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mango700,marginBottom:3}}>Review plants</div>
+                <div style={{fontFamily:FF,fontSize:12,color:C.mango600,lineHeight:1.55}}>You have plants waiting for your decision. Don't leave builders hanging.</div>
+              </div>
+            </button>
+          )}
         </div>
-
         <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,textAlign:"center",marginBottom:20}}>
           Start by exploring what's already growing — or plant your first seed.
         </div>
-
         {/* Buttons */}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           <button onClick={onExplore} style={{width:"100%",padding:"11px 0",borderRadius:DS.radius.lg,background:C.kangkong500,border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",transition:"background 0.15s"}}>
@@ -2709,7 +2722,6 @@ function WelcomeModal({onExplore, onDismissPermanently, onPlantSeed, onAddToGard
             Got it, don't show again
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -4105,6 +4117,9 @@ export default function SproutAIGarden() {
           onDismissPermanently={handleDismissWelcomePermanently}
           onPlantSeed={() => { setWelcomeSeen(true); setView("wishlist"); setShowAddWish(true); }}
           onAddToGarden={() => { setWelcomeSeen(true); setView("garden"); setShowForm(true); }}
+          onReviewNursery={() => { setWelcomeSeen(true); setView("garden"); }}
+          firstName={authUser.firstName}
+          isApprover={authUser.isApprover}
         />
       )}
 
