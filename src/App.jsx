@@ -941,220 +941,636 @@ const findRelated = (project, allProjects) => {
     .slice(0, 3);
 };
 
-// ── Executive Dashboard ───────────────────────────────────────────────────────
-const ExecutiveDashboard = ({projects, wishes, onSelectProject, onNavigateGarden, onNavigateWishlist}) => {
-  const [rankMode, setRankMode] = useState("builtBy"); // "builtBy" | "builtFor"
+// ── Overview Dashboard helpers ────────────────────────────────────────────────
 
-  const launched   = projects.filter(p=>p.stage==="bloom"||p.stage==="thriving");
-  const inProgress = projects.filter(p=>p.stage==="sprout"||p.stage==="seedling");
-  const wilting    = projects.filter(p=>p.lastUpdated>30);
-  const totalImpacts = launched.filter(p=>p.impact!=="TBD");
-  const spotlight  = launched.sort((a,b)=>a.lastUpdated-b.lastUpdated)[0];
-  const healthPct  = Math.round((launched.length/Math.max(projects.length,1))*100);
+const OVERVIEW_KF = `
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes ovPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+`;
 
-  // Seeds = wishes (not a garden stage)
-  const seedCount = wishes.length;
+const getActivityFeed = (projects, wishes) => {
+  const events = [];
+  for (const p of projects) {
+    const mils = p.milestones || [];
+    if (!mils.length) continue;
+    const last = mils[mils.length - 1] || "";
+    let type, text;
+    if (p.stage === "thriving") {
+      type = "thriving";
+      text = `${p.name} moved to Thriving by ${p.builder || p.builderEmail}`;
+    } else if (last.toLowerCase().includes("approved")) {
+      type = "approved";
+      text = `${p.name} approved — now in Sprout`;
+    } else if (p.stage === "nursery" || last.toLowerCase().includes("nursery")) {
+      type = "nursery";
+      text = `${p.name} submitted to Nursery by ${p.builder || p.builderEmail}`;
+    } else if (last.toLowerCase().includes("claimed")) {
+      type = "claimed";
+      text = `${p.name} claimed — now Seedling`;
+    } else {
+      continue;
+    }
+    events.push({ type, text, age: p.lastUpdated, id: "p" + p.id });
+  }
+  for (const w of wishes) {
+    if (!w.fulfilledBy) {
+      events.push({
+        type: "seed",
+        text: `New Seed: ${w.title} — ${w.upvoters.length} upvotes`,
+        age: w.createdDaysAgo,
+        id: w.id,
+      });
+    }
+  }
+  // age = "days ago" integer; ascending sort (lowest age first) = newest events first ✓
+  return events.sort((a, b) => a.age - b.age).slice(0, 10);
+};
 
-  const deptStats = Object.keys(DEPT_ZONES).map(dept=>{
-    const ps = rankMode==="builtBy"
-      ? projects.filter(p=>p.builtBy===dept)
-      : projects.filter(p=>p.builtFor===dept);
-    const sc = ps.reduce((s,p)=>s+STAGE_ORDER[p.stage],0);
-    const la = ps.filter(p=>p.stage==="bloom"||p.stage==="thriving").length;
-    return {dept,total:ps.length,launched:la,score:sc};
-  }).sort((a,b)=>b.score-a.score);
+const getToolCounts = (projects) => {
+  const counts = {};
+  for (const p of projects) {
+    for (const tool of (p.toolUsed || [])) {
+      counts[tool] = (counts[tool] || 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .map(([tool, count]) => ({ tool, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+};
+
+// ── Overview Dashboard ────────────────────────────────────────────────────────
+const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavigateGarden, onNavigateWishlist }) => {
+  // ── Animation state ─────────────────────────────────────────────────────────
+  const [counts, setCounts]         = useState({ seeds:0, seedling:0, nursery:0, sprout:0, bloom:0, thriving:0 });
+  const [barsReady, setBarsReady]   = useState(false);
+  const [hoverTile, setHoverTile]   = useState(null);
+  const [clickTile, setClickTile]   = useState(null);
+
+  // ── Computed data ────────────────────────────────────────────────────────────
+  const unclaimedSeeds = wishes.filter(w => !w.claimedBy && !w.fulfilledBy);
+  const seedCount      = unclaimedSeeds.length;
+  const highVoteSeeds  = unclaimedSeeds.filter(w => w.upvoters.length >= 4).length;
+
+  const pipeline = {
+    seeds:    wishes.filter(w => !w.fulfilledBy).length,
+    seedling: projects.filter(p => p.stage === "seedling").length,
+    nursery:  projects.filter(p => p.stage === "nursery").length,
+    sprout:   projects.filter(p => p.stage === "sprout").length,
+    bloom:    projects.filter(p => p.stage === "bloom").length,
+    thriving: projects.filter(p => p.stage === "thriving").length,
+  };
+
+  // lastUpdated = days since last update; ascending sort puts lowest (most recent) at [0] ✓
+  const spotlight = projects
+    .filter(p => p.stage === "thriving")
+    .sort((a, b) => a.lastUpdated - b.lastUpdated)[0] || null;
+
+  const activityFeed = getActivityFeed(projects, wishes);
+
+  const topBuilders = (() => {
+    const map = {};
+    for (const p of projects) {
+      if (p.stage === "seedling") continue;
+      const key = p.builderEmail || p.builder;
+      if (!map[key]) map[key] = { name: p.builder || p.builderEmail, email: p.builderEmail, count: 0 };
+      map[key].count++;
+    }
+    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 4);
+  })();
+
+  const topSeeds = wishes
+    .filter(w => w.upvoters.length > 0)
+    .sort((a, b) => b.upvoters.length - a.upvoters.length)
+    .slice(0, 3);
+
+  const toolCounts = getToolCounts(projects);
+
+  const deptCoverage = Object.keys(DEPT_ZONES).map(dept => ({
+    dept,
+    count: projects.filter(p => p.builtBy === dept).length,
+  })).sort((a, b) => b.count - a.count);
+
+  // Action zone data
+  const myProjects    = projects.filter(p => p.builderEmail === authUser?.email);
+  const nurseryQueue  = projects.filter(p => p.stage === "nursery")
+    .sort((a, b) => {
+      const aMs = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+      const bMs = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+      return aMs - bMs; // ASC — oldest first
+    });
+  const stalePlants   = projects
+    .filter(p => p.lastUpdated > 30)
+    .sort((a, b) => b.lastUpdated - a.lastUpdated);
+  const seedsToClaim  = wishes
+    .filter(w => !w.claimedBy && !w.fulfilledBy)
+    .sort((a, b) => b.upvoters.length - a.upvoters.length)
+    .slice(0, 3);
+
+  const healthPct = Math.round(
+    (projects.filter(p => p.stage === "bloom" || p.stage === "thriving").length /
+      Math.max(projects.length, 1)) * 100
+  );
+
+  // ── CountUp animation (200ms delay, 600ms duration) ─────────────────────────
+  useEffect(() => {
+    const targets = { ...pipeline };
+    const steps = 600 / 16;
+    const cur = { seeds: 0, seedling: 0, nursery: 0, sprout: 0, bloom: 0, thriving: 0 };
+    let timerRef = null;
+    const delay = setTimeout(() => {
+      timerRef = setInterval(() => {
+        let done = true;
+        const next = { ...cur };
+        for (const key of Object.keys(targets)) {
+          const step = targets[key] / steps;
+          next[key] = Math.min(cur[key] + step, targets[key]);
+          if (next[key] < targets[key]) done = false;
+          cur[key] = next[key];
+        }
+        setCounts({
+          seeds: Math.round(next.seeds), seedling: Math.round(next.seedling),
+          nursery: Math.round(next.nursery), sprout: Math.round(next.sprout),
+          bloom: Math.round(next.bloom), thriving: Math.round(next.thriving),
+        });
+        if (done) clearInterval(timerRef);
+      }, 16);
+    }, 200);
+    return () => { clearTimeout(delay); if (timerRef) clearInterval(timerRef); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Bar grow animation (300ms delay) ─────────────────────────────────────────
+  useEffect(() => {
+    const t = setTimeout(() => setBarsReady(true), 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ── Hero greeting ────────────────────────────────────────────────────────────
+  const hour = new Date().getHours();
+  const greeting = (hour >= 6 && hour < 12) ? "Good morning" : (hour >= 12 && hour < 17) ? "Good afternoon" : "Good evening";
+  const firstName = authUser?.displayName?.trim() || authUser?.email?.split("@")[0] || "";
+
+  // ── Dot color map for activity feed ─────────────────────────────────────────
+  const FEED_DOTS = {
+    thriving: C.kangkong500,
+    approved: C.blueberry500,
+    nursery:  C.mango500,
+    seed:     C.ubas500,
+    claimed:  C.mushroom300,
+  };
+
+  const ageLabel = (days) => days === 0 ? "today" : days === 1 ? "1d ago" : `${days}d ago`;
+
+  // ── Tile config ──────────────────────────────────────────────────────────────
+  const TILE_CFG = [
+    { key:"seeds",    label:"Seeds",    sub:"Ideas waiting to be built",  bg:C.mushroom50,  border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateWishlist?.() },
+    { key:"seedling", label:"Seedling", sub:STAGE_DESC.seedling,          bg:C.white,       border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateGarden?.("board","seedling") },
+    { key:"nursery",  label:"Nursery",  sub:STAGE_DESC.nursery,           bg:C.mango50,     border:C.mango500,   countColor:C.mango600,   nav:()=>onNavigateGarden?.("board","nursery") },
+    { key:"sprout",   label:"Sprout",   sub:STAGE_DESC.sprout,            bg:C.white,       border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateGarden?.("board","sprout") },
+    { key:"bloom",    label:"Bloom",    sub:STAGE_DESC.bloom,             bg:C.white,       border:C.mushroom200, countColor:C.mushroom900, nav:()=>onNavigateGarden?.("board","bloom") },
+    { key:"thriving", label:"Thriving", sub:STAGE_DESC.thriving,          bg:C.kangkong50,  border:C.kangkong200, countColor:C.kangkong700, nav:()=>onNavigateGarden?.("board","thriving") },
+  ];
 
   return (
-    <div style={{padding:"28px 32px",background:C.mushroom50,minHeight:"100%",overflowY:"auto"}}>
-      <div style={{marginBottom:28}}>
-        <div style={{fontFamily:FF,fontSize:22,fontWeight:700,color:C.mushroom900,marginBottom:4}}>AI Program Overview</div>
-        <div style={{fontFamily:FF,fontSize:14,color:C.mushroom500}}>
-          Live snapshot of Sprout's AI ecosystem &middot; {projects.length} active projects
+    <div style={{ padding:"28px 32px", background:C.mushroom100, minHeight:"100%", overflowY:"auto", fontFamily:FF }}>
+      <style>{OVERVIEW_KF}</style>
+
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom:20, animation:"fadeUp 0.4s ease both" }}>
+        <div style={{ fontSize:19, fontWeight:700, color:C.mushroom900, letterSpacing:"-0.01em", marginBottom:3 }}>
+          {greeting}, {firstName}
+        </div>
+        <div style={{ fontSize:12, color:C.mushroom500 }}>
+          Live snapshot of Sprout&rsquo;s AI ecosystem &middot; {projects.length} active plants across PH &amp; TH
         </div>
       </div>
 
-      {/* Key metrics — 6 tiles: Seeds + 5 pipeline stages */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>
-        {[
-          {label:"Seeds",    value:seedCount,                                                 sub:"Ideas waiting to be built",  tone:"neutral",    plant:<WishSeed size={28} color={C.mushroom500}/>,  nav:()=>onNavigateWishlist?.()},
-          {label:"Seedling", value:projects.filter(p=>p.stage==="seedling").length,           sub:STAGE_DESC.seedling,  tone:"neutral",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","seedling")},
-          {label:"Nursery",  value:projects.filter(p=>p.stage==="nursery").length,            sub:STAGE_DESC.nursery,   tone:"pending",    plant:<PlantSprout size={30}/>,                   nav:()=>onNavigateGarden?.("board","nursery")},
-          {label:"Sprout",   value:projects.filter(p=>p.stage==="sprout").length,             sub:STAGE_DESC.sprout,    tone:"plain",      plant:<PlantGrowing size={32}/>,                  nav:()=>onNavigateGarden?.("board","sprout")},
-          {label:"Bloom",    value:projects.filter(p=>p.stage==="bloom").length,              sub:STAGE_DESC.bloom,     tone:"success",    plant:<PlantBlooming size={32}/>,                 nav:()=>onNavigateGarden?.("board","bloom")},
-          {label:"Thriving", value:projects.filter(p=>p.stage==="thriving").length,           sub:STAGE_DESC.thriving,  tone:"info",       plant:<PlantTree size={32}/>,                     nav:()=>onNavigateGarden?.("board","thriving")},
-        ].map((s,i) => (
-          <Card key={i} tone={s.tone} hoverable onClick={s.nav} style={{textAlign:"center",padding:"14px 10px",cursor:"pointer"}}>
-            <div style={{display:"flex",justifyContent:"center",marginBottom:6}}>{s.plant}</div>
-            <div style={{fontFamily:FF,fontSize:26,fontWeight:800,color:C.mushroom900,lineHeight:1}}>{s.value}</div>
-            <div style={{fontFamily:FF,fontSize:11,color:C.mushroom700,marginTop:3,fontWeight:600}}>{s.label}</div>
-            <div style={{fontFamily:FF,fontSize:10,color:C.mushroom400,marginTop:2,lineHeight:1.4}}>{s.sub}</div>
-            <div style={{fontFamily:FF,fontSize:10,color:C.kangkong500,marginTop:5,fontWeight:600}}>View all →</div>
-          </Card>
-        ))}
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
-        {spotlight&&(
-          <Card tone="success" style={{gridColumn:"1/-1"}} hoverable onClick={()=>onSelectProject(spotlight)}>
-            <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
-              <PlantBlooming size={64} wilting={false}/>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:FF,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1.2,color:C.kangkong600,marginBottom:4}}>Project Spotlight</div>
-                <div style={{fontFamily:FF,fontSize:20,fontWeight:700,color:C.mushroom900,marginBottom:6}}>{spotlight.name}</div>
-                <div style={{fontFamily:FF,fontSize:13,color:C.mushroom600,lineHeight:1.5,marginBottom:8}}>{spotlight.description}</div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <StageBadge stage={spotlight.stage}/>
-                  <CapBadge cap={spotlight.capability}/>
-                  <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500,display:"flex",alignItems:"center",gap:4}}>
-                    Built by <strong style={{color:getDeptColor(spotlight.builtBy)}}>{spotlight.builtBy}</strong>{spotlight.country&&<>&nbsp;<CountryBadge country={spotlight.country}/></>}
-                    &nbsp;→ for <strong style={{color:getDeptColor(spotlight.builtFor)}}>{spotlight.builtFor}</strong>
-                  </span>
-                </div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontFamily:FF,fontSize:36,fontWeight:800,color:C.kangkong600,lineHeight:1}}>{spotlight.impactNum}</div>
-                <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:2}}>{spotlight.impact}</div>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Rankings with toggle */}
-        <Card tone="plain" style={{gridColumn:"1/2"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontFamily:FF,fontWeight:700,fontSize:14,color:C.mushroom800,display:"flex",alignItems:"center",gap:6}}>
-              <IcoImpact size={16} color={C.kangkong600}/> Rankings
-            </div>
-            <div style={{display:"flex",background:C.mushroom100,borderRadius:DS.radius.md,padding:2,gap:1}}>
-              {[{k:"builtBy",l:"Built By"},{k:"builtFor",l:"Built For"},{k:"builder",l:"Builder"}].map(opt=>(
-                <button key={opt.k} onClick={()=>setRankMode(opt.k)} style={{
-                  padding:"4px 11px",border:"none",cursor:"pointer",
-                  fontFamily:FF,fontSize:11,fontWeight:600,
-                  borderRadius:DS.radius.sm,transition:"all 0.15s",
-                  background:rankMode===opt.k?C.white:"transparent",
-                  color:rankMode===opt.k?C.kangkong600:C.mushroom500,
-                  boxShadow:rankMode===opt.k?DS.shadow.sm:"none",
-                }}>{opt.l}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{fontFamily:FF,fontSize:11,color:C.mushroom400,marginBottom:12,fontStyle:"italic"}}>
-            {rankMode==="builtBy" ? "Which team owns/creates the most AI projects"
-             : rankMode==="builtFor" ? "Which team benefits most from AI projects"
-             : "Which Farmer has built the most AI projects"}
-          </div>
-
-          {rankMode==="builder" ? (()=>{
-            // Build per-person stats
-            const builderMap = {};
-            projects.forEach(p => {
-              if (!p.builder) return;
-              if (!builderMap[p.builder]) builderMap[p.builder] = {name:p.builder, total:0, launched:0, team:p.builtBy, country:p.country};
-              builderMap[p.builder].total++;
-              if (p.stage==="bloom"||p.stage==="thriving") builderMap[p.builder].launched++;
-            });
-            const builders = Object.values(builderMap).sort((a,b)=>b.total-a.total);
-            const maxTotal = builders[0]?.total||1;
-            return builders.slice(0,6).map((b,i)=>{
-              const dc = DEPT_COLORS[b.team]||C.mushroom400;
-              return (
-                <div key={b.name} style={{marginBottom:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400,minWidth:16}}>{["1st","2nd","3rd"][i]||i+1}</span>
-                      <div style={{width:24,height:24,borderRadius:"50%",background:dc,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                        <span style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.white}}>{b.name.split(" ").map(w=>w[0]).join("").slice(0,2)}</span>
-                      </div>
-                      <div>
-                        <span style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom800}}>{b.name}</span>
-                        <span style={{fontFamily:FF,fontSize:10,color:dc,marginLeft:6,fontWeight:600}}>{b.team}</span>
-                        <CountryBadge country={b.country}/>
-                      </div>
-                    </div>
-                    <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{b.launched} launched · {b.total} total</span>
-                  </div>
-                  <ProgressBar value={(b.total/maxTotal)*100} color={dc} height={6}/>
-                </div>
-              );
-            });
-          })()
-          : deptStats.slice(0,6).map((d,i)=>{
-            const dc=DEPT_COLORS[d.dept];
-            const maxScore=deptStats[0].score||1;
-            return (
-              <div key={d.dept} style={{marginBottom:14}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400,minWidth:16}}>{["1st","2nd","3rd"][i]||i+1}</span>
-                    <div style={{width:8,height:8,borderRadius:"50%",background:dc}}/>
-                    <span style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom800}}>{d.dept}</span>
-                  </div>
-                  <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{d.launched} launched · {d.total} total</span>
-                </div>
-                <ProgressBar value={(d.score/maxScore)*100} color={dc} height={6}/>
-              </div>
-            );
-          })}
-        </Card>
-
-        <Card tone="plain" style={{gridColumn:"2/3"}}>
-          <div style={{fontFamily:FF,fontWeight:700,fontSize:14,color:C.mushroom800,marginBottom:16,display:"flex",alignItems:"center",gap:6}}>
-            <IcoImpact size={16} color={C.kangkong600}/> Impact Highlights
-          </div>
-          {totalImpacts.slice(0,5).map(p=>{
-            const dc=getDeptColor(p.builtBy);
-            return (
-              <div key={p.id} onClick={()=>onSelectProject(p)} style={{
-                display:"flex",alignItems:"center",gap:12,marginBottom:10,
-                padding:"10px 12px",borderRadius:DS.radius.lg,
-                background:C.mushroom50,border:"1px solid "+C.mushroom200,
-                borderLeft:"3px solid "+dc,cursor:"pointer",transition:"all 0.15s",
+      {/* ── Pipeline tiles ───────────────────────────────────────────────── */}
+      <div style={{
+        display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:6, marginBottom:20,
+        animation:"fadeUp 0.4s ease 0.05s both",
+      }}>
+        {TILE_CFG.map((t, i) => {
+          const isHov = hoverTile === i;
+          const isClk = clickTile === i;
+          return (
+            <div
+              key={t.key}
+              onMouseEnter={() => setHoverTile(i)}
+              onMouseLeave={() => setHoverTile(null)}
+              onClick={() => {
+                setClickTile(i);
+                setTimeout(() => { setClickTile(null); t.nav(); }, 120);
               }}
-                onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
-                onMouseOut={e=>e.currentTarget.style.background=C.mushroom50}
-              >
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom900}}>{p.name}</div>
-                  <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>
-                    {p.builtBy} → {p.builtFor}
-                  </div>
-                </div>
-                <div style={{fontFamily:FF,fontSize:18,fontWeight:800,color:dc}}>{p.impactNum}</div>
+              style={{
+                background: t.bg,
+                border: `0.5px solid ${isHov ? (t.key==="nursery" ? C.mango500 : C.kangkong200) : t.border}`,
+                borderRadius: 9,
+                padding: "12px 10px",
+                cursor: "pointer",
+                textAlign: "center",
+                transform: isClk ? "scale(0.97)" : isHov ? "translateY(-2px)" : "none",
+                boxShadow: isHov ? DS.shadow.sm : "none",
+                transition: "all 0.18s ease",
+                userSelect: "none",
+              }}
+            >
+              <div style={{ fontSize:20, fontWeight:600, color:t.countColor, lineHeight:1 }}>
+                {counts[t.key]}
               </div>
-            );
-          })}
-        </Card>
+              <div style={{ fontSize:10, fontWeight:600, color:C.mushroom700, marginTop:3 }}>
+                {t.label}
+              </div>
+              <div style={{ fontSize:9, color:C.mushroom400, marginTop:2, lineHeight:1.4 }}>
+                {t.sub}
+              </div>
+              <div style={{ fontSize:9, fontWeight:600, color:C.kangkong500, marginTop:5, opacity:isHov?1:0, transition:"opacity 0.18s" }}>
+                View all →
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Tools in Use */}
-      {(() => {
-        const counts = TOOLS
-          .map(t => ({tool:t, count:projects.filter(p=>p.toolUsed?.includes(t)).length}))
-          .filter(x=>x.count>0)
-          .sort((a,b)=>b.count-a.count);
-        const max = counts[0]?.count||1;
-        if(!counts.length) return null;
-        return (
-          <Card tone="plain">
-            <div style={{fontFamily:FF,fontWeight:700,fontSize:14,color:C.mushroom800,marginBottom:16,display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:15}}>⚒</span> Tools in Use
+      {/* ── Two-column body ─────────────────────────────────────────────── */}
+      <div style={{ display:"flex", gap:16, alignItems:"start" }}>
+
+        {/* ── LEFT COLUMN (flex 1.45) ──────────────────────────────────── */}
+        <div style={{ flex:"1.45 1 0", minWidth:0, display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* ── Action zone — Your Focus ────────────────────────────────── */}
+          <div style={{ animation:"fadeUp 0.4s ease 0.1s both" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+              Your Focus
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:"10px 24px"}}>
-              {counts.map(({tool,count})=>(
-                <div key={tool}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700}}>{tool}</span>
-                    <span style={{fontFamily:FF,fontSize:11,color:C.mushroom400}}>{count} project{count!==1?"s":""}</span>
-                  </div>
-                  <div style={{height:6,background:C.mushroom100,borderRadius:DS.radius.full,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:(count/max*100)+"%",background:C.kangkong400,borderRadius:DS.radius.full}}/>
-                  </div>
-                </div>
-              ))}
+            <div style={{ display:"flex", gap:12 }}>
+
+              {/* LEFT PANEL */}
+              <div style={{ flex:1, background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+                {authUser?.isExcom ? (
+                  /* Approver: Nursery queue */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Nursery Queue
+                    </div>
+                    {nurseryQueue.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>No plants awaiting review.</div>
+                    ) : nurseryQueue.map((p, i) => {
+                      const submitted = p.submittedAt ? Math.floor((Date.now() - new Date(p.submittedAt).getTime()) / 86400000) : p.lastUpdated;
+                      const overdue = submitted > 7;
+                      return (
+                        <div key={p.id}
+                          onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                          onClick={() => onSelectProject(p)}
+                          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<nurseryQueue.length-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                        >
+                          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
+                            <span style={{ fontSize:9, fontWeight:600, background:C.mango100, color:C.mango600, border:`0.5px solid ${C.mango500}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0 }}>
+                              Nursery
+                            </span>
+                            <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                          </div>
+                          {overdue && (
+                            <span style={{ fontSize:9, fontWeight:600, background:C.tomato100, color:C.tomato500, border:`0.5px solid ${C.tomato500}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0, marginLeft:6 }}>
+                              Overdue {submitted}d
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : authUser?.isGardener ? (
+                  /* Admin: Garden health — stale plants */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Garden Health
+                    </div>
+                    {stalePlants.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>No stale plants. Garden is healthy!</div>
+                    ) : stalePlants.slice(0, 5).map((p, i) => (
+                      <div key={p.id}
+                        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                        onClick={() => onSelectProject(p)}
+                        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(stalePlants.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                      >
+                        <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{p.name}</span>
+                        <span style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginLeft:8 }}>{p.lastUpdated}d ago</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  /* Planter: My plants with next-action CTAs */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      My Plants
+                    </div>
+                    {myProjects.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>You haven&rsquo;t added any plants yet.</div>
+                    ) : myProjects.slice(0, 5).map((p, i) => {
+                      let ctaText = null;
+                      if (p.stage === "seedling" && !p.prototypeLink) ctaText = "Add prototype →";
+                      else if (p.stage === "seedling" && p.prototypeLink) ctaText = "Submit for review →";
+                      else if (p.stage === "nursery" && p.reviewStatus === "needs_rework") ctaText = "View feedback →";
+                      else if (p.stage === "nursery") ctaText = null;
+                      else ctaText = "View →";
+                      return (
+                        <div key={p.id}
+                          onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; const cta=e.currentTarget.querySelector(".ov-cta"); if(cta) cta.style.opacity=1; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; const cta=e.currentTarget.querySelector(".ov-cta"); if(cta) cta.style.opacity=0; }}
+                          onClick={() => onSelectProject(p)}
+                          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                        >
+                          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
+                            <span style={{ fontSize:9, fontWeight:600, background:STAGE_COLORS[p.stage]?.bg, color:STAGE_COLORS[p.stage]?.text, border:`0.5px solid ${STAGE_COLORS[p.stage]?.border}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0 }}>
+                              {STAGE_LABELS[p.stage]}
+                            </span>
+                            <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                          </div>
+                          {ctaText ? (
+                            <span className="ov-cta" style={{ fontSize:11, fontWeight:600, color:C.kangkong500, flexShrink:0, marginLeft:8, opacity:0, transition:"opacity 0.15s" }}>{ctaText}</span>
+                          ) : (
+                            <span className="ov-cta" style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginLeft:8, opacity:0 }}>Under review</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+
+              {/* RIGHT PANEL */}
+              <div style={{ flex:1, background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+                {authUser?.isExcom ? (
+                  /* Approver: My plants */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      My Plants
+                    </div>
+                    {myProjects.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>You haven&rsquo;t added any plants yet.</div>
+                    ) : myProjects.slice(0,5).map((p, i) => (
+                      <div key={p.id}
+                        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                        onClick={() => onSelectProject(p)}
+                        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                      >
+                        <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{p.name}</span>
+                        <span style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginLeft:8 }}>{p.lastUpdated}d ago</span>
+                      </div>
+                    ))}
+                  </>
+                ) : authUser?.isGardener ? (
+                  /* Admin: Quick stats */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Quick Stats
+                    </div>
+                    {[
+                      { label:"Total plants", value:projects.length },
+                      { label:"Pipeline health", value:healthPct + "%" },
+                      { label:"Nursery queue", value:nurseryQueue.length },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:`0.5px solid ${C.mushroom100}` }}>
+                        <span style={{ fontSize:11, color:C.mushroom600 }}>{label}</span>
+                        <span style={{ fontSize:12, fontWeight:700, color:C.mushroom900 }}>{value}</span>
+                      </div>
+                    ))}
+                    <button onClick={() => onNavigateGarden?.("board","All")} style={{ marginTop:10, fontSize:11, fontWeight:600, color:C.kangkong500, background:"none", border:`0.5px solid ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"5px 10px", cursor:"pointer", width:"100%" }}>
+                      View Board →
+                    </button>
+                  </>
+                ) : (
+                  /* Planter: Seeds to claim */
+                  <>
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
+                      Seeds to Claim
+                    </div>
+                    {seedsToClaim.length === 0 ? (
+                      <div style={{ fontSize:11, color:C.mushroom400 }}>No unclaimed Seeds right now.</div>
+                    ) : seedsToClaim.map((w, i) => (
+                      <div key={w.id}
+                        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+                        onClick={() => onNavigateWishlist?.()}
+                        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<seedsToClaim.length-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                      >
+                        <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{w.title}</span>
+                        <span style={{ fontSize:10, color:C.ubas500, fontWeight:600, flexShrink:0, marginLeft:8 }}>▲ {w.upvoters.length}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+            </div>{/* end action zone flex */}
+          </div>{/* end action zone section */}
+
+          {/* ── Activity feed ────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.15s both" }}>
+  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:8 }}>
+    <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500 }}>
+      What&rsquo;s Happening
+    </div>
+    <div style={{ fontSize:9, color:C.mushroom400 }}>Loaded just now</div>
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, overflow:"hidden" }}>
+    {activityFeed.length === 0 ? (
+      <div style={{ padding:"14px", fontSize:12, color:C.mushroom400 }}>No recent activity yet.</div>
+    ) : activityFeed.map((ev, i) => (
+      <div key={ev.id}
+        onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="18px"; }}
+        onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; }}
+        style={{
+          display:"flex", alignItems:"center", gap:10, padding:"8px 12px",
+          borderBottom: i < activityFeed.length - 1 ? `0.5px solid ${C.mushroom100}` : "none",
+          transition:"all 0.15s",
+          animation:`slideIn 0.25s ease ${i * 0.05}s both`,
+        }}
+      >
+        <div style={{ width:7, height:7, borderRadius:"50%", background:FEED_DOTS[ev.type] || C.mushroom300, flexShrink:0 }}/>
+        <div style={{ flex:1, fontSize:12, color:C.mushroom800, lineHeight:1.4 }}>{ev.text}</div>
+        <div style={{ fontSize:10, color:C.mushroom400, flexShrink:0 }}>{ageLabel(ev.age)}</div>
+      </div>
+    ))}
+  </div>
+
+  {/* Seeds nudge */}
+  {seedCount > 0 && (
+    <div
+      onMouseEnter={e => { e.currentTarget.style.background=C.ubas100; e.currentTarget.style.transform="translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background=C.ubas100; e.currentTarget.style.transform="none"; }}
+      onClick={() => onNavigateWishlist?.()}
+      style={{ marginTop:8, padding:"10px 14px", background:C.ubas100, border:`0.5px solid ${C.ubas400}`, borderRadius:DS.radius.md, display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", transition:"all 0.15s" }}
+    >
+      <span style={{ fontSize:11, color:C.mushroom700 }}>
+        <strong style={{ color:C.ubas500 }}>{seedCount}</strong> Seeds unclaimed
+        {highVoteSeeds > 0 && ` — ${highVoteSeeds} with 4+ upvotes`}
+      </span>
+      <span style={{ fontSize:11, fontWeight:600, color:C.ubas500 }}>Browse Seeds →</span>
+    </div>
+  )}
+</div>
+
+          {/* ── Tools in Use ─────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.2s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Tools in Use
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+    {toolCounts.length === 0 ? (
+      <div style={{ fontSize:11, color:C.mushroom400 }}>No tool data yet.</div>
+    ) : (() => {
+      const maxT = toolCounts[0]?.count || 1;
+      return (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px 20px" }}>
+          {toolCounts.map(({ tool, count }) => (
+            <div key={tool} style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:11, fontWeight:500, color:C.mushroom800, width:80, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tool}</span>
+              <div style={{ flex:1, height:4, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
+                <div style={{ height:"100%", width: barsReady ? `${(count/maxT)*100}%` : 0, background:C.kangkong500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
+              </div>
+              <span style={{ fontSize:10, color:C.mushroom500, width:20, textAlign:"right", flexShrink:0 }}>{count}</span>
             </div>
-          </Card>
-        );
-      })()}
+          ))}
+        </div>
+      );
+    })()}
+  </div>
+</div>
+
+        </div>{/* end left column */}
+
+        {/* ── RIGHT COLUMN (flex 1) ─────────────────────────────────────── */}
+        <div style={{ flex:"1 1 0", minWidth:0, display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* ── Spotlight ───────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.1s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Project Spotlight
+  </div>
+  {spotlight ? (
+    <div
+      onMouseEnter={e => { e.currentTarget.style.borderColor=C.kangkong400; e.currentTarget.style.boxShadow=DS.shadow.sm; e.currentTarget.style.transform="translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor=C.kangkong200; e.currentTarget.style.boxShadow="none"; e.currentTarget.style.transform="none"; }}
+      onClick={() => onSelectProject(spotlight)}
+      style={{ background:C.kangkong50, border:`0.5px solid ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"14px", cursor:"pointer", transition:"all 0.18s" }}
+    >
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+        <div style={{ width:6, height:6, borderRadius:"50%", background:C.kangkong500, animation:"ovPulse 2s infinite", flexShrink:0 }}/>
+        <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong700 }}>Most recently thriving</span>
+      </div>
+      <div style={{ fontSize:15, fontWeight:600, color:C.mushroom900, marginBottom:4 }}>{spotlight.name}</div>
+      {spotlight.description && (
+        <div style={{ fontSize:11, color:C.mushroom700, lineHeight:1.5, marginBottom:10, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+          {spotlight.description}
+        </div>
+      )}
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:10 }}>
+        <span style={{ fontSize:10, fontWeight:600, background:STAGE_COLORS.thriving.bg, color:STAGE_COLORS.thriving.text, border:`0.5px solid ${STAGE_COLORS.thriving.border}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>Thriving</span>
+        {spotlight.capability && CAP_COLORS[spotlight.capability] && (
+          <span style={{ fontSize:10, fontWeight:600, background:CAP_COLORS[spotlight.capability].bg, color:CAP_COLORS[spotlight.capability].text, border:`0.5px solid ${CAP_COLORS[spotlight.capability].border}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>{spotlight.capability}</span>
+        )}
+        <span style={{ fontSize:10, color:C.mushroom500, background:C.mushroom100, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>
+          {spotlight.builtBy}{spotlight.country ? ` · ${spotlight.country}` : ""}
+        </span>
+      </div>
+      <div style={{ borderTop:`0.5px solid ${C.kangkong200}`, paddingTop:8 }}>
+        <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong600, marginBottom:4 }}>Documented impact</div>
+        <div style={{ fontSize:13, fontWeight:600, color:C.kangkong700 }}>{spotlight.impact || "TBD"}</div>
+      </div>
+    </div>
+  ) : (
+    <div style={{ background:C.kangkong50, border:`0.5px dashed ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"28px 14px", textAlign:"center" }}>
+      <div style={{ fontSize:12, fontWeight:500, color:C.kangkong500, marginBottom:4 }}>No thriving plants yet</div>
+      <div style={{ fontSize:11, color:C.mushroom500 }}>Be the first to get a plant to Thriving</div>
+    </div>
+  )}
+</div>
+
+          {/* ── Top Builders ─────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.2s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Top Builders
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+    {topBuilders.length === 0 ? (
+      <div style={{ fontSize:11, color:C.mushroom400 }}>No data yet.</div>
+    ) : (() => {
+      const maxB = topBuilders[0]?.count || 1;
+      return topBuilders.map((b, i) => (
+        <div key={b.email || b.name} style={{ display:"flex", alignItems:"center", gap:8, marginBottom: i<topBuilders.length-1?8:0 }}>
+          <span style={{ fontSize:10, color:C.mushroom300, width:12, flexShrink:0 }}>{i+1}</span>
+          <div style={{ width:22, height:22, borderRadius:5, background:C.mushroom100, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:9, fontWeight:700, color:C.mushroom600 }}>
+            {(b.name||"?").slice(0,2).toUpperCase()}
+          </div>
+          <span style={{ fontSize:11, color:C.mushroom800, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.name}</span>
+          <div style={{ width:50, height:3, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden", flexShrink:0 }}>
+            <div style={{ height:"100%", width: barsReady ? `${(b.count/maxB)*100}%` : 0, background:C.kangkong500, transition:"width 0.8s ease 0.3s", borderRadius:DS.radius.full }}/>
+          </div>
+          <span style={{ fontSize:10, color:C.mushroom500, width:16, textAlign:"right", flexShrink:0 }}>{b.count}</span>
+        </div>
+      ));
+    })()}
+  </div>
+</div>
+
+{/* ── Top Seeds ─────────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.25s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Top Seeds
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+    {topSeeds.length === 0 ? (
+      <div style={{ fontSize:11, color:C.mushroom400 }}>No Seeds with upvotes yet.</div>
+    ) : (() => {
+      const maxS = topSeeds[0]?.upvoters.length || 1;
+      return topSeeds.map((w, i) => (
+        <div key={w.id} style={{ display:"flex", alignItems:"center", gap:8, marginBottom: i<topSeeds.length-1?8:0 }}>
+          <span style={{ fontSize:10, color:C.mushroom300, width:12, flexShrink:0 }}>{i+1}</span>
+          <div style={{ width:22, height:22, borderRadius:5, background:C.ubas100, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, color:C.ubas500 }}>▲</div>
+          <span style={{ fontSize:11, color:C.mushroom800, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{w.title}</span>
+          <div style={{ width:50, height:3, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden", flexShrink:0 }}>
+            <div style={{ height:"100%", width: barsReady ? `${(w.upvoters.length/maxS)*100}%` : 0, background:C.ubas500, transition:"width 0.8s ease 0.3s", borderRadius:DS.radius.full }}/>
+          </div>
+          <span style={{ fontSize:10, color:C.mushroom500, width:16, textAlign:"right", flexShrink:0 }}>{w.upvoters.length}</span>
+        </div>
+      ));
+    })()}
+  </div>
+</div>
+
+          {/* ── Dept coverage ────────────────────────────────────────────────── */}
+          <div style={{ animation:"fadeUp 0.4s ease 0.3s both" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+              Dept Coverage
+            </div>
+            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+              {(() => {
+                const maxD = deptCoverage[0]?.count || 1;
+                return deptCoverage.map(({ dept, count }) => {
+                  const barColor = count >= 3 ? C.kangkong500 : count >= 1 ? C.mango500 : C.mushroom200;
+                  const nameColor = count === 0 ? C.mushroom400 : C.mushroom800;
+                  return (
+                    <div key={dept} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                      <span style={{ fontSize:11, color:nameColor, width:70, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dept}</span>
+                      <div style={{ flex:1, height:4, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
+                        <div style={{ height:"100%", width: barsReady && maxD > 0 ? `${(count/maxD)*100}%` : 0, background:barColor, transition:"width 0.8s ease 0.5s", borderRadius:DS.radius.full }}/>
+                      </div>
+                      <span style={{ fontSize:10, color:C.mushroom500, width:16, textAlign:"right", flexShrink:0 }}>{count}</span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+        </div>{/* end right column */}
+
+      </div>{/* end two-column body */}
 
     </div>
   );
@@ -4594,7 +5010,7 @@ export default function SproutAIGarden() {
       {/* ── Main content + Detail Panel ── */}
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-          {view==="dashboard" && <ExecutiveDashboard projects={projects} wishes={wishes} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
+          {view==="dashboard" && <OverviewDashboard projects={projects} wishes={wishes} authUser={authUser} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
           {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish}/>}
           {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>
