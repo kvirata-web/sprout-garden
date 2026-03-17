@@ -1430,10 +1430,6 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
           {spotlight.builtBy}{spotlight.country ? ` · ${spotlight.country}` : ""}
         </span>
       </div>
-      <div style={{ borderTop:`0.5px solid ${C.kangkong200}`, paddingTop:8 }}>
-        <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong600, marginBottom:4 }}>Documented impact</div>
-        <div style={{ fontSize:13, fontWeight:600, color:C.kangkong700 }}>{spotlight.impact || "TBD"}</div>
-      </div>
     </div>
   ) : (
     <div style={{ background:C.kangkong50, border:`0.5px dashed ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"28px 14px", textAlign:"center" }}>
@@ -2321,7 +2317,6 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected, deptF
                 <div style={{fontWeight:700,marginBottom:2}}>{project.name}</div>
                 <div style={{opacity:0.7,fontSize:10}}>{project.builtBy}{project.builtFor!==project.builtBy?" → "+project.builtFor:""}</div>
                 <div style={{opacity:0.6,fontSize:10}}>{project.capability} · {STAGE_LABELS[project.stage]}</div>
-                {project.impact!=="TBD"&&<div style={{marginTop:3,fontSize:10,color:C.kangkong300}}>{project.impact}</div>}
               </div>
             )}
           </div>
