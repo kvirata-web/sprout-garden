@@ -43,7 +43,6 @@ export const toProject = (row) => ({
 })
 
 export const fromProject = (proj) => ({
-  country:          proj.country,
   name:             proj.name,
   built_by:         proj.builtBy,
   built_for:        proj.builtFor,
