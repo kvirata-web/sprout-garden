@@ -3422,6 +3422,264 @@ function FirstTimeCountryModal({onSelect}) {
   );
 }
 
+// ── Help Panel ────────────────────────────────────────────────────────────────
+function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
+  view, setView, submitType, setSubmitType, formTitle, setFormTitle,
+  formDesc, setFormDesc, editItem, onOpen, onSubmit, onUpvote,
+  onResolve, onDelete, onStartEdit, loading, authUser }) {
+
+  // helpDateLabel is local to avoid conflict with imported daysAgo (which returns a number)
+  const helpDateLabel = (ts) => {
+    const d = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+    if (d === 0) return "Today";
+    if (d === 1) return "Yesterday";
+    return `${d} days ago`;
+  };
+
+  const ITEMS_PER_PAGE = 10;
+
+  const filtered = items.filter(i =>
+    filter === "all" ? true :
+    filter === "report" ? i.type === "report" : i.type === "ask"
+  );
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const pageItems  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const submitterName = (email) => {
+    if (email === authUser?.email && authUser?.firstName) return authUser.firstName;
+    return email.split("@")[0];
+  };
+
+  return (
+    <>
+      {/* FAB */}
+      <button
+        onClick={open ? onClose : onOpen}
+        style={{
+          position:"fixed", bottom:20, right:20, width:40, height:40,
+          borderRadius:"50%", background:C.kangkong700, border:"none",
+          cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+          boxShadow:"0 2px 8px rgba(0,0,0,0.18)",
+          zIndex:50, transition:"transform 0.15s, background 0.15s",
+        }}
+        onMouseOver={e=>{e.currentTarget.style.background=C.kangkong800;e.currentTarget.style.transform="scale(1.05)";}}
+        onMouseOut={e=>{e.currentTarget.style.background=C.kangkong700;e.currentTarget.style.transform="scale(1)";}}
+        title="Help"
+      >
+        {/* Question mark icon */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+          <circle cx="12" cy="17" r="0.5" fill="white" stroke="white" strokeWidth="1.5"/>
+        </svg>
+      </button>
+
+      {/* Panel */}
+      {open && (
+        <div style={{
+          position:"fixed", top:0, right:0, width:320, height:"100vh",
+          background:C.white, borderLeft:"1px solid "+C.mushroom200,
+          zIndex:55, display:"flex", flexDirection:"column",
+          transform:"translateX(0)", animation:"slideInPanel 0.22s cubic-bezier(0.4,0,0.2,1)",
+          boxShadow:"-4px 0 20px rgba(0,0,0,0.08)",
+        }}>
+
+          {/* Panel header */}
+          <div style={{padding:"12px 14px 0", borderBottom:"1px solid "+C.mushroom200, flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help</span>
+              <button onClick={onClose} style={{width:28,height:28,borderRadius:DS.radius.sm,border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.mushroom500,fontSize:16,fontWeight:300}}
+                onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
+                onMouseOut={e=>e.currentTarget.style.background="none"}
+              >✕</button>
+            </div>
+
+            {/* + Report and + Ask buttons — hidden during submit/edit */}
+            {view === "feed" && (
+              <div style={{display:"flex",gap:6,marginBottom:10}}>
+                <button onClick={()=>{setSubmitType("report");setFormTitle("");setFormDesc("");setView("submit");}}
+                  style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,background:"none",fontFamily:FF,fontSize:12,fontWeight:500,color:C.mushroom700,cursor:"pointer",transition:"all 0.15s"}}
+                  onMouseOver={e=>{e.currentTarget.style.background=C.tomato100;e.currentTarget.style.color=C.tomato600;e.currentTarget.style.borderColor="#FFCDD2";}}
+                  onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.color=C.mushroom700;e.currentTarget.style.borderColor=C.mushroom200;}}
+                >+ Report</button>
+                <button onClick={()=>{setSubmitType("ask");setFormTitle("");setFormDesc("");setView("submit");}}
+                  style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,background:"none",fontFamily:FF,fontSize:12,fontWeight:500,color:C.mushroom700,cursor:"pointer",transition:"all 0.15s"}}
+                  onMouseOver={e=>{e.currentTarget.style.background=C.blueberry100;e.currentTarget.style.color=C.blueberry500;e.currentTarget.style.borderColor="#BBDEFB";}}
+                  onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.color=C.mushroom700;e.currentTarget.style.borderColor=C.mushroom200;}}
+                >+ Ask</button>
+              </div>
+            )}
+
+            {/* Filter tabs — only in feed view */}
+            {view === "feed" && (
+              <div style={{display:"flex",gap:0,borderBottom:"1px solid "+C.mushroom200}}>
+                {[["all","All"],["report","Reports"],["ask","Asks"]].map(([val,label])=>(
+                  <button key={val} onClick={()=>{setFilter(val);setPage(1);}}
+                    style={{padding:"6px 12px",fontFamily:FF,fontSize:12,fontWeight:500,border:"none",background:"none",cursor:"pointer",
+                      color:filter===val?C.kangkong600:C.mushroom500,
+                      borderBottom:filter===val?"2px solid "+C.kangkong600:"2px solid transparent",
+                      transition:"all 0.15s",
+                    }}
+                  >{label}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Panel body */}
+          <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
+            {view === "feed" && (
+              <>
+                {pageItems.length === 0 ? (
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:200,gap:8}}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="9" stroke={C.mushroom300} strokeWidth="1.5"/>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke={C.mushroom300} strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="12" cy="17" r="0.5" fill={C.mushroom300} stroke={C.mushroom300} strokeWidth="1"/>
+                    </svg>
+                    <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>Nothing here yet.</div>
+                    <div style={{fontFamily:FF,fontSize:12,color:C.mushroom400,textAlign:"center"}}>Be the first to submit a report or ask a question.</div>
+                  </div>
+                ) : (
+                  pageItems.map(item => {
+                    const isSettled = item.status === "resolved" || item.status === "answered";
+                    const isOwn     = item.submitted_by === authUser?.email;
+                    const hasVoted  = item.upvoters?.includes(authUser?.email);
+                    const canEdit   = isOwn && !isSettled;
+                    return (
+                      <div key={item.id} style={{padding:"10px 0",borderBottom:"1px solid "+C.mushroom100,opacity:isSettled?0.5:1}}>
+                        <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                          {/* Type dot */}
+                          <div style={{width:6,height:6,borderRadius:"50%",marginTop:5,flexShrink:0,background:item.type==="report"?C.tomato600:C.blueberry500}}/>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontFamily:FF,fontSize:13,fontWeight:500,color:C.mushroom900,lineHeight:1.4,marginBottom:4}}>{item.title}</div>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:4}}>
+                              <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{submitterName(item.submitted_by)} · {helpDateLabel(item.created_at)}</span>
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                {/* Upvote button */}
+                                <button
+                                  onClick={()=>!isOwn&&onUpvote(item)}
+                                  disabled={isOwn}
+                                  style={{display:"flex",alignItems:"center",gap:3,padding:"2px 6px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,background:hasVoted?C.kangkong50:"none",color:hasVoted?C.kangkong700:C.mushroom500,fontFamily:FF,fontSize:11,cursor:isOwn?"default":"pointer",transition:"all 0.15s",}}
+                                >
+                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1L9 9H1L5 1Z" fill={hasVoted?C.kangkong700:C.mushroom400}/></svg>
+                                  {item.upvoters?.length || 0}
+                                </button>
+                                {/* Status pill */}
+                                <span style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:DS.radius.full,background:isSettled?C.kangkong100:C.mango100,color:isSettled?C.kangkong700:C.mango700,}}>
+                                  {item.status}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Admin + Edit actions */}
+                            <div style={{display:"flex",gap:6,marginTop:6}}>
+                              {canEdit && (
+                                <button onClick={()=>onStartEdit(item)}
+                                  style={{fontFamily:FF,fontSize:11,color:C.mushroom500,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Edit</button>
+                              )}
+                              {authUser?.isAdmin && !isSettled && (
+                                <button onClick={()=>onResolve(item)}
+                                  style={{fontFamily:FF,fontSize:11,color:C.kangkong600,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>
+                                  {item.type==="report"?"Mark resolved":"Mark answered"}
+                                </button>
+                              )}
+                              {authUser?.isAdmin && (
+                                <button onClick={()=>onDelete(item)}
+                                  style={{fontFamily:FF,fontSize:11,color:C.tomato600,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Delete</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </>
+            )}
+
+            {(view === "submit" || view === "edit") && (
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {/* Back button */}
+                <button onClick={()=>setView("feed")}
+                  style={{display:"flex",alignItems:"center",gap:4,fontFamily:FF,fontSize:12,color:C.mushroom500,background:"none",border:"none",cursor:"pointer",padding:0,alignSelf:"flex-start"}}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6L8 10" stroke={C.mushroom500} strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  Back to Help
+                </button>
+                <div style={{fontFamily:FF,fontSize:14,fontWeight:600,color:C.mushroom900}}>
+                  {view==="edit" ? "Edit your submission" : submitType==="report" ? "Submit a report" : "Ask a question"}
+                </div>
+                {/* Type toggle — only on new submit */}
+                {view === "submit" && (
+                  <div style={{display:"flex",gap:6}}>
+                    {[["report","Report"],["ask","Ask"]].map(([val,label])=>(
+                      <button key={val} onClick={()=>setSubmitType(val)}
+                        style={{flex:1,padding:"6px 0",borderRadius:DS.radius.sm,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.15s",
+                          border: submitType===val
+                            ? (val==="report"?"1px solid #FFCDD2":"1px solid #BBDEFB")
+                            : "1px solid "+C.mushroom200,
+                          background: submitType===val
+                            ? (val==="report"?C.tomato100:C.blueberry100)
+                            : "none",
+                          color: submitType===val
+                            ? (val==="report"?C.tomato600:C.blueberry500)
+                            : C.mushroom500,
+                        }}
+                      >{label}</button>
+                    ))}
+                  </div>
+                )}
+                {/* Submitter strip */}
+                <div style={{display:"flex",alignItems:"center",gap:8,background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,padding:"6px 10px"}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",background:C.kangkong200,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:10,fontWeight:700,color:C.kangkong700,flexShrink:0}}>
+                    {(authUser?.firstName||authUser?.displayName||"?")[0].toUpperCase()}
+                  </div>
+                  <span style={{fontFamily:FF,fontSize:11,color:C.mushroom600}}>Submitting as {authUser?.firstName||authUser?.displayName||authUser?.email}</span>
+                </div>
+                {/* Title field */}
+                <input
+                  value={formTitle}
+                  onChange={e=>setFormTitle(e.target.value)}
+                  placeholder="Brief description..."
+                  style={{width:"100%",padding:"8px 10px",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:13,color:C.mushroom900,outline:"none"}}
+                />
+                {/* Description field */}
+                <textarea
+                  value={formDesc}
+                  onChange={e=>setFormDesc(e.target.value)}
+                  placeholder="Steps to reproduce, or more context... (optional)"
+                  rows={4}
+                  style={{width:"100%",padding:"8px 10px",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:13,color:C.mushroom900,outline:"none",resize:"vertical"}}
+                />
+                {/* Submit button */}
+                <button
+                  onClick={onSubmit}
+                  disabled={!formTitle.trim()||loading}
+                  style={{width:"100%",padding:"10px 0",borderRadius:DS.radius.md,background:formTitle.trim()?C.kangkong700:"#ccc",border:"none",color:C.white,fontFamily:FF,fontSize:13,fontWeight:600,cursor:formTitle.trim()?"pointer":"default",transition:"background 0.15s"}}
+                  onMouseOver={e=>{if(formTitle.trim())e.currentTarget.style.background=C.kangkong800;}}
+                  onMouseOut={e=>{if(formTitle.trim())e.currentTarget.style.background=C.kangkong700;}}
+                >
+                  {loading ? "Submitting…" : view==="edit" ? "Save changes" : "Submit"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination footer — only in feed view, only when multiple pages */}
+          {view === "feed" && totalPages > 1 && (
+            <div style={{borderTop:"1px solid "+C.mushroom200,padding:"8px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+              <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}
+                style={{padding:"4px 10px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,fontFamily:FF,fontSize:11,background:"none",cursor:page===1?"default":"pointer",color:page===1?C.mushroom300:C.mushroom600}}>Prev</button>
+              <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{page} of {totalPages}</span>
+              <button onClick={()=>setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages}
+                style={{padding:"4px 10px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,fontFamily:FF,fontSize:11,background:"none",cursor:page===totalPages?"default":"pointer",color:page===totalPages?C.mushroom300:C.mushroom600}}>Next</button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 
 // ── Main App ──────────────────────────────────────────────────────────────────
@@ -3445,6 +3703,18 @@ export default function SproutAIGarden() {
   const [authUser, setAuthUser]     = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError]   = useState("");
+
+  // Help panel state
+  const [helpOpen,        setHelpOpen]        = useState(false);
+  const [helpItems,       setHelpItems]       = useState([]);
+  const [helpFilter,      setHelpFilter]      = useState("all"); // "all" | "report" | "ask"
+  const [helpPage,        setHelpPage]        = useState(1);
+  const [helpView,        setHelpView]        = useState("feed"); // "feed" | "submit" | "edit"
+  const [helpSubmitType,  setHelpSubmitType]  = useState("report"); // pre-selected type in submit form
+  const [helpEditItem,    setHelpEditItem]    = useState(null); // item being edited
+  const [helpFormTitle,   setHelpFormTitle]   = useState("");
+  const [helpFormDesc,    setHelpFormDesc]    = useState("");
+  const [helpLoading,     setHelpLoading]     = useState(false);
 
   useEffect(() => {
     // Fallback: if onAuthStateChange never fires (e.g. missing env vars), unblock after 5s
@@ -3586,6 +3856,82 @@ export default function SproutAIGarden() {
     if (!authUser) return;
     loadNotifications().then(data => setNotifications(data));
   }, [authUser?.email]);
+
+  // ── Help panel data loading & mutations ──────────────────────────────────────
+  const loadHelpItems = async () => {
+    const { data, error } = await supabase
+      .from("help_items")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) setHelpItems(data);
+  };
+
+  const handleHelpOpen = async () => {
+    setHelpOpen(true);
+    setHelpPage(1);
+    setHelpFilter("all");
+    setHelpView("feed");
+    await loadHelpItems();
+  };
+
+  const handleHelpSubmit = async () => {
+    if (!helpFormTitle.trim() || !authUser) return;
+    setHelpLoading(true);
+    const isEdit = helpView === "edit" && helpEditItem;
+    if (isEdit) {
+      const { error } = await supabase
+        .from("help_items")
+        .update({ title: helpFormTitle.trim(), description: helpFormDesc.trim() || null })
+        .eq("id", helpEditItem.id);
+      if (!error) await loadHelpItems();
+    } else {
+      const newItem = {
+        type: helpSubmitType,
+        title: helpFormTitle.trim(),
+        description: helpFormDesc.trim() || null,
+        submitted_by: authUser.email,
+        status: helpSubmitType === "report" ? "open" : "unanswered",
+      };
+      const { error } = await supabase.from("help_items").insert(newItem);
+      if (!error) await loadHelpItems();
+    }
+    setHelpFormTitle("");
+    setHelpFormDesc("");
+    setHelpEditItem(null);
+    setHelpView("feed");
+    setHelpFilter("all");
+    setHelpPage(1);
+    setHelpLoading(false);
+  };
+
+  const handleHelpUpvote = async (item) => {
+    if (!authUser || item.submitted_by === authUser.email) return;
+    const alreadyVoted = item.upvoters?.includes(authUser.email);
+    const newUpvoters = alreadyVoted
+      ? item.upvoters.filter(e => e !== authUser.email)
+      : [...(item.upvoters || []), authUser.email];
+    const { error } = await supabase
+      .from("help_items")
+      .update({ upvoters: newUpvoters })
+      .eq("id", item.id);
+    if (!error) await loadHelpItems();
+  };
+
+  const handleHelpResolve = async (item) => {
+    if (!authUser?.isAdmin) return;
+    const newStatus = item.type === "report" ? "resolved" : "answered";
+    const { error } = await supabase
+      .from("help_items")
+      .update({ status: newStatus, resolved_by: authUser.email, resolved_at: new Date().toISOString() })
+      .eq("id", item.id);
+    if (!error) await loadHelpItems();
+  };
+
+  const handleHelpDelete = async (item) => {
+    if (!authUser?.isAdmin) return;
+    const { error } = await supabase.from("help_items").delete().eq("id", item.id);
+    if (!error) setHelpItems(prev => prev.filter(i => i.id !== item.id));
+  };
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -4122,12 +4468,39 @@ export default function SproutAIGarden() {
           isApprover={authUser.isApprover}
         />
       )}
+      <HelpPanel
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        onOpen={handleHelpOpen}
+        items={helpItems}
+        filter={helpFilter}
+        setFilter={setHelpFilter}
+        page={helpPage}
+        setPage={setHelpPage}
+        view={helpView}
+        setView={setHelpView}
+        submitType={helpSubmitType}
+        setSubmitType={setHelpSubmitType}
+        formTitle={helpFormTitle}
+        setFormTitle={setHelpFormTitle}
+        formDesc={helpFormDesc}
+        setFormDesc={setHelpFormDesc}
+        editItem={helpEditItem}
+        onSubmit={handleHelpSubmit}
+        onUpvote={handleHelpUpvote}
+        onResolve={handleHelpResolve}
+        onDelete={handleHelpDelete}
+        onStartEdit={(item) => { setHelpEditItem(item); setHelpFormTitle(item.title); setHelpFormDesc(item.description || ""); setHelpView("edit"); }}
+        loading={helpLoading}
+        authUser={authUser}
+      />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
         @keyframes sway{0%,100%{transform:translate(-50%,-50%) rotate(-0.8deg)}50%{transform:translate(-50%,-50%) rotate(0.8deg)}}
         @keyframes slideInRight{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes slideInPanel{from{transform:translateX(100%)}to{transform:translateX(0)}}
         @keyframes pulse{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.1);opacity:0.3}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         ::-webkit-scrollbar{width:5px;height:5px}
