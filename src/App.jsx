@@ -132,6 +132,89 @@ const STAGE_COLORS = {
   thriving: {bg:C.blueberry100,    text:C.blueberry500,     border:C.blueberry400,   dot:C.blueberry500},
 };
 
+const STAGE_GUIDE = [
+  {
+    key: "seed", emoji: "🌰", label: "Seed",
+    borderColor: C.mushroom400, textColor: C.mushroom800,
+    desc: "An idea for a project, tool, or solution that could help a team or the whole company. Anyone at Sprout can plant a seed, regardless of their technical background.",
+    gardenBadge: false,
+    callouts: [
+      {
+        id: "overlap",
+        bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
+        icon: "🔍",
+        title: "Overlap detection",
+        body: "When you add a Seed, Grove checks if a similar idea or project already exists. If it does, you'll see a prompt to connect with that builder instead of starting from scratch.",
+      },
+    ],
+  },
+  {
+    key: "seedling", emoji: "🌱", label: "Seedling",
+    borderColor: STAGE_COLORS.seedling.border, textColor: STAGE_COLORS.seedling.text,
+    desc: "Someone has claimed this seed and is actively building it. This is the hands-on stage — experimenting, prototyping, and figuring out what works.",
+    gardenBadge: false,
+    callouts: [
+      {
+        id: "requirements",
+        bg: C.mango100, border: C.mango500, textColor: C.mango700,
+        icon: "📋",
+        title: "What you need at this stage",
+        body: "A working prototype (something people can try) and a short deck explaining what you're building and its impact. Both are required before moving to Nursery.",
+      },
+      {
+        id: "ai-help",
+        bg: C.kangkong100, border: C.kangkong300, textColor: C.kangkong700,
+        icon: "✨",
+        title: "Not sure how to make a deck?",
+        body: "AI can help you put one together quickly. Ask Claude or Gemini to help you structure your idea, how it works, and the impact in a few slides.",
+      },
+      {
+        id: "overlap-seedling",
+        bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
+        icon: "🔍",
+        title: "Overlap detection also runs here",
+        body: "If your project overlaps with another Seedling or Garden project, Grove will surface it so you can reach out and collaborate.",
+      },
+    ],
+  },
+  {
+    key: "nursery", emoji: "🌿", label: "Nursery",
+    borderColor: STAGE_COLORS.nursery.border, textColor: STAGE_COLORS.nursery.text,
+    desc: "Before spending more time building, leadership reviews your prototype and deck. The goal isn't to gatekeep — it's to make sure you get the right guidance, connections, and resources before you invest more time.",
+    gardenBadge: true,
+    callouts: [
+      {
+        id: "feedback",
+        bg: C.mango100, border: C.mango500, textColor: C.mango700,
+        icon: "💬",
+        title: "If leadership needs changes before approving",
+        body: "You'll get feedback directly in Grove. You can update your work and resubmit — your project is never stuck.",
+      },
+    ],
+  },
+  {
+    key: "sprout", emoji: "🌿", label: "Sprout",
+    borderColor: STAGE_COLORS.sprout.border, textColor: STAGE_COLORS.sprout.text,
+    desc: "Approved by leadership. You're now building the full product with momentum, guidance, and company backing behind you.",
+    gardenBadge: true,
+    callouts: [],
+  },
+  {
+    key: "bloom", emoji: "🌸", label: "Bloom",
+    borderColor: STAGE_COLORS.bloom.border, textColor: STAGE_COLORS.bloom.text,
+    desc: "Live and in the hands of real users. The team is testing, gathering feedback, and refining before full rollout.",
+    gardenBadge: true,
+    callouts: [],
+  },
+  {
+    key: "thriving", emoji: "🌳", label: "Thriving",
+    borderColor: STAGE_COLORS.thriving.border, textColor: STAGE_COLORS.thriving.text,
+    desc: "Delivering real, measurable value to Sprout. This is the goal every seed is working towards.",
+    gardenBadge: true,
+    callouts: [],
+  },
+];
+
 const CAP_COLORS = {
   LLM:              {bg:C.ubas100,        text:C.ubas500,        border:C.ubas400},
   "Computer Vision":{bg:C.blueberry100,   text:C.blueberry500,   border:C.blueberry400},
@@ -3463,88 +3546,6 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
   formDesc, setFormDesc, editItem, onOpen, onSubmit, onUpvote,
   onResolve, onDelete, onStartEdit, loading, authUser, helpTab, setHelpTab }) {
 
-  const STAGE_GUIDE = [
-    {
-      key: "seed", emoji: "🌰", label: "Seed",
-      borderColor: C.mushroom400, textColor: C.mushroom800,
-      desc: "An idea for a project, tool, or solution that could help a team or the whole company. Anyone at Sprout can plant a seed, regardless of their technical background.",
-      gardenBadge: false,
-      callouts: [
-        {
-          id: "overlap",
-          bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
-          icon: "🔍",
-          title: "Overlap detection",
-          body: "When you add a Seed, Grove checks if a similar idea or project already exists. If it does, you'll see a prompt to connect with that builder instead of starting from scratch.",
-        },
-      ],
-    },
-    {
-      key: "seedling", emoji: "🌱", label: "Seedling",
-      borderColor: STAGE_COLORS.seedling.border, textColor: STAGE_COLORS.seedling.text,
-      desc: "Someone has claimed this seed and is actively building it. This is the hands-on stage — experimenting, prototyping, and figuring out what works.",
-      gardenBadge: false,
-      callouts: [
-        {
-          id: "requirements",
-          bg: C.mango100, border: C.mango500, textColor: C.mango700,
-          icon: "📋",
-          title: "What you need at this stage",
-          body: "A working prototype (something people can try) and a short deck explaining what you're building and its impact. Both are required before moving to Nursery.",
-        },
-        {
-          id: "ai-help",
-          bg: C.kangkong100, border: C.kangkong300, textColor: C.kangkong700,
-          icon: "✨",
-          title: "Not sure how to make a deck?",
-          body: "AI can help you put one together quickly. Ask Claude or Gemini to help you structure your idea, how it works, and the impact in a few slides.",
-        },
-        {
-          id: "overlap-seedling",
-          bg: C.blueberry100, border: C.blueberry400, textColor: C.blueberry500,
-          icon: "🔍",
-          title: "Overlap detection also runs here",
-          body: "If your project overlaps with another Seedling or Garden project, Grove will surface it so you can reach out and collaborate.",
-        },
-      ],
-    },
-    {
-      key: "nursery", emoji: "🌿", label: "Nursery",
-      borderColor: STAGE_COLORS.nursery.border, textColor: STAGE_COLORS.nursery.text,
-      desc: "Before spending more time building, leadership reviews your prototype and deck. The goal isn't to gatekeep — it's to make sure you get the right guidance, connections, and resources before you invest more time.",
-      gardenBadge: true,
-      callouts: [
-        {
-          id: "feedback",
-          bg: C.mango100, border: C.mango500, textColor: C.mango700,
-          icon: "💬",
-          title: "If leadership needs changes before approving",
-          body: "You'll get feedback directly in Grove. You can update your work and resubmit — your project is never stuck.",
-        },
-      ],
-    },
-    {
-      key: "sprout", emoji: "🌿", label: "Sprout",
-      borderColor: STAGE_COLORS.sprout.border, textColor: STAGE_COLORS.sprout.text,
-      desc: "Approved by leadership. You're now building the full product with momentum, guidance, and company backing behind you.",
-      gardenBadge: true,
-      callouts: [],
-    },
-    {
-      key: "bloom", emoji: "🌸", label: "Bloom",
-      borderColor: STAGE_COLORS.bloom.border, textColor: STAGE_COLORS.bloom.text,
-      desc: "Live and in the hands of real users. The team is testing, gathering feedback, and refining before full rollout.",
-      gardenBadge: true,
-      callouts: [],
-    },
-    {
-      key: "thriving", emoji: "🌳", label: "Thriving",
-      borderColor: STAGE_COLORS.thriving.border, textColor: STAGE_COLORS.thriving.text,
-      desc: "Delivering real, measurable value to Sprout. This is the goal every seed is working towards.",
-      gardenBadge: true,
-      callouts: [],
-    },
-  ];
 
   // helpDateLabel is local to avoid conflict with imported daysAgo (which returns a number)
   const helpDateLabel = (ts) => {
@@ -3860,7 +3861,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           </div>
 
           {/* Pagination footer — only in feed view, only when multiple pages */}
-          {view === "feed" && totalPages > 1 && (
+          {view === "feed" && helpTab === "adding-work" && totalPages > 1 && (
             <div style={{borderTop:"1px solid "+C.mushroom200,padding:"8px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
               <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}
                 style={{padding:"4px 10px",border:"1px solid "+C.mushroom200,borderRadius:DS.radius.sm,fontFamily:FF,fontSize:11,background:"none",cursor:page===1?"default":"pointer",color:page===1?C.mushroom300:C.mushroom600}}>Prev</button>
@@ -3874,8 +3875,6 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
     </>
   );
 }
-
-// ── Main App ──────────────────────────────────────────────────────────────────
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function SproutAIGarden() {
@@ -4048,6 +4047,7 @@ export default function SproutAIGarden() {
     setHelpPage(1);
     setHelpFilter("all");
     setHelpView("feed");
+    setHelpTab("stages");
     await loadHelpItems();
   };
 
