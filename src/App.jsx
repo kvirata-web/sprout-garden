@@ -1460,8 +1460,30 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   </div>
 </div>
 
-          {/* ── DEPT_PLACEHOLDER ── Task 8 fills this */}
-          {/* DEPT_PLACEHOLDER */}
+          {/* ── Dept coverage ────────────────────────────────────────────────── */}
+          <div style={{ animation:"fadeUp 0.4s ease 0.3s both" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+              Dept Coverage
+            </div>
+            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+              {(() => {
+                const maxD = deptCoverage[0]?.count || 1;
+                return deptCoverage.map(({ dept, count }) => {
+                  const barColor = count >= 3 ? C.kangkong500 : count >= 1 ? C.mango500 : C.mushroom200;
+                  const nameColor = count === 0 ? C.mushroom400 : C.mushroom800;
+                  return (
+                    <div key={dept} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                      <span style={{ fontSize:11, color:nameColor, width:70, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dept}</span>
+                      <div style={{ flex:1, height:4, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
+                        <div style={{ height:"100%", width: barsReady && maxD > 0 ? `${(count/maxD)*100}%` : 0, background:barColor, transition:"width 0.8s ease 0.5s", borderRadius:DS.radius.full }}/>
+                      </div>
+                      <span style={{ fontSize:10, color:C.mushroom500, width:16, textAlign:"right", flexShrink:0 }}>{count}</span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
 
         </div>{/* end right column */}
 
