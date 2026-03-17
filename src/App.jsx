@@ -1340,11 +1340,101 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
         {/* ── RIGHT COLUMN (flex 1) ─────────────────────────────────────── */}
         <div style={{ flex:"1 1 0", minWidth:0, display:"flex", flexDirection:"column", gap:14 }}>
 
-          {/* ── SPOTLIGHT_PLACEHOLDER ── Task 6 fills this */}
-          {/* SPOTLIGHT_PLACEHOLDER */}
+          {/* ── Spotlight ───────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.1s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Project Spotlight
+  </div>
+  {spotlight ? (
+    <div
+      onMouseEnter={e => { e.currentTarget.style.borderColor=C.kangkong400; e.currentTarget.style.boxShadow=DS.shadow.sm; e.currentTarget.style.transform="translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor=C.kangkong200; e.currentTarget.style.boxShadow="none"; e.currentTarget.style.transform="none"; }}
+      onClick={() => onSelectProject(spotlight)}
+      style={{ background:C.kangkong50, border:`0.5px solid ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"14px", cursor:"pointer", transition:"all 0.18s" }}
+    >
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+        <div style={{ width:6, height:6, borderRadius:"50%", background:C.kangkong500, animation:"ovPulse 2s infinite", flexShrink:0 }}/>
+        <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong700 }}>Most recently thriving</span>
+      </div>
+      <div style={{ fontSize:15, fontWeight:600, color:C.mushroom900, marginBottom:4 }}>{spotlight.name}</div>
+      {spotlight.description && (
+        <div style={{ fontSize:11, color:C.mushroom700, lineHeight:1.5, marginBottom:10, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+          {spotlight.description}
+        </div>
+      )}
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:10 }}>
+        <span style={{ fontSize:10, fontWeight:600, background:STAGE_COLORS.thriving.bg, color:STAGE_COLORS.thriving.text, border:`0.5px solid ${STAGE_COLORS.thriving.border}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>Thriving</span>
+        {spotlight.capability && CAP_COLORS[spotlight.capability] && (
+          <span style={{ fontSize:10, fontWeight:600, background:CAP_COLORS[spotlight.capability].bg, color:CAP_COLORS[spotlight.capability].text, border:`0.5px solid ${CAP_COLORS[spotlight.capability].border}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>{spotlight.capability}</span>
+        )}
+        <span style={{ fontSize:10, color:C.mushroom500, background:C.mushroom100, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>
+          {spotlight.builtBy}{spotlight.country ? ` · ${spotlight.country}` : ""}
+        </span>
+      </div>
+      <div style={{ borderTop:`0.5px solid ${C.kangkong200}`, paddingTop:8 }}>
+        <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong600, marginBottom:4 }}>Documented impact</div>
+        <div style={{ fontSize:13, fontWeight:600, color:C.kangkong700 }}>{spotlight.impact || "TBD"}</div>
+      </div>
+    </div>
+  ) : (
+    <div style={{ background:C.kangkong50, border:`0.5px dashed ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"28px 14px", textAlign:"center" }}>
+      <div style={{ fontSize:12, fontWeight:500, color:C.kangkong500, marginBottom:4 }}>No thriving plants yet</div>
+      <div style={{ fontSize:11, color:C.mushroom500 }}>Be the first to get a plant to Thriving</div>
+    </div>
+  )}
+</div>
 
-          {/* ── LEADERBOARDS_PLACEHOLDER ── Task 6 fills this */}
-          {/* LEADERBOARDS_PLACEHOLDER */}
+          {/* ── Top Builders ─────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.2s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Top Builders
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+    {topBuilders.length === 0 ? (
+      <div style={{ fontSize:11, color:C.mushroom400 }}>No data yet.</div>
+    ) : (() => {
+      const maxB = topBuilders[0]?.count || 1;
+      return topBuilders.map((b, i) => (
+        <div key={b.email || b.name} style={{ display:"flex", alignItems:"center", gap:8, marginBottom: i<topBuilders.length-1?8:0 }}>
+          <span style={{ fontSize:10, color:C.mushroom300, width:12, flexShrink:0 }}>{i+1}</span>
+          <div style={{ width:22, height:22, borderRadius:5, background:C.mushroom100, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:9, fontWeight:700, color:C.mushroom600 }}>
+            {(b.name||"?").slice(0,2).toUpperCase()}
+          </div>
+          <span style={{ fontSize:11, color:C.mushroom800, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.name}</span>
+          <div style={{ width:50, height:3, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden", flexShrink:0 }}>
+            <div style={{ height:"100%", width: barsReady ? `${(b.count/maxB)*100}%` : 0, background:C.kangkong500, transition:"width 0.8s ease 0.3s", borderRadius:DS.radius.full }}/>
+          </div>
+          <span style={{ fontSize:10, color:C.mushroom500, width:16, textAlign:"right", flexShrink:0 }}>{b.count}</span>
+        </div>
+      ));
+    })()}
+  </div>
+</div>
+
+{/* ── Top Seeds ─────────────────────────────────────────────────────── */}
+<div style={{ animation:"fadeUp 0.4s ease 0.25s both" }}>
+  <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+    Top Seeds
+  </div>
+  <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
+    {topSeeds.length === 0 ? (
+      <div style={{ fontSize:11, color:C.mushroom400 }}>No Seeds with upvotes yet.</div>
+    ) : (() => {
+      const maxS = topSeeds[0]?.upvoters.length || 1;
+      return topSeeds.map((w, i) => (
+        <div key={w.id} style={{ display:"flex", alignItems:"center", gap:8, marginBottom: i<topSeeds.length-1?8:0 }}>
+          <span style={{ fontSize:10, color:C.mushroom300, width:12, flexShrink:0 }}>{i+1}</span>
+          <div style={{ width:22, height:22, borderRadius:5, background:C.ubas100, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, color:C.ubas500 }}>▲</div>
+          <span style={{ fontSize:11, color:C.mushroom800, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{w.title}</span>
+          <div style={{ width:50, height:3, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden", flexShrink:0 }}>
+            <div style={{ height:"100%", width: barsReady ? `${(w.upvoters.length/maxS)*100}%` : 0, background:C.ubas500, transition:"width 0.8s ease 0.3s", borderRadius:DS.radius.full }}/>
+          </div>
+          <span style={{ fontSize:10, color:C.mushroom500, width:16, textAlign:"right", flexShrink:0 }}>{w.upvoters.length}</span>
+        </div>
+      ));
+    })()}
+  </div>
+</div>
 
           {/* ── DEPT_PLACEHOLDER ── Task 8 fills this */}
           {/* DEPT_PLACEHOLDER */}
