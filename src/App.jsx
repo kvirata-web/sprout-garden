@@ -4648,7 +4648,7 @@ export default function SproutAIGarden() {
 
   const addProject = async (proj) => {
     const withCountry = {...proj, country: proj.country || authUser?.country || "PH", builderEmail: proj.builderEmail || authUser?.email || ''};
-    const row = fromProject(withCountry);
+    const row = {...fromProject(withCountry), country: withCountry.country}; // country excluded from fromProject (immutability), re-added for INSERT only
     const { data, error } = await supabase.from("projects").insert(row).select().single();
     if (error) { console.error("addProject:", error); return; }
     const saved = toProject(data);
@@ -4870,7 +4870,7 @@ export default function SproutAIGarden() {
       toolUsed: [],
       zx: 40, zy: 50,
     };
-    const row = fromProject(newPlant);
+    const row = {...fromProject(newPlant), country: newPlant.country}; // country excluded from fromProject (immutability), re-added for INSERT only
     const { data: plantData, error: plantError } = await supabase
       .from("projects").insert(row).select().single();
     if (plantError) { console.error("handleClaimWish plant:", plantError); return; }
