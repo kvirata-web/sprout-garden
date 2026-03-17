@@ -2658,10 +2658,10 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
 
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
-function WelcomeModal({ onExplore, onDismissPermanently, firstName, isApprover, country }) {
+function WelcomeModal({ onExplore, onDismissPermanently, isApprover, country }) {
   const roleName  = isApprover ? "Approver" : "Planter";
   const roleEmoji = isApprover ? "🌿" : "🌱";
-  const teamLabel = country === "PH" ? "PH team" : "TH team";
+  const teamLabel = country === "PH" ? "PH team" : country === "TH" ? "TH team" : "Your team";
   const nudge     = isApprover ? "Review plants in the Nursery" : "Claim a seed to build";
 
   const stageRows = [
@@ -2674,7 +2674,7 @@ function WelcomeModal({ onExplore, onDismissPermanently, firstName, isApprover, 
 
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.65)",backdropFilter:"blur(8px)"}}>
-      <div style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,overflow:"hidden",animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,overflow:"hidden",animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
 
         {/* ── Dark green header ── */}
         <div style={{background:"#14532d",padding:"28px 24px 24px",position:"relative",textAlign:"center"}}>
