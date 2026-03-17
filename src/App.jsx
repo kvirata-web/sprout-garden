@@ -2143,10 +2143,10 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                     <div style={{textAlign:"center",padding:"20px 8px",color:C.mushroom300,fontFamily:FF,fontSize:11,fontStyle:"italic"}}>Empty</div>
                   )}
                   {col.map(p => {
-                    const dc  = getDeptColor(p.builtBy);
                     const dfc = DEPT_COLORS[p.builtFor];
                     const cc  = COVER_COLORS[p.builtBy] || COVER_COLORS.default;
                     const wilting = p.lastUpdated>30;
+                    const readyForNursery = stage==="seedling"&&p.prototypeLink&&p.deckLink;
                     return (
                       <div key={p.id}
                         draggable
@@ -2154,20 +2154,18 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                         onDragEnd={()=>{setDragProjectId(null);setDragOverStage(null);}}
                         onClick={()=>setSelected(p)}
                         style={{
-                          background:dragProjectId===p.id ? sc.bg
-                            : (stage==="seedling"&&p.prototypeLink&&p.deckLink) ? C.mango50
-                            : C.mushroom50,
-                          borderRadius:DS.radius.lg,padding:"11px 13px",marginBottom:8,
-                          border:"1px solid "+((stage==="seedling"&&p.prototypeLink&&p.deckLink)?C.mango300:C.mushroom200),borderLeft:"3px solid "+dc,
-                          cursor:"grab",transition:"all 0.15s",boxShadow:DS.shadow.sm,
+                          background: dragProjectId===p.id ? sc.bg : C.white,
+                          borderRadius:DS.radius.xl,padding:16,marginBottom:8,
+                          border:"1px solid "+(readyForNursery?C.mango300:C.mushroom200),
+                          cursor:"grab",transition:"all 0.15s",
                           opacity:dragProjectId===p.id?0.5:1,
                         }}
-                        onMouseOver={e=>{if(dragProjectId!==p.id){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.md;}}}
-                        onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=DS.shadow.sm;}}
+                        onMouseOver={e=>{if(dragProjectId!==p.id){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.lg;e.currentTarget.style.borderColor=C.mushroom300;}}}
+                        onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=readyForNursery?C.mango300:C.mushroom200;}}
                       >
                         {/* Name + stale indicator */}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                          <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900,flex:1,lineHeight:1.3}}>
+                          <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:C.mushroom900,flex:1,lineHeight:1.35}}>
                             {p.name}
                           </div>
                           {wilting&&<IcoStale size={13} color={C.mango500}/>}
@@ -2183,14 +2181,14 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                         )}
 
                         {/* Builder + dept footer */}
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6,marginBottom:6}}>
-                          <div style={{display:"flex",alignItems:"center",gap:5}}>
-                            <div style={{width:20,height:20,borderRadius:"50%",background:cc.bg,color:cc.text,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:8,fontWeight:700,flexShrink:0}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:6}}>
+                          <div style={{display:"flex",alignItems:"center",gap:7}}>
+                            <div style={{width:24,height:24,borderRadius:"50%",background:cc.bg,color:cc.text,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:9,fontWeight:700,flexShrink:0}}>
                               {getInitials(p.builder)}
                             </div>
-                            <span style={{fontFamily:FF,fontSize:11,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
+                            <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
                           </div>
-                          {dfc&&<span style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:DS.radius.full,background:dfc+"18",color:dfc,whiteSpace:"nowrap"}}>{p.builtFor}</span>}
+                          {dfc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dfc+"18",color:dfc,whiteSpace:"nowrap"}}>{p.builtFor}</span>}
                         </div>
 
                         {/* Last updated + submitted + drag */}
