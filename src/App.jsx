@@ -2143,7 +2143,9 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                     <div style={{textAlign:"center",padding:"20px 8px",color:C.mushroom300,fontFamily:FF,fontSize:11,fontStyle:"italic"}}>Empty</div>
                   )}
                   {col.map(p => {
-                    const dc = getDeptColor(p.builtBy);
+                    const dc  = getDeptColor(p.builtBy);
+                    const dfc = DEPT_COLORS[p.builtFor];
+                    const cc  = COVER_COLORS[p.builtBy] || COVER_COLORS.default;
                     const wilting = p.lastUpdated>30;
                     return (
                       <div key={p.id}
@@ -2163,34 +2165,35 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                         onMouseOver={e=>{if(dragProjectId!==p.id){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.md;}}}
                         onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=DS.shadow.sm;}}
                       >
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
-                          <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900,flex:1,lineHeight:1.3,display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                        {/* Name + stale indicator */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                          <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900,flex:1,lineHeight:1.3}}>
                             {p.name}
-                            <CountryBadge country={p.country}/>
                           </div>
                           {wilting&&<IcoStale size={13} color={C.mango500}/>}
                         </div>
-                        <div style={{display:"flex",gap:4,marginBottom:4,flexWrap:"wrap"}}>
-                          <span style={{fontFamily:FF,fontSize:10,color:dc,fontWeight:600,padding:"2px 6px",background:dc+"15",borderRadius:DS.radius.full}}>{p.builtBy}</span>
-                        </div>
-                        {p.toolUsed?.length>0&&(
-                          <div style={{display:"flex",gap:3,marginBottom:5,flexWrap:"wrap"}}>
-                            {p.toolUsed.slice(0,2).map(t=><ToolChip key={t} tool={t}/>)}
-                            {p.toolUsed.length>2&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,alignSelf:"center"}}>+{p.toolUsed.length-2}</span>}
-                          </div>
-                        )}
-                        {p.impact!=="TBD"&&(
-                          <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,fontWeight:600,marginBottom:6,display:"flex",alignItems:"center",gap:3}}>
-                            <IcoImpact size={11} color={C.kangkong600}/> {p.impact}
-                          </div>
-                        )}
+
+                        {/* Seedling submission status */}
                         {stage==="seedling"&&(
-                          <div style={{display:"flex",gap:4,marginBottom:4,flexWrap:"wrap"}}>
+                          <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
                             {!p.prototypeLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Prototype needed</span>}
                             {!p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Deck needed</span>}
                             {p.prototypeLink&&p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mango600,fontWeight:600,border:"1px solid "+C.mango300,background:C.mango50,borderRadius:DS.radius.full,padding:"1px 7px"}}>Ready for Nursery →</span>}
                           </div>
                         )}
+
+                        {/* Builder + dept footer */}
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6,marginBottom:6}}>
+                          <div style={{display:"flex",alignItems:"center",gap:5}}>
+                            <div style={{width:20,height:20,borderRadius:"50%",background:cc.bg,color:cc.text,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:8,fontWeight:700,flexShrink:0}}>
+                              {getInitials(p.builder)}
+                            </div>
+                            <span style={{fontFamily:FF,fontSize:11,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
+                          </div>
+                          {dfc&&<span style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:DS.radius.full,background:dfc+"18",color:dfc,whiteSpace:"nowrap"}}>{p.builtFor}</span>}
+                        </div>
+
+                        {/* Last updated + submitted + drag */}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>{p.lastUpdated===0?"Today":p.lastUpdated+"d ago"}</span>
                           {stage==="nursery"&&p.submittedAt&&(()=>{
