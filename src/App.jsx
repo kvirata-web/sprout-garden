@@ -114,7 +114,7 @@ const STAGE_LABELS = {
 };
 const STAGE_DESC = {
   seedling: "Being built",
-  nursery:  "Awaiting Approver review",
+  nursery:  "Validated as high-impact",
   sprout:   "Approved, in development",
   bloom:    "In user testing",
   thriving: "Live and delivering value",
@@ -1167,7 +1167,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   const TILE_CFG = [
     { key:"seeds",    label:"Seeds",    sub:"Ideas waiting to be built",    accent:C.ubas500,         bg:C.ubas100,         border:C.ubas400,         countColor:C.ubas500,        nav:()=>onNavigateWishlist?.() },
     { key:"seedling", label:"Seedling", sub:STAGE_DESC.seedling,            accent:C.mushroom400,     bg:C.mushroom100,     border:C.mushroom300,     countColor:C.mushroom700,    nav:()=>onNavigateGarden?.("board","seedling") },
-    { key:"nursery",  label:"Nursery",  sub:STAGE_DESC.nursery,             accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
+    { key:"nursery",  label:"Nursery",  sub:"Validated as high-impact — you're building something that matters", accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
     { key:"sprout",   label:"Sprout",   sub:STAGE_DESC.sprout,              accent:C.wintermelon400,  bg:C.wintermelon100,  border:C.wintermelon400,  countColor:C.wintermelon500, nav:()=>onNavigateGarden?.("board","sprout") },
     { key:"bloom",    label:"Bloom",    sub:STAGE_DESC.bloom,               accent:C.kangkong400,     bg:C.kangkong50,      border:C.kangkong200,     countColor:C.kangkong600,    nav:()=>onNavigateGarden?.("board","bloom") },
     { key:"thriving", label:"Thriving", sub:STAGE_DESC.thriving,            accent:C.blueberry500,    bg:C.blueberry100,    border:C.blueberry400,    countColor:C.blueberry500,   nav:()=>onNavigateGarden?.("board","thriving") },
@@ -1198,48 +1198,96 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
         </div>
       </div>
       <div style={{
-        display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:8, marginBottom:24,
+        display:"flex", alignItems:"stretch", gap:0, marginBottom:24,
         animation:"fadeUp 0.4s ease 0.05s both",
       }}>
         {TILE_CFG.map((t, i) => {
           const isHov = hoverTile === i;
           const isClk = clickTile === i;
+          const isLast = i === TILE_CFG.length - 1;
+          const isLive = t.key === "thriving";
+          const wmOpacity = isHov ? 0.14 : (t.key === "seedling" ? 0.07 : 0.09);
           return (
-            <div
-              key={t.key}
-              onMouseEnter={() => setHoverTile(i)}
-              onMouseLeave={() => setHoverTile(null)}
-              onClick={() => { setClickTile(i); setTimeout(() => { setClickTile(null); t.nav(); }, 120); }}
-              style={{
-                background: t.bg,
-                border: `0.5px solid ${isHov ? t.accent : t.border}`,
-                borderRadius: DS.radius.md,
-                padding: "16px 12px 14px",
-                cursor: "pointer",
-                textAlign: "center",
-                position: "relative",
-                overflow: "hidden",
-                transform: isClk ? "scale(0.97)" : isHov ? "translateY(-2px)" : "none",
-                boxShadow: isHov ? DS.shadow.md : "none",
-                transition: "all 0.18s ease",
-                userSelect: "none",
-              }}
-            >
-              {/* left accent bar */}
-              <div style={{ position:"absolute", left:0, top:0, bottom:0, width:3, background:t.accent, borderRadius:`${DS.radius.md} 0 0 ${DS.radius.md}` }}/>
-              <div style={{ fontSize:32, fontWeight:800, color:t.countColor, lineHeight:1, marginBottom:5 }}>
-                {counts[t.key]}
+            <React.Fragment key={t.key}>
+              <div
+                onMouseEnter={() => setHoverTile(i)}
+                onMouseLeave={() => setHoverTile(null)}
+                onClick={() => { setClickTile(i); setTimeout(() => { setClickTile(null); t.nav(); }, 120); }}
+                style={{
+                  flex: 1,
+                  background: t.bg,
+                  border: `0.5px solid ${isHov ? t.accent : t.border}`,
+                  borderRadius: DS.radius.md,
+                  padding: "16px 12px 14px",
+                  cursor: "pointer",
+                  position: "relative",
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 148,
+                  transform: isClk ? "scale(0.97)" : isHov ? "translateY(-3px)" : "none",
+                  boxShadow: isHov ? DS.shadow.md : "none",
+                  transition: "all 0.2s ease",
+                  userSelect: "none",
+                }}
+              >
+                {/* Left accent bar */}
+                <div style={{ position:"absolute", left:0, top:0, bottom:0, width:4, background:t.accent, borderRadius:`${DS.radius.md} 0 0 ${DS.radius.md}` }}/>
+
+                {/* Oversized watermark icon */}
+                <div style={{
+                  position:"absolute", bottom:-14, right:-12,
+                  opacity: wmOpacity,
+                  transform: isHov ? "scale(1.07) rotate(5deg)" : "none",
+                  transition: "opacity 0.25s, transform 0.25s",
+                  pointerEvents: "none",
+                }}>
+                  {t.key === "seeds"
+                    ? <IcoWishlist size={140} color={t.accent} />
+                    : <StageIcon stage={t.key} size={140} color={t.accent} />}
+                </div>
+
+                {/* Content sits above watermark */}
+                <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", height:"100%" }}>
+                  {/* Small icon top-left */}
+                  <div style={{ marginBottom:10 }}>
+                    {t.key === "seeds"
+                      ? <IcoWishlist size={20} color={t.accent} />
+                      : <StageIcon stage={t.key} size={20} color={t.accent} />}
+                  </div>
+
+                  {/* Count */}
+                  <div style={{ fontSize:40, fontWeight:800, color:t.countColor, lineHeight:1, marginBottom:3 }}>
+                    {counts[t.key]}
+                  </div>
+
+                  {/* Stage name + live dot */}
+                  <div style={{ fontSize:12, fontWeight:700, color:t.countColor, letterSpacing:"0.02em", marginBottom:5, display:"flex", alignItems:"center", gap:4 }}>
+                    {t.label}
+                    {isLive && <span style={{ width:6, height:6, borderRadius:"50%", background:t.accent, display:"inline-block", animation:"ovPulse 1.8s infinite" }}/>}
+                  </div>
+
+                  {/* Description */}
+                  <div style={{ fontSize:10, color:C.mushroom500, lineHeight:1.6, flex:1 }}>
+                    {t.sub}
+                  </div>
+
+                  {/* CTA */}
+                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", color:t.accent, marginTop:10, opacity:isHov?1:0, transition:"opacity 0.15s" }}>
+                    View all →
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize:10, fontWeight:700, color:C.mushroom700, marginBottom:4 }}>
-                {t.label}
-              </div>
-              <div style={{ fontSize:9, color:C.mushroom400, lineHeight:1.5 }}>
-                {t.sub}
-              </div>
-              <div style={{ fontSize:9, fontWeight:600, color:t.accent, marginTop:6, opacity:isHov?1:0, transition:"opacity 0.18s" }}>
-                View all →
-              </div>
-            </div>
+
+              {/* Chevron between tiles */}
+              {!isLast && (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:20, flexShrink:0 }}>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4L10 8L6 12" stroke={C.mushroom300} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
       </div>
@@ -3356,7 +3404,7 @@ function WelcomeModal({ onExplore, onDismissPermanently, isApprover, country }) 
 
   const stageRows = [
     { key:"seedling", emoji:"🌱", label:"Seedling", desc:"Someone is actively building",      bg:STAGE_COLORS.seedling.bg, text:STAGE_COLORS.seedling.text },
-    { key:"nursery",  emoji:"🌿", label:"Nursery",  desc:"Under leadership review",           bg:STAGE_COLORS.nursery.bg,  text:STAGE_COLORS.nursery.text  },
+    { key:"nursery",  emoji:"🌿", label:"Nursery",  desc:"Validated as high-impact — ready to build", bg:STAGE_COLORS.nursery.bg,  text:STAGE_COLORS.nursery.text  },
     { key:"sprout",   emoji:"🌿", label:"Sprout",   desc:"Approved, actively developing",     bg:STAGE_COLORS.sprout.bg,   text:STAGE_COLORS.sprout.text   },
     { key:"bloom",    emoji:"🌸", label:"Bloom",    desc:"Live, in user testing",             bg:STAGE_COLORS.bloom.bg,    text:STAGE_COLORS.bloom.text    },
     { key:"thriving", emoji:"🌳", label:"Thriving", desc:"Delivering measurable value",       bg:STAGE_COLORS.thriving.bg, text:STAGE_COLORS.thriving.text },
