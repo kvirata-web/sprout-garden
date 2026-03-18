@@ -3464,10 +3464,11 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
             <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>
               Build For <span style={{color:C.carrot500}}>*</span>
             </div>
-            <MultiDeptSelect
+            <MultiSelect
               opts={DEPTS}
               value={form.builtFor}
               onChange={v=>set("builtFor",v)}
+              placeholder="Search departments…"
             />
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -3666,11 +3667,18 @@ function StoryQ({k, label, hint, form, onChange, ph}) {
   );
 }
 
-// ── MultiDeptSelect — searchable dropdown multi-select for the "For" field ─────
-function MultiDeptSelect({ value, onChange, opts, label, required, small }) {
+// ── MultiSelect — searchable dropdown multi-select ────────────────────────────
+// palette defaults to kangkong (green). Pass palette={bg,border,text,hover} to override.
+const MS_PALETTES = {
+  green:  { bg:C.kangkong50,  border:C.kangkong200, text:C.kangkong700,  hover:C.kangkong100,  check:C.kangkong600  },
+  purple: { bg:C.ubas100,     border:C.ubas400,     text:C.ubas500,      hover:"#ede9fa",      check:C.ubas500      },
+  blue:   { bg:C.blueberry100,border:C.blueberry400,text:C.blueberry500, hover:"#dbeafe",      check:C.blueberry500 },
+};
+function MultiSelect({ value, onChange, opts, label, required, optional, placeholder, palette="green" }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const ref = useRef(null);
+  const pal = MS_PALETTES[palette] || MS_PALETTES.green;
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setQ(""); } };
     document.addEventListener("mousedown", h);
@@ -3678,26 +3686,27 @@ function MultiDeptSelect({ value, onChange, opts, label, required, small }) {
   }, []);
   const filtered = opts.filter(d => d.toLowerCase().includes(q.toLowerCase()));
   const toggle = (d) => onChange(value.includes(d) ? value.filter(x => x !== d) : [...value, d]);
-  const fs = small ? 11 : 13;
   return (
-    <div ref={ref} style={{position:"relative",marginBottom:12}}>
+    <div ref={ref} style={{position:"relative",marginBottom:14}}>
       {label && (
         <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>
-          {label}{required && <span style={{color:C.tomato500,fontWeight:400}}> *</span>}
+          {label}
+          {required && <span style={{color:C.tomato500,fontWeight:400}}> *</span>}
+          {optional && <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}> (optional)</span>}
         </label>
       )}
       <div onClick={()=>setOpen(true)} style={{
         display:"flex",alignItems:"center",gap:6,
         padding:"7px 10px",borderRadius:DS.radius.md,
-        border:"1.5px solid "+(open?C.kangkong500:C.mushroom200),
+        border:"1.5px solid "+(open?pal.check:C.mushroom200),
         background:C.white,cursor:"text",boxSizing:"border-box",minHeight:36,
       }}>
         <input
           value={q}
           onChange={e=>setQ(e.target.value)}
           onFocus={()=>setOpen(true)}
-          placeholder={value.length ? "Add more…" : "Search departments…"}
-          style={{border:"none",outline:"none",background:"transparent",fontFamily:FF,fontSize:fs,color:C.mushroom700,flex:1,minWidth:0}}
+          placeholder={value.length ? "Add more…" : (placeholder||"Search…")}
+          style={{border:"none",outline:"none",background:"transparent",fontFamily:FF,fontSize:12,color:C.mushroom700,flex:1,minWidth:0}}
         />
         <span style={{color:C.mushroom400,fontSize:10,flexShrink:0}}>▾</span>
       </div>
@@ -3713,12 +3722,12 @@ function MultiDeptSelect({ value, onChange, opts, label, required, small }) {
             return (
               <div key={d}
                 onMouseDown={e=>{e.preventDefault();toggle(d);setQ("");}}
-                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",cursor:"pointer",background:active?C.kangkong50:C.white,color:active?C.kangkong700:C.mushroom700,fontFamily:FF,fontSize:fs,fontWeight:active?600:400,transition:"background 0.1s"}}
-                onMouseOver={e=>e.currentTarget.style.background=active?C.kangkong100:C.mushroom50}
-                onMouseOut={e=>e.currentTarget.style.background=active?C.kangkong50:C.white}
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",cursor:"pointer",background:active?pal.bg:C.white,color:active?pal.text:C.mushroom700,fontFamily:FF,fontSize:12,fontWeight:active?600:400,transition:"background 0.1s"}}
+                onMouseOver={e=>e.currentTarget.style.background=active?pal.hover:C.mushroom50}
+                onMouseOut={e=>e.currentTarget.style.background=active?pal.bg:C.white}
               >
                 {d}
-                {active && <span style={{color:C.kangkong600,fontSize:12,fontWeight:700}}>✓</span>}
+                {active && <span style={{color:pal.check,fontSize:12,fontWeight:700}}>✓</span>}
               </div>
             );
           })}
@@ -3727,14 +3736,14 @@ function MultiDeptSelect({ value, onChange, opts, label, required, small }) {
       {value.length > 0 && (
         <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
           {value.map(d => (
-            <span key={d} style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:DS.radius.full,background:C.kangkong50,color:C.kangkong700,border:"1px solid "+C.kangkong200,fontFamily:FF,fontSize:11,fontWeight:600}}>
+            <span key={d} style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:DS.radius.full,background:pal.bg,color:pal.text,border:"1px solid "+pal.border,fontFamily:FF,fontSize:11,fontWeight:600}}>
               {d}
-              <button onMouseDown={e=>{e.preventDefault();toggle(d);}} style={{background:"none",border:"none",cursor:"pointer",color:C.kangkong400,fontSize:13,padding:0,lineHeight:1,fontWeight:700,marginLeft:1}}>×</button>
+              <button onMouseDown={e=>{e.preventDefault();toggle(d);}} style={{background:"none",border:"none",cursor:"pointer",color:pal.check,fontSize:13,padding:0,lineHeight:1,fontWeight:700,marginLeft:1}}>×</button>
             </span>
           ))}
         </div>
       )}
-      {!value.length && <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:3}}>Select at least one</div>}
+      {required && !value.length && <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:3}}>Select at least one</div>}
     </div>
   );
 }
@@ -3972,12 +3981,12 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <ModalField label="Your team" k="builtBy" type="select" opts={DEPTS} form={form} onChange={setField}/>
-          <MultiDeptSelect
+          <MultiSelect
             label="For" required
             opts={DEPTS}
             value={form.builtFor||[]}
             onChange={v=>setField("builtFor",v)}
-            small
+            placeholder="Search departments…"
           />
         </div>
 
@@ -4002,80 +4011,32 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
           </div>
         </div>
 
-        {/* Tools you're using */}
-        <div style={{marginBottom:14}}>
-          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
-            Tools you're using <span style={{color:C.tomato500,fontWeight:400}}>*</span>
-          </label>
-          {!form.toolUsed.length&&(
-            <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginBottom:4}}>Select at least one tool</div>
-          )}
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {TOOLS.map(t=>{
-              const active = form.toolUsed.includes(t);
-              return (
-                <button key={t} onClick={()=>setField("toolUsed", active ? form.toolUsed.filter(x=>x!==t) : [...form.toolUsed,t])} style={{
-                  padding:"5px 12px",borderRadius:DS.radius.full,cursor:"pointer",
-                  fontFamily:FF,fontSize:11,fontWeight:600,
-                  border:"1.5px solid "+(active?C.kangkong400:C.mushroom300),
-                  background:active?C.kangkong50:C.white,
-                  color:active?C.kangkong700:C.mushroom600,
-                  transition:"all 0.15s",
-                }}>
-                  {active&&<span style={{marginRight:3}}>✓</span>}{t}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <MultiSelect
+          label="Tools you're using" required
+          opts={TOOLS}
+          value={form.toolUsed}
+          onChange={v=>setField("toolUsed",v)}
+          placeholder="Search tools…"
+          palette="green"
+        />
 
-        {/* Agentic framework */}
-        <div style={{marginBottom:14}}>
-          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
-            Agentic framework <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span>
-          </label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {AGENTIC_FRAMEWORKS.map(f => {
-              const active = (form.agenticFramework || []).includes(f);
-              return (
-                <button key={f} onClick={()=>setField("agenticFramework", active ? form.agenticFramework.filter(x=>x!==f) : [...(form.agenticFramework||[]),f])} style={{
-                  padding:"5px 12px",borderRadius:DS.radius.full,cursor:"pointer",
-                  fontFamily:FF,fontSize:11,fontWeight:600,
-                  border:"1.5px solid "+(active?C.ubas400:C.mushroom300),
-                  background:active?C.ubas100:C.white,
-                  color:active?C.ubas500:C.mushroom600,
-                  transition:"all 0.15s",
-                }}>
-                  {active&&<span style={{marginRight:3}}>✓</span>}{f}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <MultiSelect
+          label="Agentic framework" optional
+          opts={AGENTIC_FRAMEWORKS}
+          value={form.agenticFramework||[]}
+          onChange={v=>setField("agenticFramework",v)}
+          placeholder="Search frameworks…"
+          palette="purple"
+        />
 
-        {/* Data sources */}
-        <div style={{marginBottom:14}}>
-          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
-            Data sources <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span>
-          </label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {DATA_SOURCES.map(s=>{
-              const active = form.dataSources.includes(s);
-              return (
-                <button key={s} onClick={()=>setField("dataSources", active ? form.dataSources.filter(x=>x!==s) : [...form.dataSources,s])} style={{
-                  padding:"5px 12px",borderRadius:DS.radius.full,cursor:"pointer",
-                  fontFamily:FF,fontSize:11,fontWeight:600,
-                  border:"1.5px solid "+(active?C.blueberry400:C.mushroom300),
-                  background:active?C.blueberry50:C.white,
-                  color:active?C.blueberry600:C.mushroom600,
-                  transition:"all 0.15s",
-                }}>
-                  {active&&<span style={{marginRight:3}}>✓</span>}{s}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <MultiSelect
+          label="Data sources" optional
+          opts={DATA_SOURCES}
+          value={form.dataSources}
+          onChange={v=>setField("dataSources",v)}
+          placeholder="Search data sources…"
+          palette="blue"
+        />
 
         {/* ── Section 2: About the project ── */}
         <SectionHeader title="About the project"/>
