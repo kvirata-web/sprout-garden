@@ -113,11 +113,11 @@ const STAGE_LABELS = {
   seedling:"Seedling", nursery:"Nursery", sprout:"Sprout", bloom:"Bloom", thriving:"Thriving",
 };
 const STAGE_DESC = {
-  seedling: "Being built",
-  nursery:  "Validated as high-impact",
-  sprout:   "Approved, in development",
-  bloom:    "In user testing",
-  thriving: "Live and delivering value",
+  seedling: "Someone's building this!",
+  nursery:  "Getting leadership love before scaling",
+  sprout:   "Full speed ahead",
+  bloom:    "Real people, real feedback",
+  thriving: "Live, loved, and making an impact",
 };
 const STAGE_FLORA = {
   seedling:"Seedling", nursery:"Nursery", sprout:"Sprout", bloom:"Bloom", thriving:"Thriving",
@@ -1165,12 +1165,12 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
 
   // ── Pipeline tile config ─────────────────────────────────────────────────────
   const TILE_CFG = [
-    { key:"seeds",    label:"Seeds",    sub:"Ideas waiting to be built",    accent:C.ubas500,         bg:C.ubas100,         border:C.ubas400,         countColor:C.ubas500,        nav:()=>onNavigateWishlist?.() },
-    { key:"seedling", label:"Seedling", sub:STAGE_DESC.seedling,            accent:C.mushroom400,     bg:C.mushroom100,     border:C.mushroom300,     countColor:C.mushroom700,    nav:()=>onNavigateGarden?.("board","seedling") },
-    { key:"nursery",  label:"Nursery",  sub:"Validated as high-impact — you're building something that matters", accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
-    { key:"sprout",   label:"Sprout",   sub:STAGE_DESC.sprout,              accent:C.wintermelon400,  bg:C.wintermelon100,  border:C.wintermelon400,  countColor:C.wintermelon500, nav:()=>onNavigateGarden?.("board","sprout") },
-    { key:"bloom",    label:"Bloom",    sub:STAGE_DESC.bloom,               accent:C.kangkong400,     bg:C.kangkong50,      border:C.kangkong200,     countColor:C.kangkong600,    nav:()=>onNavigateGarden?.("board","bloom") },
-    { key:"thriving", label:"Thriving", sub:STAGE_DESC.thriving,            accent:C.blueberry500,    bg:C.blueberry100,    border:C.blueberry400,    countColor:C.blueberry500,   nav:()=>onNavigateGarden?.("board","thriving") },
+    { key:"seeds",    label:"Seeds",    sub:"Got an idea? Plant it. Anyone at Sprout can — no technical background needed.", accent:C.ubas500,         bg:C.ubas100,         border:C.ubas400,         countColor:C.ubas500,        nav:()=>onNavigateWishlist?.() },
+    { key:"seedling", label:"Seedling", sub:"A builder claimed this idea and is making it real. Expect experiments, prototypes, and a little beautiful mess.", accent:C.mushroom400,     bg:C.mushroom100,     border:C.mushroom300,     countColor:C.mushroom700,    nav:()=>onNavigateGarden?.("board","seedling") },
+    { key:"nursery",  label:"Nursery",  sub:"Leadership steps in — not to gatekeep, but to open the right doors before you go full speed.", accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
+    { key:"sprout",   label:"Sprout",   sub:"Approved and accelerating — with momentum, guidance, and the whole company rooting for you.", accent:C.wintermelon400,  bg:C.wintermelon100,  border:C.wintermelon400,  countColor:C.wintermelon500, nav:()=>onNavigateGarden?.("board","sprout") },
+    { key:"bloom",    label:"Bloom",    sub:"In the hands of real users now. Listening, refining, putting on the final polish.", accent:C.kangkong400,     bg:C.kangkong50,      border:C.kangkong200,     countColor:C.kangkong600,    nav:()=>onNavigateGarden?.("board","bloom") },
+    { key:"thriving", label:"Thriving", sub:"Started as a spark. Now it's something people rely on every day.", accent:C.blueberry500,    bg:C.blueberry100,    border:C.blueberry400,    countColor:C.blueberry500,   nav:()=>onNavigateGarden?.("board","thriving") },
   ];
 
   // ── Shared row-item hover helper ─────────────────────────────────────────────
@@ -3403,11 +3403,11 @@ function WelcomeModal({ onExplore, onDismissPermanently, isApprover, country }) 
   const nudge     = isApprover ? "Review plants in the Nursery" : "Claim a seed to build";
 
   const stageRows = [
-    { key:"seedling", emoji:"🌱", label:"Seedling", desc:"Someone is actively building",      bg:STAGE_COLORS.seedling.bg, text:STAGE_COLORS.seedling.text },
-    { key:"nursery",  emoji:"🌿", label:"Nursery",  desc:"Validated as high-impact — ready to build", bg:STAGE_COLORS.nursery.bg,  text:STAGE_COLORS.nursery.text  },
-    { key:"sprout",   emoji:"🌿", label:"Sprout",   desc:"Approved, actively developing",     bg:STAGE_COLORS.sprout.bg,   text:STAGE_COLORS.sprout.text   },
-    { key:"bloom",    emoji:"🌸", label:"Bloom",    desc:"Live, in user testing",             bg:STAGE_COLORS.bloom.bg,    text:STAGE_COLORS.bloom.text    },
-    { key:"thriving", emoji:"🌳", label:"Thriving", desc:"Delivering measurable value",       bg:STAGE_COLORS.thriving.bg, text:STAGE_COLORS.thriving.text },
+    { key:"seedling", emoji:"🌱", label:"Seedling", desc:"A builder claimed this idea and is making it real. Expect experiments, prototypes, and a little beautiful mess.", bg:STAGE_COLORS.seedling.bg, text:STAGE_COLORS.seedling.text },
+    { key:"nursery",  emoji:"🪴", label:"Nursery",  desc:"Leadership steps in — not to gatekeep, but to open the right doors before you go full speed.", bg:STAGE_COLORS.nursery.bg,  text:STAGE_COLORS.nursery.text  },
+    { key:"sprout",   emoji:"🌱", label:"Sprout",   desc:"Approved and accelerating — with momentum, guidance, and the whole company rooting for you.", bg:STAGE_COLORS.sprout.bg,   text:STAGE_COLORS.sprout.text   },
+    { key:"bloom",    emoji:"🌸", label:"Bloom",    desc:"In the hands of real users now. Listening, refining, putting on the final polish.", bg:STAGE_COLORS.bloom.bg,    text:STAGE_COLORS.bloom.text    },
+    { key:"thriving", emoji:"🌳", label:"Thriving", desc:"Started as a spark. Now it's something people rely on every day.", bg:STAGE_COLORS.thriving.bg, text:STAGE_COLORS.thriving.text },
   ];
 
   return (
