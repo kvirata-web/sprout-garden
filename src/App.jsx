@@ -3412,44 +3412,31 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
 
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
-function WelcomeModal({ onExplore, onDismissPermanently, isApprover, country }) {
-  const roleName  = isApprover ? "Approver" : "Planter";
+function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGarden, isApprover, country }) {
   const roleEmoji = isApprover ? "🌿" : "🌱";
+  const roleName  = isApprover ? "Approver" : "Planter";
   const teamLabel = country === "PH" ? "PH team" : country === "TH" ? "TH team" : "Your team";
-  const nudge     = isApprover ? "Review plants in the Nursery" : "Claim a seed to build";
-
-  const stageRows = [
-    { key:"seedling", emoji:"🌱", label:"Seedling", desc:"A builder claimed this idea and is making it real. Expect experiments, prototypes, and a little beautiful mess.", bg:STAGE_COLORS.seedling.bg, text:STAGE_COLORS.seedling.text },
-    { key:"nursery",  emoji:"🪴", label:"Nursery",  desc:"Leadership steps in — not to gatekeep, but to open the right doors before you go full speed.", bg:STAGE_COLORS.nursery.bg,  text:STAGE_COLORS.nursery.text  },
-    { key:"sprout",   emoji:"🌱", label:"Sprout",   desc:"Approved and accelerating — with momentum, guidance, and the whole company rooting for you.", bg:STAGE_COLORS.sprout.bg,   text:STAGE_COLORS.sprout.text   },
-    { key:"bloom",    emoji:"🌸", label:"Bloom",    desc:"In the hands of real users now. Listening, refining, putting on the final polish.", bg:STAGE_COLORS.bloom.bg,    text:STAGE_COLORS.bloom.text    },
-    { key:"thriving", emoji:"🌳", label:"Thriving", desc:"Started as a spark. Now it's something people rely on every day.", bg:STAGE_COLORS.thriving.bg, text:STAGE_COLORS.thriving.text },
-  ];
 
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.65)",backdropFilter:"blur(8px)"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:480,width:"92%",boxShadow:DS.shadow.xl,overflow:"hidden",animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:440,width:"92%",boxShadow:DS.shadow.xl,overflow:"hidden",animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
 
         {/* ── Dark green header ── */}
-        <div style={{background:"#14532d",padding:"28px 24px 24px",position:"relative",textAlign:"center"}}>
-          {/* Skip — session-only dismiss */}
+        <div style={{background:"#14532d",padding:"28px 24px 22px",position:"relative",textAlign:"center"}}>
           <button onClick={onExplore}
-            style={{position:"absolute",top:14,right:16,background:"none",border:"none",color:"rgba(255,255,255,0.65)",fontFamily:FF,fontSize:13,cursor:"pointer",padding:"4px 8px",borderRadius:DS.radius.sm,transition:"color 0.15s"}}
+            style={{position:"absolute",top:14,right:16,background:"none",border:"none",color:"rgba(255,255,255,0.55)",fontFamily:FF,fontSize:13,cursor:"pointer",padding:"4px 8px",borderRadius:DS.radius.sm,transition:"color 0.15s"}}
             onMouseOver={e=>e.currentTarget.style.color="#fff"}
-            onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,0.65)"}
+            onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,0.55)"}
           >Skip</button>
-          {/* Logo */}
           <div style={{marginBottom:10,display:"flex",justifyContent:"center"}}>
             <GroveLogo theme="green" size={40} />
           </div>
-          {/* Grove + Beta pill */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}}>
             <span style={{fontFamily:FF,fontSize:26,fontWeight:800,color:"#fff"}}>Grove</span>
             <span style={{fontFamily:FF,fontSize:11,fontWeight:600,background:"rgba(255,255,255,0.18)",color:"rgba(255,255,255,0.88)",borderRadius:DS.radius.full,padding:"3px 9px",letterSpacing:0.3}}>Beta</span>
           </div>
-          {/* Tagline */}
-          <div style={{fontFamily:FF,fontSize:13,color:"rgba(255,255,255,0.80)",lineHeight:1.65,maxWidth:340,margin:"0 auto"}}>
-            Every thriving AI tool started as a seed. Grove is where Sprout plants, tends, and grows its AI work — together.
+          <div style={{fontFamily:FF,fontSize:13,color:"rgba(255,255,255,0.78)",lineHeight:1.6,maxWidth:320,margin:"0 auto"}}>
+            Your AI project garden at Sprout.
           </div>
         </div>
 
@@ -3458,53 +3445,58 @@ function WelcomeModal({ onExplore, onDismissPermanently, isApprover, country }) 
 
           {/* Role pill */}
           <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
-            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:C.mushroom100,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.full,padding:"8px 16px",flexWrap:"wrap",justifyContent:"center"}}>
-              <span style={{fontSize:15}}>{roleEmoji}</span>
+            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:C.mushroom100,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.full,padding:"7px 16px"}}>
+              <span style={{fontSize:14}}>{roleEmoji}</span>
               <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom800}}>{roleName}</span>
-              <span style={{fontFamily:FF,fontSize:13,color:C.mushroom500}}>· {teamLabel}</span>
-              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400}}>· {nudge}</span>
+              <span style={{fontFamily:FF,fontSize:13,color:C.mushroom400}}>· {teamLabel}</span>
             </div>
           </div>
 
-          {/* Section label */}
-          <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mushroom500,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}}>How ideas grow</div>
+          {/* Beta callout */}
+          <div style={{background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:DS.radius.md,padding:"12px 14px",marginBottom:20,display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>🚧</span>
+            <span style={{fontFamily:FF,fontSize:12,color:"#92400e",lineHeight:1.6}}>
+              Grove is in early beta — things are still growing. If something feels off or you have ideas, tap <strong>?</strong> and go to <strong>Feedback</strong>. We read every note.
+            </span>
+          </div>
 
-          {/* Stage list */}
-          <div style={{border:"1px solid "+C.mushroom200,borderRadius:DS.radius.lg,overflow:"hidden",marginBottom:16}}>
-            {/* Seed row */}
-            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:C.mushroom50,borderBottom:"1px solid "+C.mushroom200}}>
-              <span style={{fontSize:15,flexShrink:0}}>🌰</span>
-              <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom700,flexShrink:0}}>Seed</span>
-              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom500,flex:1}}>An idea for a project or tool</span>
-              <span style={{display:"flex",alignItems:"center",gap:3,fontFamily:FF,fontSize:11,color:C.blueberry500,flexShrink:0,opacity:0.85}}>overlap check 🔍</span>
-            </div>
-            {/* Project stage rows */}
-            {stageRows.map((s, i) => (
-              <div key={s.key} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:s.bg,borderBottom:i < stageRows.length-1 ? "1px solid rgba(0,0,0,0.06)" : "none"}}>
-                <span style={{fontSize:15,flexShrink:0}}>{s.emoji}</span>
-                <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:s.text,flexShrink:0}}>{s.label}</span>
-                <span style={{fontFamily:FF,fontSize:12,color:s.text,opacity:0.8}}>{s.desc}</span>
+          {/* What do you want to do? */}
+          <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom500,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:12}}>Where do you want to start?</div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+            {/* Plant a Seed */}
+            <button onClick={onPlantSeed}
+              style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"16px 14px",textAlign:"left",cursor:"pointer",transition:"all 0.15s",display:"flex",flexDirection:"column",gap:8}}
+              onMouseOver={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.borderColor=C.mushroom400;e.currentTarget.style.boxShadow=DS.shadow.md;}}
+              onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom200;e.currentTarget.style.boxShadow="none";}}
+            >
+              <span style={{fontSize:22}}>🌰</span>
+              <div>
+                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom800,marginBottom:4}}>Plant a Seed</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,lineHeight:1.55}}>Have an idea for an AI tool? Drop it here for the team to see.</div>
               </div>
-            ))}
+            </button>
+
+            {/* Add to Garden */}
+            <button onClick={onAddToGarden}
+              style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"16px 14px",textAlign:"left",cursor:"pointer",transition:"all 0.15s",display:"flex",flexDirection:"column",gap:8}}
+              onMouseOver={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.borderColor=C.kangkong400;e.currentTarget.style.boxShadow=DS.shadow.md;}}
+              onMouseOut={e=>{e.currentTarget.style.background=C.kangkong50;e.currentTarget.style.borderColor=C.kangkong200;e.currentTarget.style.boxShadow="none";}}
+            >
+              <span style={{fontSize:22}}>🪴</span>
+              <div>
+                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong700,marginBottom:4}}>Add to Garden</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,lineHeight:1.55}}>Already building something? Log your project and track its growth.</div>
+              </div>
+            </button>
           </div>
 
-          {/* Builder nudge card */}
-          <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.md,padding:"12px 14px",marginBottom:20,display:"flex",gap:10,alignItems:"flex-start"}}>
-            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>🌱</span>
-            <span style={{fontFamily:FF,fontSize:12,color:C.kangkong700,lineHeight:1.6}}>You don't need to be an engineer to build. Anyone at Sprout can claim a seed and start growing it.</span>
-          </div>
-
-          {/* Beta note + primary CTA */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:10}}>
-            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,lineHeight:1.5,flex:1}}>
-              Grove is in Beta. Hit <strong style={{color:C.mushroom700}}>?</strong> for help or to learn more about each stage.
-            </div>
-            <button onClick={onExplore}
-              style={{flexShrink:0,padding:"10px 20px",borderRadius:DS.radius.lg,background:"#14532d",border:"none",color:C.white,fontFamily:FF,fontSize:14,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"background 0.15s"}}
-              onMouseOver={e=>e.currentTarget.style.background="#0f3d21"}
-              onMouseOut={e=>e.currentTarget.style.background="#14532d"}
-            >Take me in →</button>
-          </div>
+          {/* Just look around */}
+          <button onClick={onExplore}
+            style={{width:"100%",padding:"9px 0",borderRadius:DS.radius.lg,background:"none",border:"none",color:C.mushroom400,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"color 0.15s",marginBottom:8}}
+            onMouseOver={e=>e.currentTarget.style.color=C.mushroom600}
+            onMouseOut={e=>e.currentTarget.style.color=C.mushroom400}
+          >Just look around first</button>
 
           {/* Don't show again */}
           <button onClick={onDismissPermanently}
@@ -5455,6 +5447,8 @@ export default function SproutAIGarden() {
         <WelcomeModal
           onExplore={() => setWelcomeSeen(true)}
           onDismissPermanently={handleDismissWelcomePermanently}
+          onPlantSeed={() => { setWelcomeSeen(true); setView("wishlist"); setShowAddWish(true); }}
+          onAddToGarden={() => { setWelcomeSeen(true); setShowForm(true); }}
           isApprover={authUser.isApprover}
           country={authUser.country}
         />
