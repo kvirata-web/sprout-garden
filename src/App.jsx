@@ -1862,7 +1862,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
   const ALL_STAGES_WITH_SEED = ["seed", ...STAGES];
 
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:C.mushroom50}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:C.mushroom50,position:"relative",zIndex:1}}>
 
       {/* ── Toolbar ── */}
       <div style={{padding:"10px 20px",background:C.white,borderBottom:"1px solid "+C.mushroom200,display:"flex",gap:10,alignItems:"center",zIndex:20,flexShrink:0}}>
@@ -2354,7 +2354,7 @@ const GARDEN_THEMES = {
     sky:'linear-gradient(180deg,#fde8c8 0%,#f8c890 12%,#fad4a0 28%,#feedd4 48%,#eaf4e8 68%,#9acc94 84%,#568a58 100%)',
     hillBg:"#2a5830", hillMid:"#387040", hillFg:"#4a8050",
     ground:'linear-gradient(180deg,#4a8050 0%,#2e4e2c 100%)',
-    divider:'rgba(50,100,50,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    divider:'rgba(50,100,50,0.10)', deptLabel:'rgba(255,255,255,0.90)',
     stars:0, moon:0, sun:0.50, clouds:0.30,
     legend:{bg:'rgba(255,255,255,0.80)',border:'rgba(80,140,60,0.18)',color:'rgba(30,70,30,0.72)'},
   },
@@ -2362,7 +2362,7 @@ const GARDEN_THEMES = {
     sky:'linear-gradient(180deg,#c8e4f0 0%,#d8eef8 18%,#eaf6fe 38%,#f4fcf8 56%,#dcf0dc 72%,#88bc80 86%,#4a8450 100%)',
     hillBg:"#2c6032", hillMid:"#3a7040", hillFg:"#4c8050",
     ground:'linear-gradient(180deg,#4c8050 0%,#2e4e2e 100%)',
-    divider:'rgba(50,110,50,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    divider:'rgba(50,110,50,0.10)', deptLabel:'rgba(255,255,255,0.90)',
     stars:0, moon:0, sun:0.85, clouds:0.65,
     legend:{bg:'rgba(255,255,255,0.82)',border:'rgba(80,140,70,0.20)',color:'rgba(30,70,30,0.72)'},
   },
@@ -2370,7 +2370,7 @@ const GARDEN_THEMES = {
     sky:'linear-gradient(180deg,#b8daf0 0%,#cce8f8 20%,#e4f4fc 40%,#f4fdf8 58%,#e0f4e0 74%,#84bc78 88%,#488448 100%)',
     hillBg:"#2e6234", hillMid:"#3c7244", hillFg:"#4e8254",
     ground:'linear-gradient(180deg,#4e8254 0%,#304e32 100%)',
-    divider:'rgba(50,110,50,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    divider:'rgba(50,110,50,0.10)', deptLabel:'rgba(255,255,255,0.90)',
     stars:0, moon:0, sun:1, clouds:0.80,
     legend:{bg:'rgba(255,255,255,0.84)',border:'rgba(80,140,70,0.20)',color:'rgba(30,70,30,0.72)'},
   },
@@ -2378,7 +2378,7 @@ const GARDEN_THEMES = {
     sky:'linear-gradient(180deg,#f0e4c0 0%,#f4eacc 18%,#faf4d8 38%,#faf8ec 56%,#e8f0dc 72%,#84b478 86%,#488448 100%)',
     hillBg:"#2c5c30", hillMid:"#3a6c3c", hillFg:"#4a7c4c",
     ground:'linear-gradient(180deg,#4a7c4c 0%,#2e4a2e 100%)',
-    divider:'rgba(50,100,45,0.10)', deptLabel:'rgba(20,60,20,0.52)',
+    divider:'rgba(50,100,45,0.10)', deptLabel:'rgba(255,255,255,0.90)',
     stars:0, moon:0, sun:0.70, clouds:0.50,
     legend:{bg:'rgba(255,255,255,0.82)',border:'rgba(80,130,60,0.18)',color:'rgba(30,70,30,0.72)'},
   },
@@ -2386,7 +2386,7 @@ const GARDEN_THEMES = {
     sky:'linear-gradient(180deg,#e4c0a0 0%,#eab880 14%,#f0c87c 28%,#f8d8a8 46%,#f0dcc8 60%,#cce0b4 76%,#78a860 88%,#406038 100%)',
     hillBg:"#2a5030", hillMid:"#386038", hillFg:"#487040",
     ground:'linear-gradient(180deg,#487040 0%,#2c4828 100%)',
-    divider:'rgba(60,100,40,0.10)', deptLabel:'rgba(30,60,20,0.52)',
+    divider:'rgba(60,100,40,0.10)', deptLabel:'rgba(255,255,255,0.90)',
     stars:0.15, moon:0.25, sun:0.35, clouds:0.30,
     legend:{bg:'rgba(255,250,240,0.82)',border:'rgba(100,120,50,0.18)',color:'rgba(40,60,20,0.72)'},
   },
@@ -2394,7 +2394,7 @@ const GARDEN_THEMES = {
     sky:'linear-gradient(180deg,#b8c8d8 0%,#c2d0e2 20%,#ccd8e8 36%,#d2dce8 52%,#d6e4da 68%,#8ab890 84%,#487850 100%)',
     hillBg:"#2a4838", hillMid:"#344c3e", hillFg:"#3e5844",
     ground:'linear-gradient(180deg,#3e5844 0%,#263828 100%)',
-    divider:'rgba(50,80,60,0.12)', deptLabel:'rgba(20,50,30,0.52)',
+    divider:'rgba(50,80,60,0.12)', deptLabel:'rgba(255,255,255,0.90)',
     stars:0.55, moon:0.75, sun:0, clouds:0.15,
     legend:{bg:'rgba(255,255,255,0.78)',border:'rgba(70,100,80,0.20)',color:'rgba(20,50,30,0.72)'},
   },
@@ -2490,7 +2490,7 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected}) => {
 
         {/* Dept labels */}
         {depts.map((d,i)=>(
-          <div key={d+"lbl"} style={{position:"absolute",bottom:"5.5%",left:`${(i+0.5)/N*100}%`,transform:"translateX(-50%)",fontFamily:FF,fontSize:9,fontWeight:700,letterSpacing:"1.4px",textTransform:"uppercase",whiteSpace:"nowrap",color:theme.deptLabel,pointerEvents:"none",transition:"color 4s ease"}}>
+          <div key={d+"lbl"} style={{position:"absolute",bottom:"5.5%",left:`${(i+0.5)/N*100}%`,transform:"translateX(-50%)",fontFamily:FF,fontSize:9,fontWeight:700,letterSpacing:"1.4px",textTransform:"uppercase",whiteSpace:"nowrap",color:theme.deptLabel,pointerEvents:"none",transition:"color 4s ease",textShadow:"0 1px 4px rgba(0,0,0,0.5)"}}>
             {d}
           </div>
         ))}
@@ -4747,7 +4747,7 @@ export default function SproutAIGarden() {
     setHelpPage(1);
     setHelpFilter("all");
     setHelpView("feed");
-    setHelpTab("faq");
+    setHelpTab("feedback");
     await loadHelpItems();
   };
 
