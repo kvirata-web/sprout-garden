@@ -1210,7 +1210,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   const TILE_CFG = [
     { key:"seeds",    label:"Seeds",    sub:"Got an idea? Anyone at Sprout can plant one.", accent:C.ubas500,         bg:C.ubas100,         border:C.ubas400,         countColor:C.ubas500,        nav:()=>onNavigateWishlist?.() },
     { key:"seedling", label:"Seedling", sub:"A builder claimed this and is making it real.", accent:C.mushroom400,     bg:C.mushroom100,     border:C.mushroom300,     countColor:C.mushroom700,    nav:()=>onNavigateGarden?.("board","seedling") },
-    { key:"nursery",  label:"Nursery",  sub:"Leadership opens doors before you go full speed.", accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
+    { key:"nursery",  label:"Nursery",  sub:"A gut check before you go all in, with leadership in your corner.", accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
     { key:"sprout",   label:"Sprout",   sub:"Approved and accelerating with full support.", accent:C.wintermelon400,  bg:C.wintermelon100,  border:C.wintermelon400,  countColor:C.wintermelon500, nav:()=>onNavigateGarden?.("board","sprout") },
     { key:"bloom",    label:"Bloom",    sub:"In users' hands. Listening and refining.", accent:C.kangkong400,     bg:C.kangkong50,      border:C.kangkong200,     countColor:C.kangkong600,    nav:()=>onNavigateGarden?.("board","bloom") },
     { key:"thriving", label:"Thriving", sub:"Started as a spark. Now relied on daily.", accent:C.blueberry500,    bg:C.blueberry100,    border:C.blueberry400,    countColor:C.blueberry500,   nav:()=>onNavigateGarden?.("board","thriving") },
@@ -3097,14 +3097,18 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
 
 // ── Wishlist View ─────────────────────────────────────────────────────────────
 function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishClaim, onUnclaimSeed, onUpdateWish, showAddWish, setShowAddWish}) {
-  const [deptFilter, setDeptFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [sort, setSort] = useState("upvotes");
   const [claimingWish, setClaimingWish] = useState(null);
   const [editingWish, setEditingWish] = useState(null);
   const currentUser = authUser?.displayName || "You";
 
   const filtered = wishes
-    .filter(w => deptFilter==="All" || w.builtFor===deptFilter)
+    .filter(w => {
+      if (statusFilter === "Unclaimed") return !w.claimedBy && !w.fulfilledBy;
+      if (statusFilter === "Claimed")   return !!w.claimedBy && !w.fulfilledBy;
+      return true;
+    })
     .sort((a,b) => sort==="upvotes"
       ? b.upvoters.length - a.upvoters.length
       : a.createdDaysAgo - b.createdDaysAgo
@@ -3112,7 +3116,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 
   const toggleUpvote = (wishId) => onUpvote(wishId);
 
-  const DEPTS = ["All","Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","CA","CSM","Alliance","Prd - Aurora","Eng - Aurora","Prd - Prometheus","Eng - Prometheus","Data","DevOps","Legal","PeopleOps","Finance","ExCom"];
+  const STATUS_FILTERS = ["All", "Unclaimed", "Claimed"];
 
   return (
     <div style={{flex:1,overflow:"auto",padding:"28px 32px",background:"transparent",position:"relative",zIndex:1}}>
@@ -3161,10 +3165,9 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 
         {/* Filters */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-          <div style={{display:"flex",gap:6,overflowX:"auto",flexWrap:"nowrap",paddingBottom:4}}>
-            {DEPTS.map(d=>(
-              <Chip key={d} label={d} active={deptFilter===d} onClick={()=>setDeptFilter(d)}
-                color={d!=="All"?DEPT_COLORS[d]:undefined}/>
+          <div style={{display:"flex",gap:6}}>
+            {STATUS_FILTERS.map(s=>(
+              <Chip key={s} label={s} active={statusFilter===s} onClick={()=>setStatusFilter(s)}/>
             ))}
           </div>
           <div style={{display:"flex",gap:2,background:C.mushroom100,borderRadius:DS.radius.md,padding:2}}>
@@ -4406,6 +4409,14 @@ function AboutModal({onClose}) {
           <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 18px",marginBottom:20}}>
             <div style={{fontFamily:FF,fontSize:13,color:C.kangkong700,lineHeight:1.7}}>
               Anyway — drop your idea in the Wishlist. No pressure. Just see where it goes 🌱
+            </div>
+          </div>
+
+          {/* Tested by */}
+          <div style={{borderTop:"1px solid "+C.mushroom100,paddingTop:16,marginBottom:16}}>
+            <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mushroom400,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Tested by</div>
+            <div style={{fontFamily:FF,fontSize:13,color:C.mushroom600,lineHeight:1.6}}>
+              Berns, Julie, Noel, Raffy, Dondon, and Geoff — thanks for breaking things so others don't have to. 🙏
             </div>
           </div>
 
