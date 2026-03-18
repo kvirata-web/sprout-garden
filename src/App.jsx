@@ -1093,7 +1093,12 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   const toolCounts = getToolCounts(projects);
 
   // My Corner data
-  const myProjects   = projects.filter(p => p.builderEmail === authUser?.email || (authUser?.displayName && p.builder === authUser.displayName));
+  const _myEmail = authUser?.email?.toLowerCase()
+  const _myName  = authUser?.displayName?.toLowerCase()
+  const myProjects = projects.filter(p =>
+    (_myEmail && p.builderEmail?.toLowerCase() === _myEmail) ||
+    (_myName  && p.builder?.toLowerCase() === _myName)
+  );
   const nurseryQueue = projects.filter(p => p.stage === "nursery")
     .sort((a, b) => {
       const aMs = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
@@ -3316,7 +3321,7 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
       position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",
       display:"flex",alignItems:"center",justifyContent:"center",
       zIndex:100,backdropFilter:"blur(4px)",
-    }} onClick={onClose}>
+    }}>
       <div style={{
         background:C.white,borderRadius:DS.radius.xl,
         padding:"28px 28px 24px",width:480,maxWidth:"95vw",
@@ -3355,7 +3360,7 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
           </div>
           <div>
             <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>
-              Built for <span style={{color:C.carrot500}}>*</span>
+              Build For <span style={{color:C.carrot500}}>*</span>
             </div>
             <select value={form.builtFor} onChange={e=>set("builtFor",e.target.value)} style={inputStyle}>
               {DEPTS.map(d=><option key={d}>{d}</option>)}
@@ -3769,7 +3774,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
   };
 
   return (
-    <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.55)",backdropFilter:"blur(6px)"}} onClick={onClose}>
+    <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.55)",backdropFilter:"blur(6px)"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,padding:28,maxWidth:540,width:"92%",maxHeight:"92vh",overflowY:"auto",boxShadow:DS.shadow.xl,border:"1px solid "+C.mushroom200,animation:"slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1)"}}>
 
         {/* Header */}
@@ -4132,7 +4137,10 @@ function ReadyForReviewModal({wish, onClose, onSubmit}) {
 
 // ── Profile Modal ──────────────────────────────────────────────────────────────
 function ProfileModal({authUser, projects, wishes, onClose}) {
-  const myProjects = projects.filter(p => p.builderEmail === authUser.email || p.builder === authUser.displayName);
+  const myProjects = projects.filter(p =>
+    p.builderEmail?.toLowerCase() === authUser.email?.toLowerCase() ||
+    p.builder?.toLowerCase() === authUser.displayName?.toLowerCase()
+  );
   const mySeeds = wishes.filter(w => w.wisherEmail === authUser.email || w.wisherName === authUser.displayName);
   const claimedSeeds = wishes.filter(w => w.claimedByEmail === authUser.email && !w.fulfilledBy);
   return (
