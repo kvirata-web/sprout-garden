@@ -4372,7 +4372,7 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
 // ── From the Builder Modal ─────────────────────────────────────────────────────
 
 function AboutModal({onClose}) {
-  const BUILT_WITH = ["Claude Code","Claude Chat","Cursor","Superpowers","GitHub"];
+  const BUILT_WITH = ["Claude Code","Claude Chat","Cursor","Superpowers","GitHub","Supabase","Vercel"];
   return (
     <div style={{position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(14,56,14,0.7)",backdropFilter:"blur(6px)"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:520,width:"92%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:DS.shadow.xl,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
