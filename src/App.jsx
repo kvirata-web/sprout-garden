@@ -2445,6 +2445,15 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                           {dfc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dfc+"18",color:dfc,whiteSpace:"nowrap"}}>{builtForDisplay(p.builtFor)}</span>}
                         </div>
 
+                        {/* Similar builders indicator */}
+                        {(p.interestedUsers||[]).length > 0 && (
+                          <div style={{marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
+                            <span style={{fontFamily:FF,fontSize:10,color:C.blueberry500,fontWeight:600,background:C.blueberry100,border:"1px solid "+C.blueberry400,borderRadius:DS.radius.full,padding:"1px 8px"}}>
+                              👥 {p.interestedUsers.length} working on something similar
+                            </span>
+                          </div>
+                        )}
+
                         {/* Last updated + submitted + drag */}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>{p.lastUpdated===0?"Today":p.lastUpdated+"d ago"}</span>
@@ -2803,9 +2812,10 @@ const FeedbackBanner = ({reviewComment, reviewedBy, reviewedAt}) => {
 };
 
 // ── Detail Panel ──────────────────────────────────────────────────────────────
-const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,onEdit,onSubmitToNursery,onWithdrawFromNursery,onApproveProject,onNeedsRework,onMarkNotificationsRead}) => {
+const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,onEdit,onSubmitToNursery,onWithdrawFromNursery,onApproveProject,onNeedsRework,onMarkNotificationsRead,onToggleInterested}) => {
   const [noteText,setNoteText] = useState("");
-  const [interested,setInterested] = useState(false);
+  const interestedUsers = project.interestedUsers || [];
+  const isInterested    = authUser ? interestedUsers.includes(authUser.email) : false;
   const [prototypeLink, setPrototypeLink]       = useState(project.prototypeLink || "");
   const [deckLink, setDeckLink]                 = useState(project.deckLink || "");
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -3064,20 +3074,44 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
           </div>
         )}
 
-        <button onClick={()=>setInterested(!interested)} style={{
-          width:"100%",padding:"9px",marginBottom:16,
-          background:interested?C.kangkong600:C.white,
-          color:interested?C.white:C.kangkong600,
+        <button onClick={()=>onToggleInterested&&onToggleInterested(project)} style={{
+          width:"100%",padding:"9px",marginBottom:interestedUsers.length>0?8:16,
+          background:isInterested?C.kangkong600:C.white,
+          color:isInterested?C.white:C.kangkong600,
           border:"1.5px solid "+C.kangkong500,
           borderRadius:DS.radius.lg,cursor:"pointer",
           fontFamily:FF,fontSize:12,fontWeight:600,
           transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
         }}>
-          {interested
-            ?<><IcoCheck size={14} color={C.white}/> You're interested</>
-            :<>I'm working on something similar</>
+          {isInterested
+            ?<><IcoCheck size={14} color={C.white}/> You're working on something similar</>
+            :<>I'm working on something similar{interestedUsers.length>0?` · ${interestedUsers.length}`:""}</>
           }
         </button>
+
+        {/* Who's interested */}
+        {interestedUsers.length > 0 && (
+          <div style={{background:C.mushroom50,border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"10px 12px",marginBottom:16}}>
+            <div style={{fontFamily:FF,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.7,color:C.mushroom500,marginBottom:8}}>
+              Also working on this ({interestedUsers.length})
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {interestedUsers.map(email => {
+                const initials = email.split("@")[0].slice(0,2).toUpperCase();
+                const cc = COVER_COLORS[email] || COVER_COLORS.default;
+                return (
+                  <div key={email} style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:24,height:24,borderRadius:"50%",background:cc.bg,color:cc.text,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:9,fontWeight:700,flexShrink:0}}>{initials}</div>
+                    <a href={`mailto:${email}`} style={{fontFamily:FF,fontSize:12,color:C.kangkong700,fontWeight:500,textDecoration:"none"}}
+                      onMouseOver={e=>e.currentTarget.style.textDecoration="underline"}
+                      onMouseOut={e=>e.currentTarget.style.textDecoration="none"}
+                    >{email}</a>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div>
           <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.mushroom500,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
@@ -5124,6 +5158,39 @@ export default function SproutAIGarden() {
 
   // ── Project mutations ─────────────────────────────────────────────────────
 
+  const handleToggleInterested = async (project) => {
+    if (!authUser) return;
+    const name  = authUser.displayName || authUser.email;
+    const email = authUser.email;
+    const current = project.interestedUsers || [];
+    const isIn    = current.includes(email);
+    const updated = isIn ? current.filter(e => e !== email) : [...current, email];
+
+    // Optimistic update
+    setProjects(prev => prev.map(p => p.id === project.id ? {...p, interestedUsers: updated} : p));
+
+    const { error } = await supabase.from("projects")
+      .update({ interested_users: updated })
+      .eq("id", project.id);
+    if (error) {
+      console.error("toggleInterested:", error);
+      // Revert
+      setProjects(prev => prev.map(p => p.id === project.id ? {...p, interestedUsers: current} : p));
+      return;
+    }
+
+    // Notify builder only when adding interest (not removing)
+    if (!isIn && project.builderEmail && project.builderEmail !== email) {
+      await supabase.from("notifications").insert({
+        recipient_email: project.builderEmail,
+        type:            "interested",
+        message:         `${name} is working on something similar to "${project.name}". Consider connecting.`,
+        payload:         { project_id: project.id, project_name: project.name, interested_email: email, interested_name: name },
+        read:            false,
+      });
+    }
+  };
+
   const addNote = (id, text) => {
     if (!authUser) return;
     if (!text.trim()) return;
@@ -5632,6 +5699,7 @@ export default function SproutAIGarden() {
             onApproveProject={approveProject}
             onNeedsRework={needsRework}
             onMarkNotificationsRead={handleMarkNotificationsRead}
+            onToggleInterested={handleToggleInterested}
           />
         )}
       </div>
