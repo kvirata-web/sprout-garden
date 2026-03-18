@@ -1995,7 +1995,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
   const filtered = projects.filter(p => {
     const q = search.toLowerCase();
     const ms = !q || p.name.toLowerCase().includes(q) || (p.description||"").toLowerCase().includes(q) || p.builtBy.toLowerCase().includes(q) || p.builtFor.toLowerCase().includes(q) || (p.problemSpace||"").toLowerCase().includes(q);
-    const md = deptFilter === "All" || p.builtBy === deptFilter || p.builtFor === deptFilter;
+    const md = deptFilter === "All" || p.builtFor === "All Teams" || p.builtBy === deptFilter || p.builtFor === deptFilter;
     const mc = capFilter === "All" || p.capability === capFilter;
     const mb = builderFilter === "All" || p.builder === builderFilter;
     const mct = countryFilter === "All" || p.country === countryFilter;
@@ -3373,7 +3373,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 // ── Add Wish Modal ────────────────────────────────────────────────────────────
 function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
   const isEditing = !!existing;
-  const DEPTS = ["Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","CA","CSM","Alliance","Prd - Aurora","Eng - Aurora","Prd - Prometheus","Eng - Prometheus","Data","DevOps","Legal","PeopleOps","Finance","ExCom"];
+  const DEPTS = ["All Teams","Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","CA","CSM","Alliance","Prd - Aurora","Eng - Aurora","Prd - Prometheus","Eng - Prometheus","Data","DevOps","Legal","PeopleOps","Finance","ExCom"];
   const [form,setForm] = useState({
     title: existing?.title||"",
     why: existing?.why||"",
