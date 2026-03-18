@@ -1208,12 +1208,12 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
 
   // ── Pipeline tile config ─────────────────────────────────────────────────────
   const TILE_CFG = [
-    { key:"seeds",    label:"Seeds",    sub:"Got an idea? Plant it. Anyone at Sprout can — no technical background needed.", accent:C.ubas500,         bg:C.ubas100,         border:C.ubas400,         countColor:C.ubas500,        nav:()=>onNavigateWishlist?.() },
-    { key:"seedling", label:"Seedling", sub:"A builder claimed this idea and is making it real. Expect experiments, prototypes, and a little beautiful mess.", accent:C.mushroom400,     bg:C.mushroom100,     border:C.mushroom300,     countColor:C.mushroom700,    nav:()=>onNavigateGarden?.("board","seedling") },
-    { key:"nursery",  label:"Nursery",  sub:"Leadership steps in — not to gatekeep, but to open the right doors before you go full speed.", accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
-    { key:"sprout",   label:"Sprout",   sub:"Approved and accelerating — with momentum, guidance, and the whole company rooting for you.", accent:C.wintermelon400,  bg:C.wintermelon100,  border:C.wintermelon400,  countColor:C.wintermelon500, nav:()=>onNavigateGarden?.("board","sprout") },
-    { key:"bloom",    label:"Bloom",    sub:"In the hands of real users now. Listening, refining, putting on the final polish.", accent:C.kangkong400,     bg:C.kangkong50,      border:C.kangkong200,     countColor:C.kangkong600,    nav:()=>onNavigateGarden?.("board","bloom") },
-    { key:"thriving", label:"Thriving", sub:"Started as a spark. Now it's something people rely on every day.", accent:C.blueberry500,    bg:C.blueberry100,    border:C.blueberry400,    countColor:C.blueberry500,   nav:()=>onNavigateGarden?.("board","thriving") },
+    { key:"seeds",    label:"Seeds",    sub:"Got an idea? Anyone at Sprout can plant one.", accent:C.ubas500,         bg:C.ubas100,         border:C.ubas400,         countColor:C.ubas500,        nav:()=>onNavigateWishlist?.() },
+    { key:"seedling", label:"Seedling", sub:"A builder claimed this and is making it real.", accent:C.mushroom400,     bg:C.mushroom100,     border:C.mushroom300,     countColor:C.mushroom700,    nav:()=>onNavigateGarden?.("board","seedling") },
+    { key:"nursery",  label:"Nursery",  sub:"Leadership opens doors before you go full speed.", accent:C.mango500,        bg:C.mango100,        border:C.mango500,        countColor:C.mango600,       nav:()=>onNavigateGarden?.("board","nursery") },
+    { key:"sprout",   label:"Sprout",   sub:"Approved and accelerating with full support.", accent:C.wintermelon400,  bg:C.wintermelon100,  border:C.wintermelon400,  countColor:C.wintermelon500, nav:()=>onNavigateGarden?.("board","sprout") },
+    { key:"bloom",    label:"Bloom",    sub:"In users' hands. Listening and refining.", accent:C.kangkong400,     bg:C.kangkong50,      border:C.kangkong200,     countColor:C.kangkong600,    nav:()=>onNavigateGarden?.("board","bloom") },
+    { key:"thriving", label:"Thriving", sub:"Started as a spark. Now relied on daily.", accent:C.blueberry500,    bg:C.blueberry100,    border:C.blueberry400,    countColor:C.blueberry500,   nav:()=>onNavigateGarden?.("board","thriving") },
   ];
 
   // ── Shared row-item hover helper ─────────────────────────────────────────────
@@ -1226,20 +1226,15 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom:20, animation:"fadeUp 0.4s ease both" }}>
-        <div style={{ fontSize:19, fontWeight:700, color:C.mushroom900, letterSpacing:"-0.01em", marginBottom:3 }}>
+        <div style={{ fontSize:20, fontWeight:700, color:C.mushroom900, letterSpacing:"-0.01em", marginBottom:3 }}>
           {greeting}, {firstName}
         </div>
-        <div style={{ fontSize:12, color:C.mushroom500 }}>
+        <div style={{ fontSize:14, color:C.mushroom500 }}>
           {getDashboardSubline(projects, wishes)}
         </div>
       </div>
 
       {/* ── Pipeline ──────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom:4 }}>
-        <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
-          Program Pipeline
-        </div>
-      </div>
       <div style={{
         display:"flex", alignItems:"stretch", gap:0, marginBottom:24,
         animation:"fadeUp 0.4s ease 0.05s both",
@@ -1305,18 +1300,18 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                   </div>
 
                   {/* Stage name + live dot */}
-                  <div style={{ fontSize:12, fontWeight:700, color:t.countColor, letterSpacing:"0.02em", marginBottom:5, display:"flex", alignItems:"center", gap:4 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:t.countColor, letterSpacing:"0.02em", marginBottom:5, display:"flex", alignItems:"center", gap:4 }}>
                     {t.label}
                     {isLive && <span style={{ width:6, height:6, borderRadius:"50%", background:t.accent, display:"inline-block", animation:"ovPulse 1.8s infinite" }}/>}
                   </div>
 
                   {/* Description */}
-                  <div style={{ fontSize:10, color:C.mushroom500, lineHeight:1.6, flex:1 }}>
+                  <div style={{ fontSize:12, color:C.mushroom500, lineHeight:1.55, flex:1 }}>
                     {t.sub}
                   </div>
 
                   {/* CTA */}
-                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", color:t.accent, marginTop:10, opacity:isHov?1:0, transition:"opacity 0.15s" }}>
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", color:t.accent, marginTop:10, opacity:isHov?1:0, transition:"opacity 0.15s" }}>
                     View all →
                   </div>
                 </div>
@@ -1393,18 +1388,18 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                     {/* Content */}
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3, flexWrap:"wrap" }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:C.mushroom900, lineHeight:1.3 }}>{entityName}</span>
+                        <span style={{ fontSize:14, fontWeight:700, color:C.mushroom900, lineHeight:1.3 }}>{entityName}</span>
                         {sc && (
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"1px 7px", borderRadius:DS.radius.full, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, fontSize:9, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"1px 7px", borderRadius:DS.radius.full, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, fontSize:10, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
                             <span style={{ width:5, height:5, borderRadius:"50%", background:sc.dot, flexShrink:0 }}/>
                             {STAGE_LABELS[stageKey]}
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.3 }}>{actionText}</div>
+                      <div style={{ fontSize:12, color:C.mushroom500, lineHeight:1.3 }}>{actionText}</div>
                     </div>
                     {/* Time */}
-                    <div style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginTop:3, whiteSpace:"nowrap" }}>{timeLabel}</div>
+                    <div style={{ fontSize:12, color:C.mushroom400, flexShrink:0, marginTop:3, whiteSpace:"nowrap" }}>{timeLabel}</div>
                   </div>
                 );
               })}
@@ -2033,7 +2028,6 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
   const VIEW_MODES = [
     {id:"directory", label:"Directory", Icon:IcoViewGrid},
     {id:"board",     label:"Board",     Icon:IcoViewBoard},
-    {id:"garden",    label:"Garden",    Icon:IcoViewGarden},
   ];
 
   const ALL_STAGES_WITH_SEED = ["seed", ...STAGES];
