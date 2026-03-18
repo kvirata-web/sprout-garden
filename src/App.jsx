@@ -2718,7 +2718,9 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
     <div style={{
       width:340,flexShrink:0,background:C.white,
       borderLeft:"1px solid "+C.mushroom200,
+      boxShadow:"-6px 0 28px rgba(0,0,0,0.10)",
       overflowY:"auto",display:"flex",flexDirection:"column",
+      position:"relative",zIndex:2,
       animation:"slideInRight 0.3s cubic-bezier(0.34,1.2,0.64,1)",
     }}>
       <div style={{padding:"16px 20px",borderBottom:"1px solid "+C.mushroom100,background:STAGE_COLORS[project.stage].bg}}>
