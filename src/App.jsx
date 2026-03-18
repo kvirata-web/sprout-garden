@@ -3464,19 +3464,11 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
             <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>
               Build For <span style={{color:C.carrot500}}>*</span>
             </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {DEPTS.map(d=>{
-                const active = form.builtFor.includes(d);
-                return (
-                  <button key={d} type="button" onClick={()=>set("builtFor",active?form.builtFor.filter(x=>x!==d):[...form.builtFor,d])} style={{
-                    padding:"4px 10px",borderRadius:DS.radius.full,border:"1.5px solid "+(active?C.kangkong500:C.mushroom300),
-                    background:active?C.kangkong50:C.white,color:active?C.kangkong700:C.mushroom600,
-                    fontFamily:FF,fontSize:12,fontWeight:active?700:400,cursor:"pointer",transition:"all 0.12s",
-                  }}>{d}</button>
-                );
-              })}
-            </div>
-            {form.builtFor.length===0&&<div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Select at least one</div>}
+            <MultiDeptSelect
+              opts={DEPTS}
+              value={form.builtFor}
+              onChange={v=>set("builtFor",v)}
+            />
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             <div>
@@ -3670,6 +3662,79 @@ function StoryQ({k, label, hint, form, onChange, ph}) {
           resize:"vertical", lineHeight:1.6, boxSizing:"border-box", padding:0,
         }}
       />
+    </div>
+  );
+}
+
+// ── MultiDeptSelect — searchable dropdown multi-select for the "For" field ─────
+function MultiDeptSelect({ value, onChange, opts, label, required, small }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setQ(""); } };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  const filtered = opts.filter(d => d.toLowerCase().includes(q.toLowerCase()));
+  const toggle = (d) => onChange(value.includes(d) ? value.filter(x => x !== d) : [...value, d]);
+  const fs = small ? 11 : 13;
+  return (
+    <div ref={ref} style={{position:"relative",marginBottom:12}}>
+      {label && (
+        <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>
+          {label}{required && <span style={{color:C.tomato500,fontWeight:400}}> *</span>}
+        </label>
+      )}
+      <div onClick={()=>setOpen(true)} style={{
+        display:"flex",alignItems:"center",gap:6,
+        padding:"7px 10px",borderRadius:DS.radius.md,
+        border:"1.5px solid "+(open?C.kangkong500:C.mushroom200),
+        background:C.white,cursor:"text",boxSizing:"border-box",minHeight:36,
+      }}>
+        <input
+          value={q}
+          onChange={e=>setQ(e.target.value)}
+          onFocus={()=>setOpen(true)}
+          placeholder={value.length ? "Add more…" : "Search departments…"}
+          style={{border:"none",outline:"none",background:"transparent",fontFamily:FF,fontSize:fs,color:C.mushroom700,flex:1,minWidth:0}}
+        />
+        <span style={{color:C.mushroom400,fontSize:10,flexShrink:0}}>▾</span>
+      </div>
+      {open && filtered.length > 0 && (
+        <div style={{
+          position:"absolute",top:"calc(100% + 4px)",left:0,right:0,
+          background:C.white,borderRadius:DS.radius.md,
+          border:"1.5px solid "+C.mushroom200,boxShadow:DS.shadow.md,
+          maxHeight:200,overflowY:"auto",zIndex:200,
+        }}>
+          {filtered.map(d => {
+            const active = value.includes(d);
+            return (
+              <div key={d}
+                onMouseDown={e=>{e.preventDefault();toggle(d);setQ("");}}
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",cursor:"pointer",background:active?C.kangkong50:C.white,color:active?C.kangkong700:C.mushroom700,fontFamily:FF,fontSize:fs,fontWeight:active?600:400,transition:"background 0.1s"}}
+                onMouseOver={e=>e.currentTarget.style.background=active?C.kangkong100:C.mushroom50}
+                onMouseOut={e=>e.currentTarget.style.background=active?C.kangkong50:C.white}
+              >
+                {d}
+                {active && <span style={{color:C.kangkong600,fontSize:12,fontWeight:700}}>✓</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {value.length > 0 && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}}>
+          {value.map(d => (
+            <span key={d} style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:DS.radius.full,background:C.kangkong50,color:C.kangkong700,border:"1px solid "+C.kangkong200,fontFamily:FF,fontSize:11,fontWeight:600}}>
+              {d}
+              <button onMouseDown={e=>{e.preventDefault();toggle(d);}} style={{background:"none",border:"none",cursor:"pointer",color:C.kangkong400,fontSize:13,padding:0,lineHeight:1,fontWeight:700,marginLeft:1}}>×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      {!value.length && <div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:3}}>Select at least one</div>}
     </div>
   );
 }
@@ -3907,24 +3972,13 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <ModalField label="Your team" k="builtBy" type="select" opts={DEPTS} form={form} onChange={setField}/>
-          <div style={{marginBottom:12}}>
-            <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>
-              For <span style={{color:C.tomato500,fontWeight:400}}>*</span>
-            </label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-              {DEPTS.map(d=>{
-                const active = (form.builtFor||[]).includes(d);
-                return (
-                  <button key={d} type="button" onClick={()=>setField("builtFor",active?(form.builtFor||[]).filter(x=>x!==d):[...(form.builtFor||[]),d])} style={{
-                    padding:"3px 9px",borderRadius:DS.radius.full,border:"1.5px solid "+(active?C.kangkong500:C.mushroom300),
-                    background:active?C.kangkong50:C.white,color:active?C.kangkong700:C.mushroom600,
-                    fontFamily:FF,fontSize:11,fontWeight:active?700:400,cursor:"pointer",transition:"all 0.12s",
-                  }}>{d}</button>
-                );
-              })}
-            </div>
-            {!(form.builtFor||[]).length&&<div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:3}}>Select at least one</div>}
-          </div>
+          <MultiDeptSelect
+            label="For" required
+            opts={DEPTS}
+            value={form.builtFor||[]}
+            onChange={v=>setField("builtFor",v)}
+            small
+          />
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
