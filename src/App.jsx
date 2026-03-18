@@ -1430,7 +1430,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
               >
                 <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:C.kangkong500, animation:"ovPulse 2s infinite", flexShrink:0 }}/>
-                  <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong700 }}>Most recently thriving</span>
+                  <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong700 }}>Today's spotlight</span>
                 </div>
                 <div style={{ fontSize:16, fontWeight:700, color:C.mushroom900, marginBottom:4 }}>{spotlight.name}</div>
                 {spotlight.description && (
@@ -1454,7 +1454,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                   </div>
                 </div>
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  <span style={{ fontSize:10, fontWeight:600, background:STAGE_COLORS.thriving.bg, color:STAGE_COLORS.thriving.text, border:`0.5px solid ${STAGE_COLORS.thriving.border}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>Thriving</span>
+                  {(() => { const sc = STAGE_COLORS[spotlight.stage] || STAGE_COLORS.sprout; return <span style={{ fontSize:10, fontWeight:600, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>{STAGE_LABELS[spotlight.stage] || spotlight.stage}</span>; })()}
                   {spotlight.builtBy && (
                     <span style={{ fontSize:10, color:C.mushroom500, background:C.mushroom100, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>{spotlight.builtBy}</span>
                   )}
@@ -1465,8 +1465,8 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
               </div>
             ) : (
               <div style={{ background:C.kangkong50, border:`0.5px dashed ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"28px 14px", textAlign:"center" }}>
-                <div style={{ fontSize:12, fontWeight:500, color:C.kangkong500, marginBottom:4 }}>No thriving plants yet</div>
-                <div style={{ fontSize:11, color:C.mushroom500 }}>Be the first to get a plant to Thriving</div>
+                <div style={{ fontSize:12, fontWeight:500, color:C.kangkong500, marginBottom:4 }}>No spotlight yet</div>
+                <div style={{ fontSize:11, color:C.mushroom500 }}>Projects in Bloom or Thriving will appear here</div>
               </div>
             )}
           </div>
