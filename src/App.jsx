@@ -295,6 +295,12 @@ const ORIGINS = ["Hackathon","Side Project","Leadership Directive","Customer Req
 // Helper: get dept color
 const getDeptColor = (dept) => DEPT_COLORS[dept] || C.kangkong500;
 
+// builtFor is now text[] — module-level helpers for display, color, and filtering
+const builtForArr      = (v) => Array.isArray(v) ? v : (v ? [v] : []);
+const builtForDisplay  = (v) => builtForArr(v).join(", ") || "—";
+const builtForColor    = (v) => { const first = builtForArr(v)[0]; return DEPT_COLORS[first] || C.mushroom400; };
+const builtForIncludes = (v, dept) => builtForArr(v).includes(dept);
+
 const INITIAL_WISHES = [
   // 🇵🇭 Philippines
   {id:"w1",country:"PH",title:"Auto-summarize Slack threads for async teams",        why:"We're spread across 3 timezones. People miss key decisions buried in long threads. A daily digest or on-demand summary would save hours of catch-up every week.",   builtFor:"Engineering",         wisherName:"Kai Nakamura",  wisherEmail:"kai@sprout.ph",    createdDaysAgo:8,  upvoters:["Maya Santos","Dana Osei","Sofia Ali","Tom Eriksen","Carlos Ruiz","Niran Kositchai"], fulfilledBy:null, claimedBy:"Demo User",    claimedByEmail:"demo@sprout.ph",      claimedAt:"Mar 1, 2026",  readyForReview:false, prototypeLink:null,                              prototypeNote:null},
@@ -1438,7 +1444,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                       {spotlight.builder || spotlight.builtBy}
                     </div>
                     <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.2 }}>
-                      for <strong style={{ color:C.mushroom700 }}>{spotlight.builtFor || spotlight.builtBy}</strong>
+                      for <strong style={{ color:C.mushroom700 }}>{builtForDisplay(spotlight.builtFor) || spotlight.builtBy}</strong>
                       {spotlight.country ? ` · ${spotlight.country}` : ""}
                     </div>
                   </div>
@@ -1893,7 +1899,7 @@ function ActiveFilterChip({label, onRemove, color, icon}) {
 
 // ── Wish Detail Panel ──────────────────────────────────────────────────────────
 function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
-  const deptColor = DEPT_COLORS[wish.builtFor]||C.mushroom500;
+  const deptColor = builtForColor(wish.builtFor);
   const isBuilder  = wish.claimedByEmail === authUser?.email;
   const isAdmin = authUser?.isAdmin;
   const isClaimed  = !!wish.claimedBy;
@@ -1915,7 +1921,7 @@ function WishDetailPanel({wish, onClose, onClaim, onEdit, authUser}) {
           </div>
           <div style={{fontFamily:FF,fontSize:18,fontWeight:700,color:C.mushroom900,marginBottom:6,lineHeight:1.3,display:"flex",alignItems:"flex-start",gap:8}}>{wish.title}{wish.country&&<>&nbsp;<CountryBadge country={wish.country} size="lg"/></>}</div>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-            <span style={{fontFamily:FF,fontSize:11,fontWeight:600,color:deptColor,padding:"2px 8px",background:deptColor+"18",borderRadius:DS.radius.full}}>For {wish.builtFor}</span>
+            <span style={{fontFamily:FF,fontSize:11,fontWeight:600,color:deptColor,padding:"2px 8px",background:deptColor+"18",borderRadius:DS.radius.full}}>For {builtForDisplay(wish.builtFor)}</span>
             <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>Wished by <strong style={{color:C.mushroom700}}>{wish.wisherName}</strong></span>
             <span style={{fontFamily:FF,fontSize:11,color:C.mushroom400}}>{wish.createdDaysAgo}d ago</span>
           </div>
@@ -1994,8 +2000,8 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
 
   const filtered = projects.filter(p => {
     const q = search.toLowerCase();
-    const ms = !q || p.name.toLowerCase().includes(q) || (p.description||"").toLowerCase().includes(q) || p.builtBy.toLowerCase().includes(q) || p.builtFor.toLowerCase().includes(q) || (p.problemSpace||"").toLowerCase().includes(q);
-    const md = deptFilter === "All" || p.builtFor === "All Teams" || p.builtBy === deptFilter || p.builtFor === deptFilter;
+    const ms = !q || p.name.toLowerCase().includes(q) || (p.description||"").toLowerCase().includes(q) || p.builtBy.toLowerCase().includes(q) || builtForDisplay(p.builtFor).toLowerCase().includes(q) || (p.problemSpace||"").toLowerCase().includes(q);
+    const md = deptFilter === "All" || builtForIncludes(p.builtFor,"All Teams") || p.builtBy === deptFilter || builtForIncludes(p.builtFor,deptFilter);
     const mc = capFilter === "All" || p.capability === capFilter;
     const mb = builderFilter === "All" || p.builder === builderFilter;
     const mct = countryFilter === "All" || p.country === countryFilter;
@@ -2007,7 +2013,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
     if (stageFilter !== "All" && stageFilter !== "seed") return false;
     const q = search.toLowerCase();
     const ms = !q || w.title.toLowerCase().includes(q) || (w.why||"").toLowerCase().includes(q) || w.wisherName.toLowerCase().includes(q);
-    const md = deptFilter === "All" || w.builtFor === deptFilter;
+    const md = deptFilter === "All" || builtForIncludes(w.builtFor,deptFilter);
     return ms && md && !w.fulfilledBy;
   });
 
@@ -2187,7 +2193,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
             {filteredAlpha.map(p => {
               const sc  = STAGE_COLORS[p.stage] || STAGE_COLORS.seedling;
               const cc  = COVER_COLORS[p.builtBy] || COVER_COLORS.default;
-              const dc  = DEPT_COLORS[p.builtFor];
+              const dc  = builtForColor(p.builtFor);
               return (
                 <div key={p.id} onClick={()=>setSelected(p)}
                   style={{position:"relative",background:C.white,borderRadius:DS.radius.xl,border:"1px solid "+C.mushroom200,padding:16,cursor:"pointer",transition:"all 0.15s"}}
@@ -2219,7 +2225,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                       </div>
                       <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
                     </div>
-                    {dc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dc+"18",color:dc,whiteSpace:"nowrap"}}>{p.builtFor}</span>}
+                    {dc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dc+"18",color:dc,whiteSpace:"nowrap"}}>{builtForDisplay(p.builtFor)}</span>}
                   </div>
                 </div>
               );
@@ -2299,7 +2305,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                     <div style={{textAlign:"center",padding:"20px 8px",color:C.mushroom300,fontFamily:FF,fontSize:11,fontStyle:"italic"}}>No wishes yet</div>
                   )}
                   {seedCol.map(w=>{
-                    const deptColor = DEPT_COLORS[w.builtFor]||C.mushroom400;
+                    const deptColor = builtForColor(w.builtFor);
                     return (
                       <div key={w.id} onClick={()=>setSelectedWish(w)}
                         style={{background:C.mushroom50,borderRadius:DS.radius.lg,padding:"11px 13px",marginBottom:8,border:"1.5px dashed "+(w.readyForReview?C.mango500:w.claimedBy?C.wintermelon400:C.mushroom300),cursor:"pointer",transition:"all 0.15s"}}
@@ -2307,7 +2313,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                         onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.boxShadow="none";}}
                       >
                         <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom800,lineHeight:1.3,marginBottom:6}}>{w.title}</div>
-                        <div style={{fontFamily:FF,fontSize:10,color:deptColor,fontWeight:600,marginBottom:6,padding:"2px 6px",background:deptColor+"15",borderRadius:DS.radius.full,display:"inline-block"}}>{w.builtFor}</div>
+                        <div style={{fontFamily:FF,fontSize:10,color:deptColor,fontWeight:600,marginBottom:6,padding:"2px 6px",background:deptColor+"15",borderRadius:DS.radius.full,display:"inline-block"}}>{builtForDisplay(w.builtFor)}</div>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>{w.upvoters.length} votes</span>
                           {w.readyForReview
@@ -2387,7 +2393,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                     <div style={{textAlign:"center",padding:"20px 8px",color:C.mushroom300,fontFamily:FF,fontSize:11,fontStyle:"italic"}}>No plants at this stage yet.</div>
                   )}
                   {col.map(p => {
-                    const dfc = DEPT_COLORS[p.builtFor];
+                    const dfc = builtForColor(p.builtFor);
                     const cc  = COVER_COLORS[p.builtBy] || COVER_COLORS.default;
                     const wilting = p.lastUpdated>30;
                     const readyForNursery = stage==="seedling"&&p.prototypeLink&&p.deckLink;
@@ -2432,7 +2438,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                             </div>
                             <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
                           </div>
-                          {dfc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dfc+"18",color:dfc,whiteSpace:"nowrap"}}>{p.builtFor}</span>}
+                          {dfc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dfc+"18",color:dfc,whiteSpace:"nowrap"}}>{builtForDisplay(p.builtFor)}</span>}
                         </div>
 
                         {/* Last updated + submitted + drag */}
@@ -2703,7 +2709,7 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected}) => {
                   {isHov&&visible&&(
                     <div style={{position:"absolute",bottom:"108%",left:"50%",transform:"translateX(-50%)",background:C.mushroom900,color:C.mushroom50,padding:"8px 12px",borderRadius:DS.radius.lg,fontFamily:FF,fontSize:11,whiteSpace:"nowrap",pointerEvents:"none",zIndex:100,boxShadow:DS.shadow.lg,border:"1px solid "+C.mushroom700}}>
                       <div style={{fontWeight:700,marginBottom:2}}>{project.name}</div>
-                      <div style={{opacity:0.7,fontSize:10}}>{project.builtBy}{project.builtFor!==project.builtBy?" → "+project.builtFor:""}</div>
+                      <div style={{opacity:0.7,fontSize:10}}>{project.builtBy}{builtForDisplay(project.builtFor)!==project.builtBy?" → "+builtForDisplay(project.builtFor):""}</div>
                       <div style={{opacity:0.6,fontSize:10}}>{project.capability} · {STAGE_LABELS[project.stage]}</div>
                     </div>
                   )}
@@ -2846,12 +2852,12 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           {project.capability&&<CapBadge cap={project.capability}/>}
           <span style={{fontFamily:FF,fontSize:11,fontWeight:600,color:dc,padding:"2px 8px",background:dc+"18",borderRadius:DS.radius.full}}>{project.builtBy}</span>
-          {project.builtFor!==project.builtBy&&(
+          {builtForArr(project.builtFor).filter(f=>f!==project.builtBy).length>0&&(
             <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>→</span>
           )}
-          {project.builtFor!==project.builtBy&&(
-            <span style={{fontFamily:FF,fontSize:11,fontWeight:600,color:getDeptColor(project.builtFor),padding:"2px 8px",background:getDeptColor(project.builtFor)+"18",borderRadius:DS.radius.full}}>{project.builtFor}</span>
-          )}
+          {builtForArr(project.builtFor).filter(f=>f!==project.builtBy).map(f=>(
+            <span key={f} style={{fontFamily:FF,fontSize:11,fontWeight:600,color:getDeptColor(f),padding:"2px 8px",background:getDeptColor(f)+"18",borderRadius:DS.radius.full}}>{f}</span>
+          ))}
           {project.problemSpace&&<Badge label={project.problemSpace} tone="neutral"/>}
         </div>
       </div>
@@ -3196,7 +3202,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
           const fulfilled = wish.fulfilledBy
             ? projects.find(p=>p.id===wish.fulfilledBy)
             : null;
-          const deptColor = DEPT_COLORS[wish.builtFor] || C.mushroom500;
+          const deptColor = builtForColor(wish.builtFor);
           const votes = wish.upvoters.length;
           const demandBg     = fulfilled ? C.white : votes >= 10 ? C.mango100 : votes >= 5 ? C.mango50  : C.white;
           const demandBorder = fulfilled ? C.kangkong200 : votes >= 10 ? C.mango500 : votes >= 5 ? C.mango300 : C.mushroom200;
@@ -3235,7 +3241,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
                     background:deptColor+"18",color:deptColor,
                     border:"1px solid "+deptColor+"40",
                     fontFamily:FF,fontSize:10,fontWeight:700,letterSpacing:0.3,
-                  }}>{wish.builtFor}</span>
+                  }}>{builtForDisplay(wish.builtFor)}</span>
                 </div>
                 <div style={{textAlign:"center",minWidth:44,flexShrink:0}}>
                   <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:demandCount,lineHeight:1}}>{votes}</div>
@@ -3377,12 +3383,12 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
   const [form,setForm] = useState({
     title: existing?.title||"",
     why: existing?.why||"",
-    builtFor: existing?.builtFor||"Marketing",
+    builtFor: existing?.builtFor || [],
     wisherName: existing?.wisherName||authUser?.displayName||"",
     wisherEmail: existing?.wisherEmail||authUser?.email||"",
   });
   const set = (k,v) => setForm(p=>({...p,[k]:v}));
-  const canSubmit = form.title.trim() && form.wisherName.trim() && form.builtFor;
+  const canSubmit = form.title.trim() && form.wisherName.trim() && form.builtFor.length > 0;
 
   const submit = () => {
     if(!canSubmit) return;
@@ -3458,9 +3464,19 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
             <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,marginBottom:5,textTransform:"uppercase",letterSpacing:0.7}}>
               Build For <span style={{color:C.carrot500}}>*</span>
             </div>
-            <select value={form.builtFor} onChange={e=>set("builtFor",e.target.value)} style={inputStyle}>
-              {DEPTS.map(d=><option key={d}>{d}</option>)}
-            </select>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {DEPTS.map(d=>{
+                const active = form.builtFor.includes(d);
+                return (
+                  <button key={d} type="button" onClick={()=>set("builtFor",active?form.builtFor.filter(x=>x!==d):[...form.builtFor,d])} style={{
+                    padding:"4px 10px",borderRadius:DS.radius.full,border:"1.5px solid "+(active?C.kangkong500:C.mushroom300),
+                    background:active?C.kangkong50:C.white,color:active?C.kangkong700:C.mushroom600,
+                    fontFamily:FF,fontSize:12,fontWeight:active?700:400,cursor:"pointer",transition:"all 0.12s",
+                  }}>{d}</button>
+                );
+              })}
+            </div>
+            {form.builtFor.length===0&&<div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:4}}>Select at least one</div>}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             <div>
@@ -3774,7 +3790,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     name:               existing?.name        || prefill?.title    || "",
     description:        existing?.description || prefill?.why      || "",
     builtBy:            existing?.builtBy     || "Marketing",
-    builtFor:           existing?.builtFor    || prefill?.builtFor || "Marketing",
+    builtFor:           existing?.builtFor    || prefill?.builtFor || [],
     problem:"", built:"", betterNow:"",
     builder:            existing?.builder     || authUser?.displayName || "",
     builderEmail:       existing?.builderEmail || authUser?.email || "",
@@ -3814,7 +3830,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     setAiSummaryError(null);
     try {
       const summary = await generateProjectSummary({
-        name: form.name, builtBy: form.builtBy, builtFor: form.builtFor,
+        name: form.name, builtBy: form.builtBy, builtFor: builtForDisplay(form.builtFor),
         problem: form.problem, built: form.built, betterNow: form.betterNow,
       });
       setForm(p=>({...p, description:summary}));
@@ -3850,7 +3866,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     if (aiOverlapChecked && aiOverlaps?.length > 0) { doAdd(); return; }
     setSubmitting(true);
     setAiChecking(true);
-    const candidates = projects.filter(p => p.builtFor === form.builtFor);
+    const candidates = projects.filter(p => builtForArr(p.builtFor).some(f => builtForArr(form.builtFor).includes(f)));
     const overlaps = await detectDuplicates(
       {...form, problemSpace: "", capability: ""},
       candidates
@@ -3891,7 +3907,24 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <ModalField label="Your team" k="builtBy" type="select" opts={DEPTS} form={form} onChange={setField}/>
-          <ModalField label="For" k="builtFor" type="select" opts={DEPTS} form={form} onChange={setField}/>
+          <div style={{marginBottom:12}}>
+            <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4,textTransform:"uppercase",letterSpacing:0.5}}>
+              For <span style={{color:C.tomato500,fontWeight:400}}>*</span>
+            </label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {DEPTS.map(d=>{
+                const active = (form.builtFor||[]).includes(d);
+                return (
+                  <button key={d} type="button" onClick={()=>setField("builtFor",active?(form.builtFor||[]).filter(x=>x!==d):[...(form.builtFor||[]),d])} style={{
+                    padding:"3px 9px",borderRadius:DS.radius.full,border:"1.5px solid "+(active?C.kangkong500:C.mushroom300),
+                    background:active?C.kangkong50:C.white,color:active?C.kangkong700:C.mushroom600,
+                    fontFamily:FF,fontSize:11,fontWeight:active?700:400,cursor:"pointer",transition:"all 0.12s",
+                  }}>{d}</button>
+                );
+              })}
+            </div>
+            {!(form.builtFor||[]).length&&<div style={{fontFamily:FF,fontSize:11,color:C.tomato500,marginTop:3}}>Select at least one</div>}
+          </div>
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -4138,7 +4171,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
         {/* Submit */}
         {(()=>{
           const hasOverlaps = aiOverlapChecked && aiOverlaps?.length > 0;
-          const canSubmit = !!(form.name.trim() && form.toolUsed.length && !submitting);
+          const canSubmit = !!(form.name.trim() && form.toolUsed.length && (form.builtFor||[]).length && !submitting);
           const bg = !canSubmit ? C.mushroom300 : hasOverlaps ? C.mango500 : C.kangkong500;
           const shadow = canSubmit ? "0 4px 16px "+(hasOverlaps?C.mango500:C.kangkong500)+"40" : "none";
           return (
@@ -4174,7 +4207,7 @@ function ClaimModal({wish, authUser, onClose, onClaim}) {
         <div style={{background:C.kangkong50,padding:"22px 24px",borderBottom:"1px solid "+C.kangkong200}}>
           <div style={{fontFamily:FF,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.kangkong600,marginBottom:8}}>Committing to build</div>
           <div style={{fontFamily:FF,fontSize:17,fontWeight:700,color:C.mushroom900,lineHeight:1.3}}>"{wish.title}"</div>
-          <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:6}}>Wished by <strong style={{color:C.mushroom700}}>{wish.wisherName}</strong> · For {wish.builtFor}</div>
+          <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:6}}>Wished by <strong style={{color:C.mushroom700}}>{wish.wisherName}</strong> · For {builtForDisplay(wish.builtFor)}</div>
         </div>
         <div style={{padding:"20px 24px"}}>
           <div style={{background:C.mushroom50,borderRadius:DS.radius.lg,padding:"12px 14px",marginBottom:20,border:"1px solid "+C.mushroom200}}>
@@ -4307,7 +4340,7 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
                       <ProjectImage project={p} width={40} height={40} style={{borderRadius:DS.radius.md,overflow:"hidden",flexShrink:0}}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900}}>{p.name}</div>
-                        <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{p.builtBy} → {p.builtFor}{p.country&&<>&nbsp;<CountryBadge country={p.country}/></>}</div>
+                        <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{p.builtBy} → {builtForDisplay(p.builtFor)}{p.country&&<>&nbsp;<CountryBadge country={p.country}/></>}</div>
                       </div>
                       <StageBadge stage={p.stage}/>
                     </div>
@@ -4327,7 +4360,7 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
                   <div key={w.id} style={{padding:"10px 14px",marginBottom:8,borderRadius:DS.radius.lg,background:C.mushroom50,border:"1.5px dashed "+C.mushroom300}}>
                     <div style={{fontFamily:FF,fontSize:13,fontWeight:600,color:C.mushroom800,marginBottom:4}}>{w.title}</div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:4}}>
-                      <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>For {w.builtFor}</span>
+                      <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>For {builtForDisplay(w.builtFor)}</span>
                       {w.fulfilledBy
                         ? <span style={{fontFamily:FF,fontSize:11,color:C.kangkong600,fontWeight:600,display:"flex",alignItems:"center",gap:3}}><IcoCheck size={12} color={C.kangkong500}/> Built as {w.fulfilledBy}</span>
                         : w.claimedBy
@@ -4352,7 +4385,7 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
                     <div key={w.id} style={{padding:"12px 14px",marginBottom:10,borderRadius:DS.radius.lg,background:C.wintermelon100,border:"1.5px solid "+C.wintermelon400}}>
                       <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900,marginBottom:4}}>{w.title}</div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:4}}>
-                        <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>For {w.builtFor} · Claimed {w.claimedAt}</span>
+                        <span style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>For {builtForDisplay(w.builtFor)} · Claimed {w.claimedAt}</span>
                         <span style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.wintermelon500,padding:"2px 8px",background:C.white,borderRadius:DS.radius.full,border:"1px solid "+C.wintermelon400}}>🔨 In progress</span>
                       </div>
                     </div>
