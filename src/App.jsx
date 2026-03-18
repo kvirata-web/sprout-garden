@@ -1167,7 +1167,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   ];
 
   return (
-    <div style={{ padding:"28px 32px", background:C.mushroom100, minHeight:"100%", overflowY:"auto", fontFamily:FF }}>
+    <div style={{ padding:"28px 32px", background:"transparent", minHeight:"100%", overflowY:"auto", fontFamily:FF, position:"relative", zIndex:1 }}>
       <style>{OVERVIEW_KF}</style>
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
@@ -1862,7 +1862,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
   const ALL_STAGES_WITH_SEED = ["seed", ...STAGES];
 
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:C.mushroom50,position:"relative",zIndex:1}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:"transparent",position:"relative",zIndex:1}}>
 
       {/* ── Toolbar ── */}
       <div style={{padding:"10px 20px",background:C.white,borderBottom:"1px solid "+C.mushroom200,display:"flex",gap:10,alignItems:"center",zIndex:20,flexShrink:0}}>
@@ -2002,11 +2002,17 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
 
       {/* ── Directory View ── */}
       {viewMode === "directory" && (
-        <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
-          <div style={{fontFamily:FF,fontSize:12,color:C.mushroom400,marginBottom:12}}>
-            {filtered.length} project{filtered.length!==1?"s":""}{showSeeds&&filteredWishes.length>0?` · ${filteredWishes.length} seed${filteredWishes.length!==1?"s":""}`:""} found
+        <div style={{flex:1,overflowY:"auto",padding:"24px 28px"}}>
+          {/* Page identity header */}
+          <div style={{marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+              <IcoGarden size={18} color={C.kangkong600}/>
+              <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,lineHeight:1}}>Garden</div>
+            </div>
+            <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600}}>
+              {filtered.length} plant{filtered.length!==1?"s":""} across PH &amp; TH{showSeeds&&filteredWishes.length>0?` · ${filteredWishes.length} seed${filteredWishes.length!==1?"s":""}`:""}</div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
             {filtered.map(p => {
               const sc  = STAGE_COLORS[p.stage] || STAGE_COLORS.seedling;
               const cc  = COVER_COLORS[p.builtBy] || COVER_COLORS.default;
@@ -2936,7 +2942,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
   const DEPTS = ["All","Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","CA","CSM","Alliance","Prd - Aurora","Eng - Aurora","Prd - Prometheus","Eng - Prometheus","Data","DevOps","Legal","PeopleOps","Finance","ExCom"];
 
   return (
-    <div style={{flex:1,overflow:"auto",padding:"28px 32px",background:C.mushroom50}}>
+    <div style={{flex:1,overflow:"auto",padding:"28px 32px",background:"transparent",position:"relative",zIndex:1}}>
       {/* Header */}
       <div style={{marginBottom:28}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:16}}>
@@ -2962,26 +2968,27 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
         </div>
 
         {/* Stats bar */}
-        <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:20}}>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
           {[
-            {label:"Total wishes", value:wishes.length, color:C.mushroom700},
-            {label:"Fulfilled", value:wishes.filter(w=>w.fulfilledBy).length, color:C.kangkong600},
-            {label:"Departments", value:[...new Set(wishes.map(w=>w.builtFor))].length, color:C.blueberry500},
-            {label:"Total upvotes", value:wishes.reduce((s,w)=>s+w.upvoters.length,0), color:C.mango600},
+            {label:"Seeds waiting", sub:"No builder yet",       value:wishes.filter(w=>!w.fulfilledBy&&!w.claimedBy).length,              bg:C.mushroom50,      border:C.mushroom300,      countColor:C.mushroom700},
+            {label:"Now growing",   sub:"Builder claimed",      value:wishes.filter(w=>w.claimedBy&&!w.fulfilledBy).length,               bg:C.wintermelon100,  border:C.wintermelon400,   countColor:C.wintermelon500},
+            {label:"Fulfilled",     sub:"Shipped as a plant",   value:wishes.filter(w=>!!w.fulfilledBy).length,                           bg:C.kangkong50,      border:C.kangkong200,      countColor:C.kangkong700},
+            {label:"Total demand",  sub:'"I need this" votes',  value:wishes.reduce((s,w)=>s+w.upvoters.length,0),                        bg:C.mango50,         border:C.mango300,         countColor:C.mango600},
           ].map(s=>(
             <div key={s.label} style={{
-              padding:"8px 16px",background:C.white,borderRadius:DS.radius.lg,
-              border:"1px solid "+C.mushroom200,
+              padding:"12px 16px",background:s.bg,borderRadius:DS.radius.xl,
+              border:"1px solid "+s.border, minWidth:120,
             }}>
-              <div style={{fontFamily:FF,fontSize:20,fontWeight:800,color:s.color,lineHeight:1}}>{s.value}</div>
-              <div style={{fontFamily:FF,fontSize:10,color:C.mushroom500,marginTop:2,textTransform:"uppercase",letterSpacing:0.6}}>{s.label}</div>
+              <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:s.countColor,lineHeight:1}}>{s.value}</div>
+              <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:s.countColor,marginTop:3,marginBottom:1}}>{s.label}</div>
+              <div style={{fontFamily:FF,fontSize:10,color:C.mushroom500}}>{s.sub}</div>
             </div>
           ))}
         </div>
 
         {/* Filters */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:6,overflowX:"auto",flexWrap:"nowrap",paddingBottom:4}}>
             {DEPTS.map(d=>(
               <Chip key={d} label={d} active={deptFilter===d} onClick={()=>setDeptFilter(d)}
                 color={d!=="All"?DEPT_COLORS[d]:undefined}/>
