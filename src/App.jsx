@@ -263,6 +263,7 @@ const DEPT_ZONES = {
 
 const CAPABILITIES = ["All","LLM","Computer Vision","Automation","Prediction","NLP"];
 const TOOLS =["Claude Chat","Claude Code","Cowork","ChatGPT","Copilot","Cursor","Zapier / Make","Other"];
+const AGENTIC_FRAMEWORKS = ["AutoGPT","Aulendil","BlackMagic","BMAD","Claude Flow","CrewAI","GSD","Kiro","LangChain","Spec Kit","Superpowers","TaskMaster"];
 const DATA_SOURCES = [
   "HubSpot","NetSuite","Sprout HR","Sprout Payroll",
   "Google Drive/Docs","Product Analytics/Pendo/Userpilot","Databricks","Zendesk",
@@ -1018,6 +1019,19 @@ const getToolCounts = (projects) => {
     .slice(0, 6);
 };
 
+const getFrameworkCounts = (projects) => {
+  const counts = {};
+  for (const p of projects) {
+    for (const f of (p.agenticFramework || [])) {
+      counts[f] = (counts[f] || 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .map(([framework, count]) => ({ framework, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+};
+
 // ── Dashboard helpers ─────────────────────────────────────────────────────────
 function getDashboardSubline(projects, wishes) {
   const seedCount  = wishes.filter(w => !w.fulfilledBy).length;
@@ -1090,7 +1104,8 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
     .sort((a, b) => b.upvoters.length - a.upvoters.length)
     .slice(0, 3);
 
-  const toolCounts = getToolCounts(projects);
+  const toolCounts       = getToolCounts(projects);
+  const frameworkCounts  = getFrameworkCounts(projects);
 
   // My Corner data
   const _myEmail = authUser?.email?.toLowerCase()
@@ -1468,6 +1483,33 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                         <span style={{ fontSize:13, fontWeight:500, color:C.mushroom800, width:130, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tool}</span>
                         <div style={{ flex:1, height:8, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
                           <div style={{ height:"100%", width: barsReady ? `${(count/maxT)*100}%` : 0, background:C.kangkong500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
+                        </div>
+                        <span style={{ fontSize:11, color:C.mushroom500, width:24, textAlign:"right", flexShrink:0 }}>{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* ── Agentic Frameworks ────────────────────────────────────────── */}
+          <div style={{ animation:"fadeUp 0.4s ease 0.25s both" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+              Agentic Frameworks
+            </div>
+            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"14px 16px" }}>
+              {frameworkCounts.length === 0 ? (
+                <div style={{ fontSize:11, color:C.mushroom400 }}>No framework data yet.</div>
+              ) : (() => {
+                const maxF = frameworkCounts[0]?.count || 1;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {frameworkCounts.map(({ framework, count }) => (
+                      <div key={framework} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <span style={{ fontSize:13, fontWeight:500, color:C.mushroom800, width:130, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{framework}</span>
+                        <div style={{ flex:1, height:8, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
+                          <div style={{ height:"100%", width: barsReady ? `${(count/maxF)*100}%` : 0, background:C.ubas500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
                         </div>
                         <span style={{ fontSize:11, color:C.mushroom500, width:24, textAlign:"right", flexShrink:0 }}>{count}</span>
                       </div>
@@ -3743,7 +3785,8 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     dataSource:         existing?.dataSource  || "",
     dataSources:        existing?.dataSources || [],
     demoLink:           existing?.demoLink    || "",
-    toolUsed:           existing?.toolUsed    || [],
+    toolUsed:           existing?.toolUsed          || [],
+    agenticFramework:   existing?.agenticFramework  || [],
     collaboratorEmails: existing?.collaboratorEmails || [],
   });
 
@@ -3896,6 +3939,30 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
                   transition:"all 0.15s",
                 }}>
                   {active&&<span style={{marginRight:3}}>✓</span>}{t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Agentic framework */}
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
+            Agentic framework <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span>
+          </label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {AGENTIC_FRAMEWORKS.map(f => {
+              const active = (form.agenticFramework || []).includes(f);
+              return (
+                <button key={f} onClick={()=>setField("agenticFramework", active ? form.agenticFramework.filter(x=>x!==f) : [...(form.agenticFramework||[]),f])} style={{
+                  padding:"5px 12px",borderRadius:DS.radius.full,cursor:"pointer",
+                  fontFamily:FF,fontSize:11,fontWeight:600,
+                  border:"1.5px solid "+(active?C.ubas400:C.mushroom300),
+                  background:active?C.ubas100:C.white,
+                  color:active?C.ubas500:C.mushroom600,
+                  transition:"all 0.15s",
+                }}>
+                  {active&&<span style={{marginRight:3}}>✓</span>}{f}
                 </button>
               );
             })}
