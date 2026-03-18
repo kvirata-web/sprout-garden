@@ -40,6 +40,7 @@ export const toProject = (row) => ({
   reviewedAt:      row.reviewed_at     || null,
   submittedAt:     row.submitted_at    || null,
   lastUpdated:     daysAgo(row.last_updated),
+  lastUpdatedAt:   row.last_updated  || null,
 })
 
 export const fromProject = (proj) => ({
@@ -85,6 +86,7 @@ export const toWish = (row) => ({
   prototypeLink:   row.prototype_link  || null,
   prototypeNote:   row.prototype_note  || null,
   createdDaysAgo:  daysAgo(row.created_at),
+  createdAt:       row.created_at    || null,
 })
 
 export const fromWish = (wish) => ({

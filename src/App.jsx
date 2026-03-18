@@ -1169,6 +1169,27 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   };
 
   const ageLabel = (days) => days === 0 ? "today" : days === 1 ? "1d ago" : `${days}d ago`;
+  const timeAgo = (ts) => {
+    if (!ts) return "—";
+    const mins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (mins < 2)  return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return days === 1 ? "yesterday" : `${days}d ago`;
+  };
+  const FEED_ACTION = {
+    thriving:  "reached Thriving",
+    approved:  "approved → now in Sprout",
+    bloom:     "moved to Bloom",
+    sprout:    "moved to Sprout",
+    nursery:   "submitted to Nursery",
+    added:     "added to Garden",
+    seed:      "planted a new seed",
+    fulfilled: "seed fulfilled",
+    claimed:   "seed claimed",
+  };
 
   // ── Pipeline tile config ─────────────────────────────────────────────────────
   const TILE_CFG = [
@@ -1310,33 +1331,65 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
 
           {/* ── Momentum ──────────────────────────────────────────────────── */}
           <div style={{ animation:"fadeUp 0.4s ease 0.1s both" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:8 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
               <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500 }}>
                 Momentum
               </div>
-              <div style={{ fontSize:9, color:C.mushroom400 }}>Just now</div>
+              <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                <div style={{ width:6, height:6, borderRadius:"50%", background:C.kangkong500, animation:"ovPulse 2s infinite", flexShrink:0 }}/>
+                <span style={{ fontSize:9, fontWeight:600, color:C.kangkong600, letterSpacing:"0.04em" }}>live</span>
+              </div>
             </div>
             <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, overflow:"hidden" }}>
               {momentumFeed.length === 0 ? (
                 <div style={{ padding:"14px", fontSize:12, color:C.mushroom400 }}>Nothing to show yet — activity will appear here as projects move forward.</div>
               ) : momentumFeed.map((ev, i) => {
                 const evProject = ev.id.startsWith("p") ? projects.find(p => "p" + p.id === ev.id) : null;
+                const evWish    = !ev.id.startsWith("p") ? wishes.find(w => w.id === ev.id) : null;
+                const actor     = evProject?.builder || evProject?.builderEmail?.split("@")[0] || evWish?.wisherName || "?";
+                const initials  = actor.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase() || "?";
+                const cc        = COVER_COLORS[evProject?.builtBy] || COVER_COLORS.default;
+                const accentColor = FEED_DOTS[ev.type] || C.mushroom300;
+                const entityName  = evProject?.name || evWish?.title || ev.text;
+                const actionText  = FEED_ACTION[ev.type] || ev.text;
+                const rawTs       = evProject?.lastUpdatedAt || evWish?.createdAt;
+                const timeLabel   = rawTs ? timeAgo(rawTs) : ageLabel(ev.age);
+                const stageKey    = evProject?.stage;
+                const sc          = stageKey ? (STAGE_COLORS[stageKey] || STAGE_COLORS.seedling) : null;
                 return (
                   <div key={ev.id}
-                    onMouseEnter={rowHoverOn}
-                    onMouseLeave={rowHoverOff}
+                    onMouseEnter={e => e.currentTarget.style.background=C.mushroom50}
+                    onMouseLeave={e => e.currentTarget.style.background=C.white}
                     onClick={evProject ? () => onSelectProject(evProject) : undefined}
                     style={{
-                      display:"flex", alignItems:"center", gap:10, padding:"9px 12px",
+                      display:"flex", alignItems:"flex-start", gap:10, padding:"11px 14px",
+                      borderLeft: "3px solid " + accentColor,
                       borderBottom: i < momentumFeed.length - 1 ? `0.5px solid ${C.mushroom100}` : "none",
-                      transition:"all 0.15s",
+                      transition:"background 0.15s",
                       animation:`slideIn 0.25s ease ${i * 0.04}s both`,
                       cursor: evProject ? "pointer" : "default",
+                      background: C.white,
                     }}
                   >
-                    <div style={{ width:7, height:7, borderRadius:"50%", background:FEED_DOTS[ev.type] || C.mushroom300, flexShrink:0 }}/>
-                    <div style={{ flex:1, fontSize:12, color:C.mushroom800, lineHeight:1.4 }}>{ev.text}</div>
-                    <div style={{ fontSize:10, color:C.mushroom400, flexShrink:0 }}>{ageLabel(ev.age)}</div>
+                    {/* Avatar */}
+                    <div style={{ width:28, height:28, borderRadius:"50%", background:cc.bg, color:cc.text, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, flexShrink:0, marginTop:1 }}>
+                      {initials}
+                    </div>
+                    {/* Content */}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3, flexWrap:"wrap" }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:C.mushroom900, lineHeight:1.3 }}>{entityName}</span>
+                        {sc && (
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"1px 7px", borderRadius:DS.radius.full, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, fontSize:9, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
+                            <span style={{ width:5, height:5, borderRadius:"50%", background:sc.dot, flexShrink:0 }}/>
+                            {STAGE_LABELS[stageKey]}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.3 }}>{actionText}</div>
+                    </div>
+                    {/* Time */}
+                    <div style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginTop:3, whiteSpace:"nowrap" }}>{timeLabel}</div>
                   </div>
                 );
               })}
