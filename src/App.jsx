@@ -1069,9 +1069,13 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
     thriving: projects.filter(p => p.stage === "thriving").length,
   };
 
-  const spotlight = projects
-    .filter(p => p.stage === "thriving")
-    .sort((a, b) => a.lastUpdated - b.lastUpdated)[0] || null;
+  const spotlight = (() => {
+    const pool = projects.filter(p => p.stage === "bloom" || p.stage === "thriving");
+    if (!pool.length) return null;
+    // Daily shuffle — same pick all day, rotates each midnight
+    const seed = [...new Date().toDateString()].reduce((a, c) => a + c.charCodeAt(0), 0);
+    return pool[seed % pool.length];
+  })();
 
   // Curated momentum feed — exclude low-signal "claimed" events, cap at 7
   const MOMENTUM_PRIORITY = { thriving:0, approved:1, fulfilled:2, bloom:3, sprout:4, nursery:5, added:6, seed:7, claimed:99 };
