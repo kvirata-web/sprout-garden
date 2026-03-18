@@ -109,7 +109,7 @@ export const fromWish = (wish) => ({
 
 export const loadProjects = async () => {
   const { data, error } = await supabase
-    .from('projects').select('*').order('created_at', { ascending: true })
+    .from('projects').select('*').order('created_at', { ascending: false })
   if (error) { console.error('loadProjects:', error); return [] }
   return data.map(toProject)
 }

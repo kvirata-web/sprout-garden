@@ -1923,6 +1923,8 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
 
   const showSeeds = stageFilter === "All" || stageFilter === "seed";
 
+  const filteredAlpha = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+
   const moveStage = (project, dirOrStage) => onMoveStage(project, dirOrStage);
 
   const handleConfirmClaim = () => {
@@ -2093,7 +2095,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
               {filtered.length} plant{filtered.length!==1?"s":""} across PH &amp; TH{showSeeds&&filteredWishes.length>0?` · ${filteredWishes.length} seed${filteredWishes.length!==1?"s":""}`:""}</div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
-            {filtered.map(p => {
+            {filteredAlpha.map(p => {
               const sc  = STAGE_COLORS[p.stage] || STAGE_COLORS.seedling;
               const cc  = COVER_COLORS[p.builtBy] || COVER_COLORS.default;
               const dc  = DEPT_COLORS[p.builtFor];
@@ -2253,7 +2255,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
           })()}
 
           {STAGES.map((stage,si) => {
-            const col = filtered.filter(p=>p.stage===stage);
+            const col = filtered.filter(p=>p.stage===stage).sort((a,b)=>a.lastUpdated-b.lastUpdated||a.name.localeCompare(b.name));
             const sc = STAGE_COLORS[stage];
             return (
               <div key={stage}
@@ -4937,7 +4939,7 @@ export default function SproutAIGarden() {
     const { data, error } = await supabase.from("projects").insert(row).select().single();
     if (error) { console.error("addProject:", error); return; }
     const saved = toProject(data);
-    setProjects(prev => [...prev, saved]);
+    setProjects(prev => [saved, ...prev]);
   };
 
   const handleUpdateProject = async (updated) => {
@@ -5171,7 +5173,7 @@ export default function SproutAIGarden() {
       ? {...w, claimedBy:authUser.displayName, claimedByEmail:authUser.email, claimedAt, fulfilledBy:savedPlant.id}
       : w
     ));
-    setProjects(prev => [...prev, savedPlant]);
+    setProjects(prev => [savedPlant, ...prev]);
   };
 
   const handleUnclaimSeed = async (wishId) => {
