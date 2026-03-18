@@ -1312,22 +1312,27 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
             <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, overflow:"hidden" }}>
               {momentumFeed.length === 0 ? (
                 <div style={{ padding:"14px", fontSize:12, color:C.mushroom400 }}>Nothing to show yet — activity will appear here as projects move forward.</div>
-              ) : momentumFeed.map((ev, i) => (
-                <div key={ev.id}
-                  onMouseEnter={rowHoverOn}
-                  onMouseLeave={rowHoverOff}
-                  style={{
-                    display:"flex", alignItems:"center", gap:10, padding:"9px 12px",
-                    borderBottom: i < momentumFeed.length - 1 ? `0.5px solid ${C.mushroom100}` : "none",
-                    transition:"all 0.15s",
-                    animation:`slideIn 0.25s ease ${i * 0.04}s both`,
-                  }}
-                >
-                  <div style={{ width:7, height:7, borderRadius:"50%", background:FEED_DOTS[ev.type] || C.mushroom300, flexShrink:0 }}/>
-                  <div style={{ flex:1, fontSize:12, color:C.mushroom800, lineHeight:1.4 }}>{ev.text}</div>
-                  <div style={{ fontSize:10, color:C.mushroom400, flexShrink:0 }}>{ageLabel(ev.age)}</div>
-                </div>
-              ))}
+              ) : momentumFeed.map((ev, i) => {
+                const evProject = ev.id.startsWith("p") ? projects.find(p => "p" + p.id === ev.id) : null;
+                return (
+                  <div key={ev.id}
+                    onMouseEnter={rowHoverOn}
+                    onMouseLeave={rowHoverOff}
+                    onClick={evProject ? () => onSelectProject(evProject) : undefined}
+                    style={{
+                      display:"flex", alignItems:"center", gap:10, padding:"9px 12px",
+                      borderBottom: i < momentumFeed.length - 1 ? `0.5px solid ${C.mushroom100}` : "none",
+                      transition:"all 0.15s",
+                      animation:`slideIn 0.25s ease ${i * 0.04}s both`,
+                      cursor: evProject ? "pointer" : "default",
+                    }}
+                  >
+                    <div style={{ width:7, height:7, borderRadius:"50%", background:FEED_DOTS[ev.type] || C.mushroom300, flexShrink:0 }}/>
+                    <div style={{ flex:1, fontSize:12, color:C.mushroom800, lineHeight:1.4 }}>{ev.text}</div>
+                    <div style={{ fontSize:10, color:C.mushroom400, flexShrink:0 }}>{ageLabel(ev.age)}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1521,17 +1526,17 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
           {/* Section header */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.mushroom800 }}>My Corner</div>
-            {authUser?.isExcom && (
+            {authUser?.isApprover && (
               <span style={{ fontSize:9, fontWeight:600, background:C.mango100, color:C.mango600, border:`0.5px solid ${C.mango500}`, borderRadius:DS.radius.full, padding:"1px 7px" }}>Approver</span>
             )}
-            {authUser?.isGardener && !authUser?.isExcom && (
+            {authUser?.isAdmin && !authUser?.isApprover && (
               <span style={{ fontSize:9, fontWeight:600, background:C.kangkong100, color:C.kangkong700, border:`0.5px solid ${C.kangkong200}`, borderRadius:DS.radius.full, padding:"1px 7px" }}>Admin</span>
             )}
           </div>
 
           {/* ── Panel A: role-aware primary action ──────────────────────── */}
           <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
-            {authUser?.isExcom ? (
+            {authUser?.isApprover ? (
               <>
                 <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
                   Nursery Queue
@@ -1558,7 +1563,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                   );
                 })}
               </>
-            ) : authUser?.isGardener ? (
+            ) : authUser?.isAdmin ? (
               <>
                 <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
                   Garden Health
@@ -1626,7 +1631,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
 
           {/* ── Panel B: role-aware secondary ───────────────────────────── */}
           <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"12px 14px" }}>
-            {authUser?.isExcom ? (
+            {authUser?.isApprover ? (
               <>
                 <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.mushroom500, marginBottom:10 }}>
                   My Plants
@@ -4733,7 +4738,7 @@ export default function SproutAIGarden() {
                 await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
               }
               setAuthUser({
-                email: existing.email,
+                email: existing.email || email,
                 firstName: existing.first_name || firstName || null,
                 displayName: existing.display_name || displayName,
                 country: existing.country,
