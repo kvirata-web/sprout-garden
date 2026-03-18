@@ -4428,7 +4428,7 @@ function AboutModal({onClose}) {
             <IcoClose size={16} color={C.white}/>
           </button>
           <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.white,lineHeight:1.3,maxWidth:400,marginBottom:20}}>
-            "I ran out of Claude credits on day one. Switched accounts and kept going."
+            "A place to see what's growing at Sprout."
           </div>
           {/* Byline */}
           <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -4456,7 +4456,7 @@ function AboutModal({onClose}) {
           {/* Closing callout */}
           <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 18px",marginBottom:20}}>
             <div style={{fontFamily:FF,fontSize:13,color:C.kangkong700,lineHeight:1.7}}>
-              Anyway — drop your idea in the Wishlist. No pressure. Just see where it goes 🌱
+              Anyway — drop your idea in the Seeds page. No pressure. Just see where it goes 🌱
             </div>
           </div>
 
