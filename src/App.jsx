@@ -3769,7 +3769,7 @@ function CollaboratorInput({selected, onChange, selfEmail}) {
 // ── Add Project Modal (with AI Summarizer + Duplicate Detector) ───────────────
 const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existing=null, authUser=null}) => {
   const isEditing = !!existing;
-  const DEPTS = Object.keys(DEPT_ZONES);
+  const DEPTS = ["All Teams", ...Object.keys(DEPT_ZONES)];
   const [form, setForm] = useState({
     name:               existing?.name        || prefill?.title    || "",
     description:        existing?.description || prefill?.why      || "",
