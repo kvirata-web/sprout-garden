@@ -3383,7 +3383,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 // ── Add Wish Modal ────────────────────────────────────────────────────────────
 function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
   const isEditing = !!existing;
-  const DEPTS = ["All Teams","Marketing","Product Marketing","LDU","SolCon","Sales","RevOps","Implementation","MPS","CA","CSM","Alliance","Prd - Aurora","Eng - Aurora","Prd - Prometheus","Eng - Prometheus","Data","DevOps","Legal","PeopleOps","Finance","ExCom"];
+  const DEPTS = ["All Teams","Alliance","CA","CSM","Data","DevOps","Eng - Aurora","Eng - Prometheus","ExCom","Finance","Implementation","Legal","LDU","Marketing","MPS","PeopleOps","Prd - Aurora","Prd - Prometheus","Product Marketing","RevOps","Sales","SolCon"];
   const [form,setForm] = useState({
     title: existing?.title||"",
     why: existing?.why||"",
@@ -3889,7 +3889,7 @@ function CollaboratorInput({selected, onChange, selfEmail}) {
 // ── Add Project Modal (with AI Summarizer + Duplicate Detector) ───────────────
 const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existing=null, authUser=null}) => {
   const isEditing = !!existing;
-  const DEPTS = ["All Teams", ...Object.keys(DEPT_ZONES)];
+  const DEPTS = ["All Teams", ...Object.keys(DEPT_ZONES).sort()];
   const [form, setForm] = useState({
     name:               existing?.name        || prefill?.title    || "",
     description:        existing?.description || prefill?.why      || "",
