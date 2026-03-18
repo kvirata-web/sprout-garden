@@ -3541,6 +3541,32 @@ function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGar
           </div>
         </div>
 
+        {/* ── This week only announcement ── */}
+        <div style={{margin:"0 20px",marginTop:16,borderRadius:DS.radius.lg,overflow:"hidden",position:"relative",background:"#14532d",boxShadow:"0 2px 12px rgba(20,83,45,0.35)"}}>
+          {/* Shimmer — runs once on load */}
+          <div style={{
+            position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden",borderRadius:DS.radius.lg,zIndex:1,
+          }}>
+            <div style={{
+              position:"absolute",top:0,bottom:0,width:"40%",
+              background:"linear-gradient(105deg,transparent 20%,rgba(255,255,255,0.13) 50%,transparent 80%)",
+              animation:"shimmerOnce 1.1s ease 0.4s 1 forwards",
+              transform:"translateX(-100%)",
+            }}/>
+          </div>
+          <div style={{position:"relative",zIndex:2,padding:"14px 16px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+              <span style={{fontFamily:FF,fontSize:10,fontWeight:800,letterSpacing:0.8,color:"#fcd34d",textTransform:"uppercase"}}>📣 This week only</span>
+            </div>
+            <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:"#fff",lineHeight:1.45,marginBottom:6}}>
+              The Grove is open for existing projects.
+            </div>
+            <div style={{fontFamily:FF,fontSize:12,color:"rgba(255,255,255,0.78)",lineHeight:1.6}}>
+              Starting March 23, all new entries begin as a Seed or Seedling. Have something already growing? Add it now, through Sunday.
+            </div>
+          </div>
+        </div>
+
         {/* ── Body ── */}
         <div style={{padding:"20px 24px 24px"}}>
 
@@ -3551,14 +3577,6 @@ function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGar
               <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom800}}>{roleName}</span>
               <span style={{fontFamily:FF,fontSize:13,color:C.mushroom400}}>· {teamLabel}</span>
             </div>
-          </div>
-
-          {/* Beta callout */}
-          <div style={{background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:DS.radius.md,padding:"12px 14px",marginBottom:20,display:"flex",gap:10,alignItems:"flex-start"}}>
-            <span style={{fontSize:16,flexShrink:0,marginTop:1}}>🚧</span>
-            <span style={{fontFamily:FF,fontSize:12,color:"#92400e",lineHeight:1.6}}>
-              Grove is in early beta — things are still growing. If something feels off or you have ideas, tap <strong>?</strong> and go to <strong>Feedback</strong>. We read every note.
-            </span>
           </div>
 
           {/* What do you want to do? */}
@@ -3605,6 +3623,14 @@ function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGar
             onMouseOver={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom300;}}
             onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.borderColor=C.mushroom200;}}
           >Don't show again</button>
+
+          {/* Beta callout — fine print at bottom */}
+          <div style={{background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:DS.radius.md,padding:"10px 14px",marginTop:16,display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:14,flexShrink:0,marginTop:1}}>🚧</span>
+            <span style={{fontFamily:FF,fontSize:11,color:"#92400e",lineHeight:1.6}}>
+              Grove is in early beta — things are still growing. If something feels off or you have ideas, tap <strong>?</strong> and go to <strong>Feedback</strong>. We read every note.
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -5440,6 +5466,7 @@ export default function SproutAIGarden() {
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Roboto+Mono&display=swap');
           @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+          @keyframes shimmerOnce{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
           * { box-sizing:border-box; }
         `}</style>
       </>
@@ -5669,6 +5696,7 @@ export default function SproutAIGarden() {
         @keyframes cloudDrift{from{transform:translateX(-200px)}to{transform:translateX(110vw)}}
         @keyframes slideInRight{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes shimmerOnce{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
         @keyframes slideInPanel{from{transform:translateX(100%)}to{transform:translateX(0)}}
         @keyframes pulse{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.1);opacity:0.3}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
