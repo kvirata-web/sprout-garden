@@ -3011,13 +3011,17 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
         {filtered.map(wish=>{
           const hasUpvoted = wish.upvoters.includes(currentUser);
           const fulfilled = wish.fulfilledBy
-            ? projects.find(p=>p.name===wish.fulfilledBy)
+            ? projects.find(p=>p.id===wish.fulfilledBy)
             : null;
           const deptColor = DEPT_COLORS[wish.builtFor] || C.mushroom500;
+          const votes = wish.upvoters.length;
+          const demandBg     = fulfilled ? C.white : votes >= 10 ? C.mango100 : votes >= 5 ? C.mango50  : C.white;
+          const demandBorder = fulfilled ? C.kangkong200 : votes >= 10 ? C.mango500 : votes >= 5 ? C.mango300 : C.mushroom200;
+          const demandCount  = votes >= 10 ? C.mango600 : votes >= 5 ? C.mango500 : votes > 0 ? C.mushroom500 : C.mushroom300;
           return (
             <div key={wish.id} style={{
-              background:C.white,borderRadius:DS.radius.xl,
-              border:"1.5px solid "+(fulfilled?C.kangkong200:C.mushroom200),
+              background:demandBg,borderRadius:DS.radius.xl,
+              border:"1.5px solid "+demandBorder,
               padding:"20px 22px",
               boxShadow:DS.shadow.sm,
               position:"relative",overflow:"hidden",
@@ -3050,7 +3054,10 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
                     fontFamily:FF,fontSize:10,fontWeight:700,letterSpacing:0.3,
                   }}>{wish.builtFor}</span>
                 </div>
-                <WishSeed size={28} color={fulfilled?C.kangkong500:C.mushroom400}/>
+                <div style={{textAlign:"center",minWidth:44,flexShrink:0}}>
+                  <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:demandCount,lineHeight:1}}>{votes}</div>
+                  <div style={{fontFamily:FF,fontSize:9,fontWeight:600,color:C.mushroom400,marginTop:2,textTransform:"uppercase",letterSpacing:0.5,lineHeight:1.2}}>need<br/>this</div>
+                </div>
               </div>
 
               {/* Why */}
@@ -3078,9 +3085,6 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 
               {/* Upvoters */}
               <div style={{marginBottom:14}}>
-                <div style={{fontFamily:FF,fontSize:10,color:C.mushroom500,marginBottom:6,textTransform:"uppercase",letterSpacing:0.6,fontWeight:600}}>
-                  {wish.upvoters.length} {wish.upvoters.length===1?"person needs this":"people need this"}
-                </div>
                 {wish.upvoters.length>0&&(
                   <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>
                     {wish.upvoters.slice(0,6).map(name=>(
