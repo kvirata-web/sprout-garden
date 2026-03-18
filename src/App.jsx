@@ -4369,55 +4369,62 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
   );
 }
 
-// ── About Modal ────────────────────────────────────────────────────────────────
+// ── From the Builder Modal ─────────────────────────────────────────────────────
 
 function AboutModal({onClose}) {
+  const BUILT_WITH = ["Claude Code","Claude Chat","Cursor","Superpowers","GitHub"];
   return (
     <div style={{position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(14,56,14,0.7)",backdropFilter:"blur(6px)"}} onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:520,width:"92%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:DS.shadow.xl,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
-        <div style={{background:"linear-gradient(160deg,"+C.kangkong900+" 0%,"+C.kangkong700+" 50%,"+C.kangkong500+" 100%)",padding:"36px 32px 28px",position:"relative",overflow:"hidden"}}>
-          <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:DS.radius.md,padding:6,cursor:"pointer"}}>
+
+        {/* ── Dark green hero header ── */}
+        <div style={{background:"#14532d",padding:"32px 28px 24px",position:"relative",flexShrink:0}}>
+          <button onClick={onClose} style={{position:"absolute",top:14,right:14,background:"rgba(255,255,255,0.12)",border:"none",borderRadius:DS.radius.md,padding:6,cursor:"pointer"}}>
             <IcoClose size={16} color={C.white}/>
           </button>
-          <div style={{opacity:0.06,position:"absolute",right:-40,top:-20,pointerEvents:"none"}}>
-            <PlantTree size={280} wilting={false}/>
+          <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.white,lineHeight:1.3,maxWidth:400,marginBottom:20}}>
+            "I ran out of Claude credits on day one. Switched accounts and kept going."
           </div>
-          <div style={{position:"relative"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-              <div style={{width:44,height:44,borderRadius:12,background:C.kangkong800,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.3)"}}>
-                <IcoGarden size={22} color={C.kangkong200}/>
-              </div>
-              <div>
-                <div style={{fontFamily:FF,fontSize:20,fontWeight:800,color:C.white,lineHeight:1}}>Grove</div>
-                <div style={{fontFamily:FF,fontSize:11,color:C.kangkong300,fontWeight:600,letterSpacing:1.2,textTransform:"uppercase"}}>by Sprout</div>
-              </div>
+          {/* Byline */}
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:36,height:36,borderRadius:"50%",background:C.kangkong800,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:12,fontWeight:700,color:C.kangkong200,flexShrink:0}}>
+              Vk
             </div>
-            <div style={{fontFamily:FF,fontSize:26,fontWeight:800,color:C.white,lineHeight:1.2,marginBottom:12}}>
-              Every great idea starts as a seed.
-            </div>
-            <div style={{fontFamily:FF,fontSize:14,color:C.kangkong200,lineHeight:1.7}}>
-              Grove is where Sprout's AI transformation takes root — a living map of every AI project our teams are building, from the first spark of an idea to measurable, company-wide impact.
+            <div>
+              <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.white}}>Vk Virata</div>
+              <div style={{fontFamily:FF,fontSize:11,color:"rgba(255,255,255,0.6)"}}>Builder · Started March 8, 2026</div>
             </div>
           </div>
         </div>
-        <div style={{overflowY:"auto",flex:1,padding:"28px 32px"}}>
+
+        {/* ── Body ── */}
+        <div style={{overflowY:"auto",flex:1,padding:"24px 28px"}}>
           {[
-            {icon:"🌱", title:"You don't need to be an engineer to start", body:"Anyone at Sprout can plant a seed. If you have a problem that AI could solve, put it in the Wishlist. Your idea could become the next ForecastIQ or CodeReview AI — tools that save hours every week."},
-            {icon:"🌿", title:"Learning AI is a team sport", body:"AI isn't just for the Engineering team. Marketing, Finance, HR, Operations — every team has problems that AI can help solve. The best builders are people who deeply understand their own workflows."},
-            {icon:"🌸", title:"Small experiments become big wins", body:"Every Tree-stage project you see started as a Sprout. It didn't need to be perfect. It needed to start. The Garden exists so nothing stays hidden — your work gets visibility, feedback, and the chance to grow."},
-            {icon:"🌳", title:"Where to begin", body:"Browse the Garden to see what others are building. Vote on seeds in the Wishlist. Or hit 'Add to Garden' and plant your first idea today. Sprout's AI future is built by all of us — one project at a time."},
-          ].map((s,i)=>(
-            <div key={i} style={{display:"flex",gap:14,marginBottom:22}}>
-              <div style={{fontSize:24,flexShrink:0,marginTop:2}}>{s.icon}</div>
-              <div>
-                <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:C.mushroom900,marginBottom:5}}>{s.title}</div>
-                <div style={{fontFamily:FF,fontSize:13,color:C.mushroom600,lineHeight:1.7}}>{s.body}</div>
-              </div>
-            </div>
+            "Honestly, it started because I kept seeing people at Sprout building cool AI stuff — and nobody knew what anyone else was making. No place to see it all. So I thought, what if we had a garden? Like, a literal one. Seeds, sprouts, things growing. Patrick the farmer would get it.",
+            "March 8, 2026. I sat down and had something working in 5 hours. Very chaotic. Very fun. And honestly — still learning. I didn't plan to learn all these tools. I just kept hitting problems and had to figure things out. At one point my Claude Code stopped working and I had no idea what to do — turns out you can run Claude Code straight from GitHub. Didn't know that was a thing. Found out because I had to. Now I'm trying to make the whole thing more reliable — I started setting up Playwright for testing but it's still a work in progress. So if you see bugs, just log it 😅",
+            "I spent way too much time on the Garden board trying to make it look nice. It's still not perfect. Probably never will be. At some point you just ship it.",
+            "When I started, AI was writing everything and I was just typing prompts hoping something worked. Now I feel like I'm starting to give it more direction. Small progress, but it feels big to me. I even started letting Claude work while I sleep. Waking up to see what it did overnight — that never gets old.",
+          ].map((para, i) => (
+            <p key={i} style={{fontFamily:FF,fontSize:13,color:C.mushroom700,lineHeight:1.75,marginTop:0,marginBottom:16}}>{para}</p>
           ))}
-          <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 18px",textAlign:"center",marginTop:4}}>
-            <div style={{fontFamily:FF,fontSize:13,color:C.kangkong700,fontWeight:600}}>Ready to grow something?</div>
-            <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,marginTop:4}}>Click "Add to Garden" in the top bar — your idea is welcome here.</div>
+
+          {/* Closing callout */}
+          <div style={{background:C.kangkong50,border:"1px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"14px 18px",marginBottom:20}}>
+            <div style={{fontFamily:FF,fontSize:13,color:C.kangkong700,lineHeight:1.7}}>
+              Anyway — drop your idea in the Wishlist. No pressure. Just see where it goes 🌱
+            </div>
+          </div>
+
+          {/* Built with chips */}
+          <div style={{borderTop:"1px solid "+C.mushroom100,paddingTop:16}}>
+            <div style={{fontFamily:FF,fontSize:10,fontWeight:700,color:C.mushroom400,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Built with</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {BUILT_WITH.map(tool => (
+                <span key={tool} style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:DS.radius.full,background:C.mushroom100,color:C.mushroom600,border:"1px solid "+C.mushroom200}}>
+                  {tool}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -5500,7 +5507,7 @@ export default function SproutAIGarden() {
                 </div>
                 {[
                   {label:"My Profile", icon:"👤", action:()=>{setProfileModal("profile");setProfileOpen(false);}},
-                  {label:"About Grove", icon:"🌿", action:()=>{setProfileModal("about");setProfileOpen(false);}},
+                  {label:"From the Builder", icon:"🌿", action:()=>{setProfileModal("about");setProfileOpen(false);}},
                 ].map(item=>(
                   <button key={item.label} onClick={item.action} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom700,textAlign:"left",transition:"background 0.1s"}}
                     onMouseOver={e=>e.currentTarget.style.background=C.mushroom50}
