@@ -1018,6 +1018,18 @@ const getToolCounts = (projects) => {
     .slice(0, 6);
 };
 
+// ── Dashboard helpers ─────────────────────────────────────────────────────────
+function getDashboardSubline(projects, wishes) {
+  const seedCount  = wishes.filter(w => !w.fulfilledBy).length;
+  const plantCount = projects.length;
+  const total      = plantCount + seedCount;
+  if (total === 0) return "No projects yet — be the first to plant one.";
+  const plantStr = plantCount === 1 ? "1 plant" : `${plantCount} plants`;
+  const seedStr  = seedCount === 0 ? null : seedCount === 1 ? "1 seed" : `${seedCount} seeds`;
+  const breakdown = seedStr ? `${plantStr}, ${seedStr}` : plantStr;
+  return `${total} internal AI projects across PH & TH — ${breakdown}`;
+}
+
 // ── Overview Dashboard ────────────────────────────────────────────────────────
 const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavigateGarden, onNavigateWishlist }) => {
   // ── Animation state ─────────────────────────────────────────────────────────
@@ -1164,7 +1176,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
           {greeting}, {firstName}
         </div>
         <div style={{ fontSize:12, color:C.mushroom500 }}>
-          Live snapshot of Sprout&rsquo;s AI ecosystem &middot; {projects.length} active plants across PH &amp; TH
+          {getDashboardSubline(projects, wishes)}
         </div>
       </div>
 
@@ -2062,7 +2074,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
             ))}
 
             {filtered.length===0&&(!showSeeds||filteredWishes.length===0)&&(
-              <div style={{gridColumn:"1/-1",textAlign:"center",padding:"48px 24px",color:C.mushroom400,fontFamily:FF,fontSize:14}}>No projects match your filters</div>
+              <div style={{gridColumn:"1/-1",textAlign:"center",padding:"48px 24px",color:C.mushroom400,fontFamily:FF,fontSize:14}}>Nothing growing here — try different filters, or be the first to plant one.</div>
             )}
           </div>
         </div>
@@ -2195,7 +2207,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                 </div>
                 <div style={{overflowY:"auto",flex:1,padding:"10px"}}>
                   {col.length===0&&(
-                    <div style={{textAlign:"center",padding:"20px 8px",color:C.mushroom300,fontFamily:FF,fontSize:11,fontStyle:"italic"}}>Empty</div>
+                    <div style={{textAlign:"center",padding:"20px 8px",color:C.mushroom300,fontFamily:FF,fontSize:11,fontStyle:"italic"}}>No plants at this stage yet.</div>
                   )}
                   {col.map(p => {
                     const dfc = DEPT_COLORS[p.builtFor];
@@ -2522,6 +2534,16 @@ const GardenMapView = ({projects, filtered, wishes, selected, setSelected}) => {
               </div>
             );
           })
+        )}
+
+        {/* Garden Map empty state */}
+        {filtered.length===0&&(
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:10}}>
+            <div style={{fontFamily:FF,fontSize:13,color:theme.legend.color,textAlign:"center",lineHeight:1.7,opacity:0.75}}>
+              The garden is quiet.<br/>
+              Add a project or clear your filters to see plants grow here.
+            </div>
+          </div>
         )}
 
         {/* Legend */}
@@ -2924,6 +2946,7 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
               <div>
                 <div style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,lineHeight:1.1}}>Seeds</div>
                 <div style={{fontFamily:FF,fontSize:12,color:C.kangkong600,fontWeight:600,marginTop:1}}>Seeds waiting to grow — ideas without a builder yet</div>
+                <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500,marginTop:6,lineHeight:1.6}}>Got an AI idea but no time to build it? Plant a seed. Someone might just pick it up.</div>
               </div>
             </div>
           </div>
@@ -2980,6 +3003,11 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
 
       {/* Wish cards */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:16}}>
+        {filtered.length===0&&(
+          <div style={{gridColumn:"1/-1",textAlign:"center",padding:"48px 24px",color:C.mushroom400,fontFamily:FF,fontSize:14}}>
+            No seeds yet. Be the first — what AI tool does your team wish existed?
+          </div>
+        )}
         {filtered.map(wish=>{
           const hasUpvoted = wish.upvoters.includes(currentUser);
           const fulfilled = wish.fulfilledBy
@@ -5111,7 +5139,7 @@ export default function SproutAIGarden() {
               <div style={{width:36,height:36,background:C.kangkong600,borderRadius:DS.radius.md,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🌿</div>
               <span style={{fontFamily:FF,fontSize:22,fontWeight:800,color:C.mushroom900,letterSpacing:"-0.02em"}}>Grove</span>
             </div>
-            <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500,textAlign:"center"}}>Sprout's AI project tracker</div>
+            <div style={{fontFamily:FF,fontSize:13,color:C.mushroom500,textAlign:"center"}}>Where Sprout&rsquo;s internal AI projects grow.</div>
             {/* Error message */}
             {authError && (
               <div style={{width:"100%",background:C.tomato100,border:"1px solid #FFCDD2",borderRadius:DS.radius.sm,padding:"8px 12px",fontFamily:FF,fontSize:12,color:C.tomato600,textAlign:"center"}}>
@@ -5134,7 +5162,7 @@ export default function SproutAIGarden() {
               {authLoading ? "Signing in…" : "Sign in with Google"}
             </button>
             <div style={{fontFamily:FF,fontSize:11,color:C.mushroom400,textAlign:"center"}}>
-              @sprout.ph and @sproutsolutions.io accounts only
+              Sign in to see what your team is building — and add your own.
             </div>
           </div>
         </div>
