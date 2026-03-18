@@ -1093,7 +1093,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   const toolCounts = getToolCounts(projects);
 
   // My Corner data
-  const myProjects   = projects.filter(p => p.builderEmail === authUser?.email);
+  const myProjects   = projects.filter(p => p.builderEmail === authUser?.email || (authUser?.displayName && p.builder === authUser.displayName));
   const nurseryQueue = projects.filter(p => p.stage === "nursery")
     .sort((a, b) => {
       const aMs = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
@@ -3684,6 +3684,7 @@ const AddProjectModal = ({onClose, onAdd, onSave, projects, prefill=null, existi
     builtFor:           existing?.builtFor    || prefill?.builtFor || "Marketing",
     problem:"", built:"", betterNow:"",
     builder:            existing?.builder     || authUser?.displayName || "",
+    builderEmail:       existing?.builderEmail || authUser?.email || "",
     stage:              existing?.stage       || STAGES[0],
     dataSource:         existing?.dataSource  || "",
     dataSources:        existing?.dataSources || [],
