@@ -1095,10 +1095,12 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   // My Corner data
   const _myEmail = authUser?.email?.toLowerCase()
   const _myName  = authUser?.displayName?.toLowerCase()
-  const myProjects = projects.filter(p =>
-    (_myEmail && p.builderEmail?.toLowerCase() === _myEmail) ||
-    (_myName  && p.builder?.toLowerCase() === _myName)
-  );
+  const myProjects = projects
+    .filter(p =>
+      (_myEmail && p.builderEmail?.toLowerCase() === _myEmail) ||
+      (_myName  && p.builder?.toLowerCase() === _myName)
+    )
+    .sort((a, b) => (a.lastUpdated ?? 999) - (b.lastUpdated ?? 999)); // newest first (0 = today)
   const nurseryQueue = projects.filter(p => p.stage === "nursery")
     .sort((a, b) => {
       const aMs = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
@@ -1607,7 +1609,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                 </div>
                 {myProjects.length === 0 ? (
                   <div style={{ fontSize:11, color:C.mushroom400 }}>Nothing planted yet. Hit &ldquo;Add to Garden&rdquo; to log your first AI project.</div>
-                ) : myProjects.slice(0,4).map((p, i) => {
+                ) : myProjects.slice(0,5).map((p, i) => {
                   let ctaText = null;
                   if (p.stage === "seedling" && !p.prototypeLink) ctaText = "Add prototype →";
                   else if (p.stage === "seedling" && p.prototypeLink) ctaText = "Submit for review →";
@@ -1618,7 +1620,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                       onMouseEnter={e => { e.currentTarget.style.background=C.mushroom50; e.currentTarget.style.paddingLeft="8px"; const cta=e.currentTarget.querySelector(".mc-cta"); if(cta) cta.style.opacity=1; }}
                       onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.paddingLeft="0"; const cta=e.currentTarget.querySelector(".mc-cta"); if(cta) cta.style.opacity=0; }}
                       onClick={() => onSelectProject(p)}
-                      style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,4)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s", borderRadius:4 }}
+                      style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s", borderRadius:4 }}
                     >
                       <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
                         <span style={{ fontSize:9, fontWeight:600, background:STAGE_COLORS[p.stage]?.bg, color:STAGE_COLORS[p.stage]?.text, border:`0.5px solid ${STAGE_COLORS[p.stage]?.border}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0 }}>
@@ -1643,9 +1645,9 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                 </div>
                 {myProjects.length === 0 ? (
                   <div style={{ fontSize:11, color:C.mushroom400 }}>You haven&rsquo;t added any plants yet.</div>
-                ) : myProjects.slice(0,4).map((p, i) => (
+                ) : myProjects.slice(0,5).map((p, i) => (
                   <div key={p.id} onMouseEnter={rowHoverOn} onMouseLeave={rowHoverOff} onClick={() => onSelectProject(p)}
-                    style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,4)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
+                    style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0", borderBottom: i<Math.min(myProjects.length,5)-1?`0.5px solid ${C.mushroom100}`:"none", cursor:"pointer", transition:"all 0.15s" }}
                   >
                     <span style={{ fontSize:12, fontWeight:500, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{p.name}</span>
                     <span style={{ fontSize:10, color:C.mushroom400, flexShrink:0, marginLeft:8 }}>{p.lastUpdated}d ago</span>
