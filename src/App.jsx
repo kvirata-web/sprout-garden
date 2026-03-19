@@ -3562,11 +3562,6 @@ function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGar
 
         {/* ── Dark green header ── */}
         <div style={{background:"#14532d",padding:"28px 24px 22px",position:"relative",textAlign:"center"}}>
-          <button onClick={onExplore}
-            style={{position:"absolute",top:14,right:16,background:"none",border:"none",color:"rgba(255,255,255,0.55)",fontFamily:FF,fontSize:13,cursor:"pointer",padding:"4px 8px",borderRadius:DS.radius.sm,transition:"color 0.15s"}}
-            onMouseOver={e=>e.currentTarget.style.color="#fff"}
-            onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,0.55)"}
-          >Skip</button>
           <div style={{marginBottom:10,display:"flex",justifyContent:"center"}}>
             <GroveLogo theme="green" size={40} />
           </div>
@@ -5658,7 +5653,6 @@ export default function SproutAIGarden() {
                 </div>
                 {[
                   {label:"My Profile", icon:"👤", action:()=>{setProfileModal("profile");setProfileOpen(false);}},
-                  {label:"From the Builder", icon:"🌿", action:()=>{setProfileModal("about");setProfileOpen(false);}},
                 ].map(item=>(
                   <button key={item.label} onClick={item.action} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"none",border:"none",cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom700,textAlign:"left",transition:"background 0.1s"}}
                     onMouseOver={e=>e.currentTarget.style.background=C.mushroom50}
