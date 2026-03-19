@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
-import { loadProjects, loadWishes, loadProfiles, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo } from "./lib/db";
+import { loadProjects, loadWishes, loadProfiles, loadActivityLog, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo } from "./lib/db";
 import { extractKeywords, countOverlap, getRelatedProjects, getActivityFeed } from "./lib/utils.js";
 
 // ── Sprout Design System Tokens ───────────────────────────────────────────────
@@ -1051,7 +1051,7 @@ function getDashboardSubline(projects, wishes) {
 }
 
 // ── Overview Dashboard ────────────────────────────────────────────────────────
-const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavigateGarden, onNavigateWishlist }) => {
+const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectProject, onNavigateGarden, onNavigateWishlist }) => {
   // ── Animation state ─────────────────────────────────────────────────────────
   const [counts, setCounts]       = useState({ seeds:0, seedling:0, nursery:0, sprout:0, bloom:0, thriving:0 });
   const [barsReady, setBarsReady] = useState(false);
@@ -1077,12 +1077,26 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
     return pool[seed % pool.length];
   })();
 
-  // Curated momentum feed — exclude low-signal "claimed" events, cap at 7
-  const MOMENTUM_PRIORITY = { thriving:0, approved:1, fulfilled:2, bloom:3, sprout:4, nursery:5, added:6, seed:7, claimed:99 };
-  const momentumFeed = getActivityFeed(projects, wishes)
-    .filter(ev => ev.type !== "claimed")
-    .sort((a, b) => (MOMENTUM_PRIORITY[a.type] ?? 50) - (MOMENTUM_PRIORITY[b.type] ?? 50) || a.age - b.age)
-    .slice(0, 7);
+  // Activity log feed — already sorted newest-first from DB
+  const ACTIVITY_DOTS = {
+    project_added:          C.mushroom400,
+    stage_moved:            C.kangkong500,
+    submitted_for_approval: C.mango500,
+    approved:               C.blueberry400,
+    seed_planted:           C.ubas500,
+    seed_fulfilled:         C.wintermelon500,
+  };
+  const ACTIVITY_ACTION = {
+    project_added:          "added to Garden",
+    submitted_for_approval: "submitted for approval",
+    approved:               "approved → now in Sprout",
+    seed_planted:           "planted a new seed",
+    seed_fulfilled:         "seed fulfilled",
+  };
+  const getActivityActionText = (ev) => {
+    if (ev.event_type === "stage_moved") return `moved to ${STAGE_LABELS[ev.to_stage] || ev.to_stage}`;
+    return ACTIVITY_ACTION[ev.event_type] || ev.event_type;
+  };
 
   // Rankings — people view
   const topBuilders = (() => {
@@ -1181,19 +1195,6 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   const greeting  = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const firstName = authUser?.firstName?.trim() || authUser?.email?.split("@")[0] || "";
 
-  // ── Momentum dot colors ──────────────────────────────────────────────────────
-  const FEED_DOTS = {
-    thriving:  C.blueberry500,
-    approved:  C.blueberry400,
-    nursery:   C.mango500,
-    bloom:     C.kangkong500,
-    sprout:    C.wintermelon400,
-    added:     C.mushroom400,
-    seed:      C.ubas500,
-    fulfilled: C.wintermelon500,
-  };
-
-  const ageLabel = (days) => days === 0 ? "today" : days === 1 ? "1d ago" : `${days}d ago`;
   const timeAgo = (ts) => {
     if (!ts) return "—";
     const mins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
@@ -1203,17 +1204,6 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
     if (hrs < 24)  return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     return days === 1 ? "yesterday" : `${days}d ago`;
-  };
-  const FEED_ACTION = {
-    thriving:  "reached Thriving",
-    approved:  "approved → now in Sprout",
-    bloom:     "moved to Bloom",
-    sprout:    "moved to Sprout",
-    nursery:   "submitted to Nursery",
-    added:     "added to Garden",
-    seed:      "planted a new seed",
-    fulfilled: "seed fulfilled",
-    claimed:   "seed claimed",
   };
 
   // ── Pipeline tile config ─────────────────────────────────────────────────────
@@ -1360,33 +1350,28 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                 <span style={{ fontSize:9, fontWeight:600, color:C.kangkong600, letterSpacing:"0.04em" }}>live</span>
               </div>
             </div>
-            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, overflow:"hidden" }}>
-              {momentumFeed.length === 0 ? (
-                <div style={{ padding:"14px", fontSize:12, color:C.mushroom400 }}>Nothing to show yet — activity will appear here as projects move forward.</div>
-              ) : momentumFeed.map((ev, i) => {
-                const evProject = ev.id.startsWith("p") ? projects.find(p => "p" + p.id === ev.id) : null;
-                const evWish    = !ev.id.startsWith("p") ? wishes.find(w => w.id === ev.id) : null;
-                const actor     = evProject?.builder || evProject?.builderEmail?.split("@")[0] || evWish?.wisherName || "?";
-                const initials  = actor.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase() || "?";
-                const cc        = COVER_COLORS[evProject?.builtBy] || COVER_COLORS.default;
-                const accentColor = FEED_DOTS[ev.type] || C.mushroom300;
-                const entityName  = evProject?.name || evWish?.title || ev.text;
-                const actionText  = FEED_ACTION[ev.type] || ev.text;
-                const rawTs       = evProject?.lastUpdatedAt || evWish?.createdAt;
-                const timeLabel   = rawTs ? timeAgo(rawTs) : ageLabel(ev.age);
-                const stageKey    = evProject?.stage;
+            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, maxHeight:340, overflowY:"auto" }}>
+              {activityLog.length === 0 ? (
+                <div style={{ padding:"14px", fontSize:12, color:C.mushroom400 }}>No activity yet — this feed fills up as projects move forward.</div>
+              ) : activityLog.map((ev, i) => {
+                const evProject   = ev.project_id ? projects.find(p => String(p.id) === String(ev.project_id)) : null;
+                const actor       = ev.actor_name || ev.actor_email?.split("@")[0] || "?";
+                const initials    = actor.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase() || "?";
+                const cc          = COVER_COLORS[evProject?.builtBy] || COVER_COLORS.default;
+                const accentColor = ACTIVITY_DOTS[ev.event_type] || C.mushroom300;
+                const stageKey    = ev.to_stage;
                 const sc          = stageKey ? (STAGE_COLORS[stageKey] || STAGE_COLORS.seedling) : null;
                 return (
-                  <div key={ev.id}
+                  <div key={ev.id ?? i}
                     onMouseEnter={e => e.currentTarget.style.background=C.mushroom50}
                     onMouseLeave={e => e.currentTarget.style.background=C.white}
                     onClick={evProject ? () => onSelectProject(evProject) : undefined}
                     style={{
                       display:"flex", alignItems:"flex-start", gap:10, padding:"11px 14px",
                       borderLeft: "3px solid " + accentColor,
-                      borderBottom: i < momentumFeed.length - 1 ? `0.5px solid ${C.mushroom100}` : "none",
+                      borderBottom: i < activityLog.length - 1 ? `0.5px solid ${C.mushroom100}` : "none",
                       transition:"background 0.15s",
-                      animation:`slideIn 0.25s ease ${i * 0.04}s both`,
+                      animation:`slideIn 0.25s ease ${Math.min(i,10) * 0.04}s both`,
                       cursor: evProject ? "pointer" : "default",
                       background: C.white,
                     }}
@@ -1398,7 +1383,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                     {/* Content */}
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3, flexWrap:"wrap" }}>
-                        <span style={{ fontSize:14, fontWeight:700, color:C.mushroom900, lineHeight:1.3 }}>{entityName}</span>
+                        <span style={{ fontSize:13, fontWeight:700, color:C.mushroom900, lineHeight:1.3 }}>{ev.entity_name}</span>
                         {sc && (
                           <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"1px 7px", borderRadius:DS.radius.full, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, fontSize:10, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
                             <span style={{ width:5, height:5, borderRadius:"50%", background:sc.dot, flexShrink:0 }}/>
@@ -1406,10 +1391,13 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize:12, color:C.mushroom500, lineHeight:1.3 }}>{actionText}</div>
+                      <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.3 }}>
+                        <span style={{ fontWeight:600, color:C.mushroom700 }}>{actor}</span>
+                        {" · "}{getActivityActionText(ev)}
+                      </div>
                     </div>
                     {/* Time */}
-                    <div style={{ fontSize:12, color:C.mushroom400, flexShrink:0, marginTop:3, whiteSpace:"nowrap" }}>{timeLabel}</div>
+                    <div style={{ fontSize:11, color:C.mushroom400, flexShrink:0, marginTop:3, whiteSpace:"nowrap" }}>{timeAgo(ev.created_at)}</div>
                   </div>
                 );
               })}
@@ -4907,6 +4895,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
 export default function SproutAIGarden() {
   const [projects, setProjects] = useState([]);
   const [wishes, setWishes]     = useState([]);
+  const [activityLog, setActivityLog] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [welcomeSeen, setWelcomeSeen] = useState(false);
@@ -5059,7 +5048,7 @@ export default function SproutAIGarden() {
   useEffect(() => {
     if (!authUser) return;
     setDataLoading(true);
-    Promise.all([loadProjects(), loadWishes(), loadProfiles()]).then(([projs, wishs, profs]) => {
+    Promise.all([loadProjects(), loadWishes(), loadProfiles(), loadActivityLog()]).then(([projs, wishs, profs, activity]) => {
       const nameMap = Object.fromEntries(profs.map(p => [p.email, p.display_name]));
       const fmtName = (raw) => {
         if (!raw) return raw;
@@ -5076,6 +5065,7 @@ export default function SproutAIGarden() {
         wisherName: fmtName(nameMap[w.wisherEmail] || w.wisherName) || w.wisherName,
         claimedBy: w.claimedByEmail ? (fmtName(nameMap[w.claimedByEmail]) || w.claimedBy) : w.claimedBy,
       })));
+      setActivityLog(activity);
       setDataLoading(false);
     });
   }, [authUser?.email]);
@@ -5227,6 +5217,7 @@ export default function SproutAIGarden() {
     if (error) { console.error("addProject:", error); return; }
     const saved = toProject(data);
     setProjects(prev => [saved, ...prev]);
+    logActivity("project_added", saved.name, { project_id: String(saved.id), to_stage: saved.stage });
   };
 
   const handleUpdateProject = async (updated) => {
@@ -5280,6 +5271,7 @@ export default function SproutAIGarden() {
     ));
     supabase.from("projects").update({ stage: next, milestones: newMilestones, last_updated: new Date().toISOString() }).eq("id", project.id)
       .then(({ error }) => { if (error) console.error("handleMoveStage:", error); });
+    logActivity("stage_moved", project.name, { project_id: String(project.id), from_stage: project.stage, to_stage: next });
   };
 
   // ── Nursery flow mutations ─────────────────────────────────────────────────
@@ -5302,6 +5294,28 @@ export default function SproutAIGarden() {
       .then(({ error }) => { if (error) console.error("markNotificationsRead:", error); });
   };
 
+  const logActivity = (type, entityName, extras = {}) => {
+    const entry = {
+      event_type:  type,
+      actor_email: authUser?.email || null,
+      actor_name:  authUser?.displayName || authUser?.email?.split("@")[0] || null,
+      entity_name: entityName,
+      created_at:  new Date().toISOString(),
+      ...extras,
+    };
+    setActivityLog(prev => [entry, ...prev]);
+    supabase.from("activity_log").insert({
+      event_type:  entry.event_type,
+      actor_email: entry.actor_email,
+      actor_name:  entry.actor_name,
+      entity_name: entry.entity_name,
+      project_id:  entry.project_id  || null,
+      wish_id:     entry.wish_id     || null,
+      from_stage:  entry.from_stage  || null,
+      to_stage:    entry.to_stage    || null,
+    }).then(({ error }) => { if (error) console.error("logActivity:", error); });
+  };
+
   const submitToNursery = async (projectId, prototypeLink, deckLink) => {
     const project = projects.find(p => p.id === projectId);
     if (!authUser || !project || (authUser.email !== project.builderEmail && !authUser.isAdmin)) return;
@@ -5319,6 +5333,7 @@ export default function SproutAIGarden() {
       ? {...p, stage:"nursery", reviewStatus:"pending", prototypeLink, deckLink, submittedAt:now, lastUpdated:0}
       : p
     ));
+    logActivity("submitted_for_approval", project.name, { project_id: String(projectId), from_stage: project.stage, to_stage: "nursery" });
     setSelected(null);
     // Fire notification (non-blocking)
     sendNotification("nursery-submitted", {
@@ -5358,6 +5373,7 @@ export default function SproutAIGarden() {
       ? {...p, stage:"sprout", reviewStatus:"approved", reviewedBy:authUser.email, reviewedAt:now, milestones:newMilestones, lastUpdated:0}
       : p
     ));
+    logActivity("approved", project.name, { project_id: String(projectId), from_stage: "nursery", to_stage: "sprout" });
     setSelected(null);
     sendNotification("plant-approved", {
       project_id: projectId,
@@ -5400,7 +5416,9 @@ export default function SproutAIGarden() {
     const row = fromWish(wish);
     const { data, error } = await supabase.from("wishes").insert(row).select().single();
     if (error) { console.error("handleAddWish:", error); return; }
-    setWishes(prev => [toWish(data), ...prev]);
+    const saved = toWish(data);
+    setWishes(prev => [saved, ...prev]);
+    logActivity("seed_planted", saved.title, { wish_id: saved.id });
   };
 
   const handleUpvote = (wishId) => {
@@ -5461,6 +5479,7 @@ export default function SproutAIGarden() {
       : w
     ));
     setProjects(prev => [savedPlant, ...prev]);
+    logActivity("seed_fulfilled", wish.title, { wish_id: wishId, project_id: String(savedPlant.id), to_stage: "seedling" });
   };
 
   const handleUnclaimSeed = async (wishId) => {
@@ -5701,7 +5720,7 @@ export default function SproutAIGarden() {
       {/* ── Main content + Detail Panel ── */}
       <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-          {view==="dashboard" && <OverviewDashboard projects={projects} wishes={wishes} authUser={authUser} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
+          {view==="dashboard" && <OverviewDashboard projects={projects} wishes={wishes} activityLog={activityLog} authUser={authUser} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
           {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish}/>}
           {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
         </div>

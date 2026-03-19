@@ -132,6 +132,16 @@ export const loadProfiles = async () => {
   return data
 }
 
+export const loadActivityLog = async () => {
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) { console.error('loadActivityLog:', error); return [] }
+  return data
+}
+
 export const loadNotifications = async () => {
   const { data, error } = await supabase
     .from('notifications')
