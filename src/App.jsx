@@ -1237,7 +1237,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom:20, animation:"fadeUp 0.4s ease both" }}>
         <div style={{ fontSize:20, fontWeight:700, color:C.mushroom900, letterSpacing:"-0.01em", marginBottom:3 }}>
-          {greeting}, {firstName}
+          {greeting}, {firstName}!
         </div>
         <div style={{ fontSize:14, color:C.mushroom500 }}>
           {getDashboardSubline(projects, wishes)}
@@ -1835,6 +1835,7 @@ function UserAvatar({user, size=28, style={}}) {
     return (
       <img
         src={photoURL} alt={user?.displayName || "User"}
+        referrerPolicy="no-referrer"
         onError={()=>setImgError(true)}
         style={{
           width:size, height:size, borderRadius:"50%",
@@ -4979,12 +4980,12 @@ export default function SproutAIGarden() {
         supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
           .then(async ({ data: existing }) => {
             if (existing) {
-              if (!existing.first_name && firstName) {
+              if (firstName && existing.first_name !== firstName) {
                 await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
               }
               setAuthUser({
                 email: existing.email || email,
-                firstName: existing.first_name || firstName || null,
+                firstName: firstName || existing.first_name || null,
                 displayName: existing.display_name || displayName,
                 photoURL,
                 country: existing.country,
