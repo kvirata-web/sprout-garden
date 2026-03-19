@@ -2358,18 +2358,22 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                   boxShadow:dragOverStage===stage?DS.shadow.md:DS.shadow.sm,
                   transition:"all 0.12s",
                 }}>
-                <div style={{padding:"12px 16px",borderBottom:"1px solid "+C.mushroom100,background:sc.bg,flexShrink:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                    <StageIcon stage={stage} size={15}/>
-                    <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:sc.text}}>{STAGE_LABELS[stage]}</span>
-                    <span style={{marginLeft:"auto",fontFamily:FF,fontSize:11,fontWeight:700,background:sc.border,color:sc.text,borderRadius:DS.radius.full,padding:"1px 8px"}}>{col.length}</span>
-                    {stage==="seedling"&&col.filter(p=>p.prototypeLink&&p.deckLink).length>0&&(
-                      <span style={{fontFamily:FF,fontSize:10,color:C.mango600,marginLeft:4,fontWeight:600}}>
-                        ({col.filter(p=>p.prototypeLink&&p.deckLink).length} ready)
-                      </span>
-                    )}
+                <div style={{padding:"14px 16px 12px",borderBottom:"1px solid "+sc.border,background:sc.bg,flexShrink:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:32,height:32,borderRadius:DS.radius.lg,background:sc.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <StageIcon stage={stage} size={18}/>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:sc.text}}>{STAGE_LABELS[stage]}</span>
+                        {stage==="seedling"&&col.filter(p=>p.prototypeLink&&p.deckLink).length>0&&(
+                          <span style={{fontFamily:FF,fontSize:10,color:C.mango600,fontWeight:600}}>({col.filter(p=>p.prototypeLink&&p.deckLink).length} ready)</span>
+                        )}
+                        <span style={{marginLeft:"auto",fontFamily:FF,fontSize:11,fontWeight:700,background:sc.border,color:sc.text,borderRadius:DS.radius.full,padding:"1px 8px"}}>{col.length}</span>
+                      </div>
+                      <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.75,marginTop:2}}>{STAGE_FLORA[stage]}</div>
+                    </div>
                   </div>
-                  <div style={{fontFamily:FF,fontSize:10,color:sc.text,opacity:0.7}}>{STAGE_FLORA[stage]}</div>
                 </div>
                 <div style={{overflowY:"auto",flex:1,padding:"10px"}}>
                   {col.length===0&&(
@@ -2388,21 +2392,30 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                         onClick={()=>setSelected(p)}
                         style={{
                           background: dragProjectId===p.id ? sc.bg : C.white,
-                          borderRadius:DS.radius.xl,padding:16,marginBottom:8,
+                          borderRadius:DS.radius.xl,padding:"14px 14px 12px 18px",marginBottom:8,
                           border:"1px solid "+(readyForNursery?C.mango300:C.mushroom200),
                           cursor:"grab",transition:"all 0.15s",
                           opacity:dragProjectId===p.id?0.5:1,
+                          position:"relative",overflow:"hidden",
                         }}
                         onMouseOver={e=>{if(dragProjectId!==p.id){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.lg;e.currentTarget.style.borderColor=C.mushroom300;}const dh=e.currentTarget.querySelector('[data-drag]');if(dh)dh.style.opacity="1";}}
                         onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=readyForNursery?C.mango300:C.mushroom200;const dh=e.currentTarget.querySelector('[data-drag]');if(dh)dh.style.opacity="0";}}
                       >
+                        {/* Left accent bar */}
+                        <div style={{position:"absolute",left:0,top:0,bottom:0,width:4,background:dfc||C.mushroom300,borderRadius:"12px 0 0 12px"}}/>
                         {/* Name + stale indicator */}
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:p.description?4:8}}>
                           <div style={{fontFamily:FF,fontSize:15,fontWeight:700,color:C.mushroom900,flex:1,lineHeight:1.3,letterSpacing:"-0.01em"}}>
                             {p.name}
                           </div>
                           {wilting&&<IcoStale size={13} color={C.mango500}/>}
                         </div>
+                        {/* Description teaser */}
+                        {p.description&&(
+                          <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,lineHeight:1.5,marginBottom:8,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
+                            {p.description}
+                          </div>
+                        )}
 
                         {/* Seedling submission status — "needed" chips only visible to builder/admin */}
                         {stage==="seedling"&&(
@@ -2420,9 +2433,10 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                           </div>
                           <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
                         </div>
-                        {/* Tags row — own line, wraps freely */}
+                        {/* Tags row — "for" label + chips */}
                         {builtForArr(p.builtFor).length>0&&(
-                          <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
+                          <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",marginBottom:6}}>
+                            <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400,flexShrink:0}}>for</span>
                             {builtForArr(p.builtFor).slice(0,3).map(t=>{const tc=DEPT_COLORS[t]||C.mushroom400;return(<span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:tc+"18",color:tc,whiteSpace:"nowrap"}}>{t}</span>);})}
                             {builtForArr(p.builtFor).length>3&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 6px",borderRadius:DS.radius.full,background:C.mushroom100,color:C.mushroom500,whiteSpace:"nowrap"}}>+{builtForArr(p.builtFor).length-3}</span>}
                           </div>
