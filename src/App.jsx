@@ -4968,9 +4968,11 @@ export default function SproutAIGarden() {
         }
 
         const meta        = session.user.user_metadata || {};
+        console.log("[Grove] user_metadata:", meta);
         const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
         const displayName = email.split("@")[0];
         const photoURL    = meta.avatar_url || meta.picture || null;
+        console.log("[Grove] photoURL:", photoURL);
 
         // Immediately unblock the UI — no DB await before this line
         setAuthUser({ email, firstName, displayName, photoURL, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false, profileLoaded: false });
