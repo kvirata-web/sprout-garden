@@ -119,9 +119,7 @@ const STAGE_DESC = {
   bloom:    "Real people, real feedback",
   thriving: "Live, loved, and making an impact",
 };
-const STAGE_FLORA = {
-  seedling:"Seedling", nursery:"Nursery", sprout:"Sprout", bloom:"Bloom", thriving:"Thriving",
-};
+const STAGE_FLORA = STAGE_DESC;
 const STAGE_ORDER = {seedling:0,nursery:1,sprout:2,bloom:3,thriving:4};
 
 const STAGE_COLORS = {
@@ -1359,8 +1357,6 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                 const initials    = actor.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase() || "?";
                 const cc          = COVER_COLORS[evProject?.builtBy] || COVER_COLORS.default;
                 const accentColor = ACTIVITY_DOTS[ev.event_type] || C.mushroom300;
-                const stageKey    = ev.to_stage;
-                const sc          = stageKey ? (STAGE_COLORS[stageKey] || STAGE_COLORS.seedling) : null;
                 return (
                   <div key={ev.id ?? i}
                     onMouseEnter={e => e.currentTarget.style.background=C.mushroom50}
@@ -1382,14 +1378,8 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                     </div>
                     {/* Content */}
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3, flexWrap:"wrap" }}>
+                      <div style={{ marginBottom:3 }}>
                         <span style={{ fontSize:13, fontWeight:700, color:C.mushroom900, lineHeight:1.3 }}>{ev.entity_name}</span>
-                        {sc && (
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"1px 7px", borderRadius:DS.radius.full, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, fontSize:10, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
-                            <span style={{ width:5, height:5, borderRadius:"50%", background:sc.dot, flexShrink:0 }}/>
-                            {STAGE_LABELS[stageKey]}
-                          </span>
-                        )}
                       </div>
                       <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.3 }}>
                         <span style={{ fontWeight:600, color:C.mushroom700 }}>{actor}</span>
