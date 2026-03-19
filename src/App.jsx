@@ -1179,7 +1179,7 @@ const OverviewDashboard = ({ projects, wishes, authUser, onSelectProject, onNavi
   // ── Greeting ────────────────────────────────────────────────────────────────
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const firstName = authUser?.displayName?.trim() || authUser?.email?.split("@")[0] || "";
+  const firstName = authUser?.firstName?.trim() || authUser?.email?.split("@")[0] || "";
 
   // ── Momentum dot colors ──────────────────────────────────────────────────────
   const FEED_DOTS = {
@@ -4969,9 +4969,10 @@ export default function SproutAIGarden() {
         const meta        = session.user.user_metadata || {};
         const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
         const displayName = email.split("@")[0];
+        const photoURL    = meta.avatar_url || meta.picture || null;
 
         // Immediately unblock the UI — no DB await before this line
-        setAuthUser({ email, firstName, displayName, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false, profileLoaded: false });
+        setAuthUser({ email, firstName, displayName, photoURL, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false, profileLoaded: false });
         setAuthLoading(false);
 
         // Enrich with real DB profile in the background (non-blocking)
@@ -4985,6 +4986,7 @@ export default function SproutAIGarden() {
                 email: existing.email || email,
                 firstName: existing.first_name || firstName || null,
                 displayName: existing.display_name || displayName,
+                photoURL,
                 country: existing.country,
                 isAdmin: existing.is_admin || false,
                 isApprover: existing.is_approver || false,
