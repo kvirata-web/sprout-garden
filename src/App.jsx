@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
-import { loadProjects, loadWishes, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo } from "./lib/db";
+import { loadProjects, loadWishes, loadProfiles, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo } from "./lib/db";
 import { extractKeywords, countOverlap, getRelatedProjects, getActivityFeed } from "./lib/utils.js";
 
 // ── Sprout Design System Tokens ───────────────────────────────────────────────
@@ -4970,7 +4970,8 @@ export default function SproutAIGarden() {
         const meta        = session.user.user_metadata || {};
         const identityData = session.user.identities?.find(i => i.provider === "google")?.identity_data || {};
         const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
-        const displayName = email.split("@")[0];
+        const googleFullName = meta.full_name || meta.name || null;
+        const displayName = googleFullName || email.split("@")[0];
         const photoURL    = meta.avatar_url || meta.picture || identityData.avatar_url || identityData.picture || null;
 
         // Immediately unblock the UI — no DB await before this line
@@ -4981,13 +4982,16 @@ export default function SproutAIGarden() {
         supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
           .then(async ({ data: existing }) => {
             if (existing) {
-              if (firstName && existing.first_name !== firstName) {
-                await supabase.from("profiles").update({ first_name: firstName }).eq("id", session.user.id);
+              const profileUpdates = {};
+              if (firstName && existing.first_name !== firstName) profileUpdates.first_name = firstName;
+              if (googleFullName && existing.display_name !== googleFullName) profileUpdates.display_name = googleFullName;
+              if (Object.keys(profileUpdates).length) {
+                await supabase.from("profiles").update(profileUpdates).eq("id", session.user.id);
               }
               setAuthUser({
                 email: existing.email || email,
                 firstName: firstName || existing.first_name || null,
-                displayName: existing.display_name || displayName,
+                displayName: googleFullName || existing.display_name || displayName,
                 photoURL,
                 country: existing.country,
                 isAdmin: existing.is_admin || false,
@@ -4999,7 +5003,7 @@ export default function SproutAIGarden() {
               await supabase.from("profiles").insert({
                 id: session.user.id,
                 email,
-                display_name: displayName,
+                display_name: googleFullName || displayName,
                 first_name: firstName,
                 country,
                 is_admin: false,
@@ -5054,9 +5058,23 @@ export default function SproutAIGarden() {
   useEffect(() => {
     if (!authUser) return;
     setDataLoading(true);
-    Promise.all([loadProjects(), loadWishes()]).then(([projs, wishs]) => {
-      setProjects(projs);
-      setWishes(wishs);
+    Promise.all([loadProjects(), loadWishes(), loadProfiles()]).then(([projs, wishs, profs]) => {
+      const nameMap = Object.fromEntries(profs.map(p => [p.email, p.display_name]));
+      const fmtName = (raw) => {
+        if (!raw) return raw;
+        const parts = raw.trim().split(/\s+/).filter(Boolean);
+        const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+        return parts.length === 1 ? cap(parts[0]) : cap(parts[0]) + " " + cap(parts[parts.length - 1]);
+      };
+      setProjects(projs.map(p => ({
+        ...p,
+        builder: fmtName(nameMap[p.builderEmail] || p.builder) || p.builder,
+      })));
+      setWishes(wishs.map(w => ({
+        ...w,
+        wisherName: fmtName(nameMap[w.wisherEmail] || w.wisherName) || w.wisherName,
+        claimedBy: w.claimedByEmail ? (fmtName(nameMap[w.claimedByEmail]) || w.claimedBy) : w.claimedBy,
+      })));
       setDataLoading(false);
     });
   }, [authUser?.email]);

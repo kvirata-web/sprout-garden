@@ -125,6 +125,13 @@ export const loadWishes = async () => {
   return data.map(toWish)
 }
 
+export const loadProfiles = async () => {
+  const { data, error } = await supabase
+    .from('profiles').select('email, display_name')
+  if (error) { console.error('loadProfiles:', error); return [] }
+  return data
+}
+
 export const loadNotifications = async () => {
   const { data, error } = await supabase
     .from('notifications')
