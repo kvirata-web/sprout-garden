@@ -4982,9 +4982,12 @@ export default function SproutAIGarden() {
         supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
           .then(async ({ data: existing }) => {
             if (existing) {
+              const emailPrefix = email.split("@")[0];
               const profileUpdates = {};
-              if (firstName && existing.first_name !== firstName) profileUpdates.first_name = firstName;
-              if (googleFullName && existing.display_name !== googleFullName) profileUpdates.display_name = googleFullName;
+              // Save first_name once — only if not yet set
+              if (firstName && !existing.first_name) profileUpdates.first_name = firstName;
+              // Save full name once — only if display_name is still the email prefix
+              if (googleFullName && existing.display_name === emailPrefix) profileUpdates.display_name = googleFullName;
               if (Object.keys(profileUpdates).length) {
                 await supabase.from("profiles").update(profileUpdates).eq("id", session.user.id);
               }
