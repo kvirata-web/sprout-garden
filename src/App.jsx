@@ -3559,28 +3559,26 @@ function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGar
 
   return (
     <div style={{position:"fixed",inset:0,zIndex:60,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.65)",backdropFilter:"blur(8px)"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:440,width:"92%",boxShadow:DS.shadow.xl,overflow:"hidden",animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:DS.radius.xl,maxWidth:440,width:"92%",maxHeight:"92vh",overflowY:"auto",boxShadow:DS.shadow.xl,animation:"slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1)"}}>
 
         {/* ── Dark green header ── */}
-        <div style={{background:"#14532d",padding:"28px 24px 22px",position:"relative",textAlign:"center"}}>
-          <div style={{marginBottom:10,display:"flex",justifyContent:"center"}}>
-            <GroveLogo theme="green" size={40} />
+        <div style={{background:"#14532d",padding:"16px 24px 14px",position:"relative",textAlign:"center"}}>
+          <div style={{marginBottom:6,display:"flex",justifyContent:"center"}}>
+            <GroveLogo theme="green" size={32} />
           </div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}}>
-            <span style={{fontFamily:FF,fontSize:26,fontWeight:800,color:"#fff"}}>Grove</span>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:6}}>
+            <span style={{fontFamily:FF,fontSize:22,fontWeight:800,color:"#fff"}}>Grove</span>
             <span style={{fontFamily:FF,fontSize:11,fontWeight:600,background:"rgba(255,255,255,0.18)",color:"rgba(255,255,255,0.88)",borderRadius:DS.radius.full,padding:"3px 9px",letterSpacing:0.3}}>Beta</span>
           </div>
-          <div style={{fontFamily:FF,fontSize:13,color:"rgba(255,255,255,0.78)",lineHeight:1.6,maxWidth:320,margin:"0 auto"}}>
+          <div style={{fontFamily:FF,fontSize:12,color:"rgba(255,255,255,0.78)",lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>
             Your AI project garden at Sprout.
           </div>
         </div>
 
         {/* ── This week only announcement ── */}
-        <div style={{margin:"0 20px",marginTop:16,borderRadius:DS.radius.lg,overflow:"hidden",position:"relative",background:"#14532d",boxShadow:"0 2px 12px rgba(20,83,45,0.35)"}}>
+        <div style={{margin:"0 16px",marginTop:12,borderRadius:DS.radius.lg,overflow:"hidden",position:"relative",background:"#14532d",boxShadow:"0 2px 12px rgba(20,83,45,0.35)"}}>
           {/* Shimmer — runs once on load */}
-          <div style={{
-            position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden",borderRadius:DS.radius.lg,zIndex:1,
-          }}>
+          <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden",borderRadius:DS.radius.lg,zIndex:1}}>
             <div style={{
               position:"absolute",top:0,bottom:0,width:"40%",
               background:"linear-gradient(105deg,transparent 20%,rgba(255,255,255,0.13) 50%,transparent 80%)",
@@ -3588,80 +3586,80 @@ function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGar
               transform:"translateX(-100%)",
             }}/>
           </div>
-          <div style={{position:"relative",zIndex:2,padding:"14px 16px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+          <div style={{position:"relative",zIndex:2,padding:"10px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
               <span style={{fontFamily:FF,fontSize:10,fontWeight:800,letterSpacing:0.8,color:"#fcd34d",textTransform:"uppercase"}}>📣 This week only</span>
             </div>
-            <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:"#fff",lineHeight:1.45,marginBottom:6}}>
+            <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:"#fff",lineHeight:1.4,marginBottom:4}}>
               The Grove is open for existing projects.
             </div>
-            <div style={{fontFamily:FF,fontSize:12,color:"rgba(255,255,255,0.78)",lineHeight:1.6}}>
+            <div style={{fontFamily:FF,fontSize:11,color:"rgba(255,255,255,0.78)",lineHeight:1.55}}>
               Starting March 23, all new entries begin as a Seed or Seedling. Have something already growing? Add it now, through Sunday.
             </div>
           </div>
         </div>
 
         {/* ── Body ── */}
-        <div style={{padding:"20px 24px 24px"}}>
+        <div style={{padding:"14px 20px 18px"}}>
 
           {/* Role pill */}
-          <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
-            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:C.mushroom100,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.full,padding:"7px 16px"}}>
-              <span style={{fontSize:14}}>{roleEmoji}</span>
-              <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom800}}>{roleName}</span>
-              <span style={{fontFamily:FF,fontSize:13,color:C.mushroom400}}>· {teamLabel}</span>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:C.mushroom100,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.full,padding:"5px 14px"}}>
+              <span style={{fontSize:13}}>{roleEmoji}</span>
+              <span style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom800}}>{roleName}</span>
+              <span style={{fontFamily:FF,fontSize:12,color:C.mushroom400}}>· {teamLabel}</span>
             </div>
           </div>
 
           {/* What do you want to do? */}
-          <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom500,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:12}}>Where do you want to start?</div>
+          <div style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom500,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:10}}>Where do you want to start?</div>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
             {/* Plant a Seed */}
             <button onClick={onPlantSeed}
-              style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"16px 14px",textAlign:"left",cursor:"pointer",transition:"all 0.15s",display:"flex",flexDirection:"column",gap:8}}
+              style={{background:C.mushroom50,border:"1.5px solid "+C.mushroom200,borderRadius:DS.radius.lg,padding:"12px 12px",textAlign:"left",cursor:"pointer",transition:"all 0.15s",display:"flex",flexDirection:"column",gap:6}}
               onMouseOver={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.borderColor=C.mushroom400;e.currentTarget.style.boxShadow=DS.shadow.md;}}
               onMouseOut={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom200;e.currentTarget.style.boxShadow="none";}}
             >
-              <span style={{fontSize:22}}>🌰</span>
+              <span style={{fontSize:20}}>🌰</span>
               <div>
-                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom800,marginBottom:4}}>Plant a Seed</div>
-                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,lineHeight:1.55}}>Have an idea for an AI tool? Drop it here for the team to see.</div>
+                <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom800,marginBottom:3}}>Plant a Seed</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,lineHeight:1.5}}>Have an idea for an AI tool? Drop it here for the team to see.</div>
               </div>
             </button>
 
             {/* Add to Garden */}
             <button onClick={onAddToGarden}
-              style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"16px 14px",textAlign:"left",cursor:"pointer",transition:"all 0.15s",display:"flex",flexDirection:"column",gap:8}}
+              style={{background:C.kangkong50,border:"1.5px solid "+C.kangkong200,borderRadius:DS.radius.lg,padding:"12px 12px",textAlign:"left",cursor:"pointer",transition:"all 0.15s",display:"flex",flexDirection:"column",gap:6}}
               onMouseOver={e=>{e.currentTarget.style.background=C.white;e.currentTarget.style.borderColor=C.kangkong400;e.currentTarget.style.boxShadow=DS.shadow.md;}}
               onMouseOut={e=>{e.currentTarget.style.background=C.kangkong50;e.currentTarget.style.borderColor=C.kangkong200;e.currentTarget.style.boxShadow="none";}}
             >
-              <span style={{fontSize:22}}>🪴</span>
+              <span style={{fontSize:20}}>🪴</span>
               <div>
-                <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong700,marginBottom:4}}>Add to Garden</div>
-                <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,lineHeight:1.55}}>Already building something? Log your project and track its growth.</div>
+                <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.kangkong700,marginBottom:3}}>Add to Garden</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,lineHeight:1.5}}>Already building something? Log your project and track its growth.</div>
               </div>
             </button>
           </div>
 
           {/* Just look around */}
           <button onClick={onExplore}
-            style={{width:"100%",padding:"9px 0",borderRadius:DS.radius.lg,background:"none",border:"none",color:C.mushroom400,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"color 0.15s",marginBottom:8}}
+            style={{width:"100%",padding:"7px 0",borderRadius:DS.radius.lg,background:"none",border:"none",color:C.mushroom400,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"color 0.15s",marginBottom:6}}
             onMouseOver={e=>e.currentTarget.style.color=C.mushroom600}
             onMouseOut={e=>e.currentTarget.style.color=C.mushroom400}
           >Just look around first</button>
 
           {/* Don't show again */}
           <button onClick={onDismissPermanently}
-            style={{width:"100%",padding:"9px 0",borderRadius:DS.radius.lg,background:"none",border:"1.5px solid "+C.mushroom200,color:C.mushroom500,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.15s"}}
+            style={{width:"100%",padding:"7px 0",borderRadius:DS.radius.lg,background:"none",border:"1.5px solid "+C.mushroom200,color:C.mushroom500,fontFamily:FF,fontSize:12,fontWeight:500,cursor:"pointer",transition:"all 0.15s"}}
             onMouseOver={e=>{e.currentTarget.style.background=C.mushroom50;e.currentTarget.style.borderColor=C.mushroom300;}}
             onMouseOut={e=>{e.currentTarget.style.background="none";e.currentTarget.style.borderColor=C.mushroom200;}}
           >Don't show again</button>
 
           {/* Beta callout — fine print at bottom */}
-          <div style={{background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:DS.radius.md,padding:"10px 14px",marginTop:16,display:"flex",gap:10,alignItems:"flex-start"}}>
-            <span style={{fontSize:14,flexShrink:0,marginTop:1}}>🚧</span>
-            <span style={{fontFamily:FF,fontSize:11,color:"#92400e",lineHeight:1.6}}>
+          <div style={{background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:DS.radius.md,padding:"8px 12px",marginTop:12,display:"flex",gap:8,alignItems:"flex-start"}}>
+            <span style={{fontSize:13,flexShrink:0,marginTop:1}}>🚧</span>
+            <span style={{fontFamily:FF,fontSize:11,color:"#92400e",lineHeight:1.55}}>
               Grove is in early beta — things are still growing. If something feels off or you have ideas, tap <strong>?</strong> and go to <strong>Feedback</strong>. We read every note.
             </span>
           </div>
