@@ -2413,21 +2413,20 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                           </div>
                         )}
 
-                        {/* Builder + dept footer */}
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:6}}>
-                          <div style={{display:"flex",alignItems:"center",gap:7}}>
-                            <div style={{width:24,height:24,borderRadius:"50%",background:cc.bg,color:cc.text,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:9,fontWeight:700,flexShrink:0}}>
-                              {getInitials(p.builder)}
-                            </div>
-                            <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
+                        {/* Builder row */}
+                        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}>
+                          <div style={{width:24,height:24,borderRadius:"50%",background:cc.bg,color:cc.text,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:FF,fontSize:9,fontWeight:700,flexShrink:0}}>
+                            {getInitials(p.builder)}
                           </div>
-                          {builtForArr(p.builtFor).length>0&&(
-                            <div style={{display:"flex",gap:3,alignItems:"center",flexShrink:0}}>
-                              {builtForArr(p.builtFor).slice(0,2).map(t=>{const tc=DEPT_COLORS[t]||C.mushroom400;return(<span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:tc+"18",color:tc,whiteSpace:"nowrap"}}>{t}</span>);})}
-                              {builtForArr(p.builtFor).length>2&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 6px",borderRadius:DS.radius.full,background:C.mushroom100,color:C.mushroom500,whiteSpace:"nowrap"}}>+{builtForArr(p.builtFor).length-2}</span>}
-                            </div>
-                          )}
+                          <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
                         </div>
+                        {/* Tags row — own line, wraps freely */}
+                        {builtForArr(p.builtFor).length>0&&(
+                          <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
+                            {builtForArr(p.builtFor).slice(0,3).map(t=>{const tc=DEPT_COLORS[t]||C.mushroom400;return(<span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:tc+"18",color:tc,whiteSpace:"nowrap"}}>{t}</span>);})}
+                            {builtForArr(p.builtFor).length>3&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 6px",borderRadius:DS.radius.full,background:C.mushroom100,color:C.mushroom500,whiteSpace:"nowrap"}}>+{builtForArr(p.builtFor).length-3}</span>}
+                          </div>
+                        )}
 
                         {/* Similar builders indicator */}
                         {(p.interestedUsers||[]).length > 0 && (
