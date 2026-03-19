@@ -2393,22 +2393,22 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                           cursor:"grab",transition:"all 0.15s",
                           opacity:dragProjectId===p.id?0.5:1,
                         }}
-                        onMouseOver={e=>{if(dragProjectId!==p.id){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.lg;e.currentTarget.style.borderColor=C.mushroom300;}}}
-                        onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=readyForNursery?C.mango300:C.mushroom200;}}
+                        onMouseOver={e=>{if(dragProjectId!==p.id){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=DS.shadow.lg;e.currentTarget.style.borderColor=C.mushroom300;}const dh=e.currentTarget.querySelector('[data-drag]');if(dh)dh.style.opacity="1";}}
+                        onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=readyForNursery?C.mango300:C.mushroom200;const dh=e.currentTarget.querySelector('[data-drag]');if(dh)dh.style.opacity="0";}}
                       >
                         {/* Name + stale indicator */}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                          <div style={{fontFamily:FF,fontSize:14,fontWeight:700,color:C.mushroom900,flex:1,lineHeight:1.35}}>
+                          <div style={{fontFamily:FF,fontSize:15,fontWeight:700,color:C.mushroom900,flex:1,lineHeight:1.3,letterSpacing:"-0.01em"}}>
                             {p.name}
                           </div>
                           {wilting&&<IcoStale size={13} color={C.mango500}/>}
                         </div>
 
-                        {/* Seedling submission status */}
+                        {/* Seedling submission status — "needed" chips only visible to builder/admin */}
                         {stage==="seedling"&&(
                           <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
-                            {!p.prototypeLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Prototype needed</span>}
-                            {!p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Deck needed</span>}
+                            {(authUser?.email===p.builderEmail||authUser?.isAdmin)&&!p.prototypeLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Prototype needed</span>}
+                            {(authUser?.email===p.builderEmail||authUser?.isAdmin)&&!p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mushroom400,border:"1px solid "+C.mushroom300,borderRadius:DS.radius.full,padding:"1px 7px"}}>Deck needed</span>}
                             {p.prototypeLink&&p.deckLink&&<span style={{fontFamily:FF,fontSize:9,color:C.mango600,fontWeight:600,border:"1px solid "+C.mango300,background:C.mango50,borderRadius:DS.radius.full,padding:"1px 7px"}}>Ready for Nursery →</span>}
                           </div>
                         )}
@@ -2421,7 +2421,12 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                             </div>
                             <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600,fontWeight:500}}>{p.builder||"Unknown"}</span>
                           </div>
-                          {dfc&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:dfc+"18",color:dfc,whiteSpace:"nowrap"}}>{builtForDisplay(p.builtFor)}</span>}
+                          {builtForArr(p.builtFor).length>0&&(
+                            <div style={{display:"flex",gap:3,alignItems:"center",flexShrink:0}}>
+                              {builtForArr(p.builtFor).slice(0,2).map(t=>{const tc=DEPT_COLORS[t]||C.mushroom400;return(<span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:DS.radius.full,background:tc+"18",color:tc,whiteSpace:"nowrap"}}>{t}</span>);})}
+                              {builtForArr(p.builtFor).length>2&&<span style={{fontFamily:FF,fontSize:11,fontWeight:600,padding:"2px 6px",borderRadius:DS.radius.full,background:C.mushroom100,color:C.mushroom500,whiteSpace:"nowrap"}}>+{builtForArr(p.builtFor).length-2}</span>}
+                            </div>
+                          )}
                         </div>
 
                         {/* Similar builders indicator */}
@@ -2444,7 +2449,7 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                               </span>
                             );
                           })()}
-                          <span style={{fontSize:10,color:C.mushroom300,userSelect:"none"}}>⠿ drag</span>
+                          <span data-drag="1" style={{fontSize:14,color:C.mushroom400,userSelect:"none",opacity:0,transition:"opacity 0.15s",cursor:"grab"}}>⠿</span>
                         </div>
                       </div>
                     );
