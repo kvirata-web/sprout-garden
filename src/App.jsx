@@ -2451,17 +2451,16 @@ const GardenHub = ({projects, wishes, selected, setSelected, authUser, onMoveSta
                           </div>
                         )}
 
-                        {/* Last updated + submitted + drag */}
+                        {/* Submitted indicator (nursery only) + drag */}
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                          <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>{p.lastUpdated===0?"Today":p.lastUpdated+"d ago"}</span>
-                          {stage==="nursery"&&p.submittedAt&&(()=>{
+                          {stage==="nursery"&&p.submittedAt?(()=>{
                             const daysAgoVal = daysAgo(p.submittedAt);
                             return (
                               <span style={{fontFamily:FF,fontSize:10,color:daysAgoVal>7?C.mango600:C.mushroom400,fontWeight:daysAgoVal>7?600:400}}>
                                 {daysAgoVal===0?"Submitted today":`Submitted ${daysAgoVal}d ago`}
                               </span>
                             );
-                          })()}
+                          })():<span/>}
                           <span data-drag="1" style={{fontSize:14,color:C.mushroom400,userSelect:"none",opacity:0,transition:"opacity 0.15s",cursor:"grab"}}>⠿</span>
                         </div>
                       </div>
