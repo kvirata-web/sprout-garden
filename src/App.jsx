@@ -4968,11 +4968,10 @@ export default function SproutAIGarden() {
         }
 
         const meta        = session.user.user_metadata || {};
-        console.log("[Grove] user_metadata:", meta);
+        const identityData = session.user.identities?.find(i => i.provider === "google")?.identity_data || {};
         const firstName   = meta.full_name?.split(" ")[0] || meta.name?.split(" ")[0] || null;
         const displayName = email.split("@")[0];
-        const photoURL    = meta.avatar_url || meta.picture || null;
-        console.log("[Grove] photoURL:", photoURL);
+        const photoURL    = meta.avatar_url || meta.picture || identityData.avatar_url || identityData.picture || null;
 
         // Immediately unblock the UI — no DB await before this line
         setAuthUser({ email, firstName, displayName, photoURL, country, isAdmin: false, isApprover: false, hasDismissedWelcome: false, profileLoaded: false });
@@ -5032,7 +5031,7 @@ export default function SproutAIGarden() {
     setAuthLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.origin, scopes: "profile email" },
     });
     // If error (e.g. provider not enabled), surface it and unblock
     if (error) {
