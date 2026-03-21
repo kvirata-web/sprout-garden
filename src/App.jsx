@@ -5437,7 +5437,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                 <div>
                   <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:8}}>Built with</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {["React + Vite","Supabase Auth","Supabase Postgres","Vercel","GitHub","Claude Code"].map(t=>(
+                    {["React + Vite","Supabase Auth","Supabase Postgres","Vercel","GitHub","Claude API","Claude Code"].map(t=>(
                       <span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:500,padding:"3px 9px",borderRadius:DS.radius.full,background:C.kangkong50,color:C.kangkong700,border:"1px solid "+C.kangkong200}}>{t}</span>
                     ))}
                   </div>
