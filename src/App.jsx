@@ -1623,7 +1623,7 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                   My Plants
                 </div>
                 {myProjects.length === 0 ? (
-                  <div style={{ fontSize:11, color:C.mushroom400 }}>Nothing planted yet. Hit &ldquo;Add to Garden&rdquo; to log your first AI project.</div>
+                  <div style={{ fontSize:11, color:C.mushroom400 }}>Nothing planted yet. Hit &ldquo;Contribute&rdquo; to log your first AI project.</div>
                 ) : myProjects.slice(0,5).map((p, i) => {
                   let ctaText = null;
                   if (p.stage === "seedling" && !p.prototypeLink) ctaText = "Add prototype →";
@@ -3073,7 +3073,7 @@ const DetailPanel = ({project,allProjects,onClose,onNote,setSelected,authUser,on
 // ── Add Project Modal ─────────────────────────────────────────────────────────
 
 // ── Wishlist View ─────────────────────────────────────────────────────────────
-function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishClaim, onUnclaimSeed, onUpdateWish, showAddWish, setShowAddWish}) {
+function WishlistView({wishes, projects, authUser, onUpvote, onWishClaim, onUnclaimSeed, onUpdateWish}) {
   const [statusFilter, setStatusFilter] = useState("All");
   const [sort, setSort] = useState("upvotes");
   const [claimingWish, setClaimingWish] = useState(null);
@@ -3110,15 +3110,6 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
               </div>
             </div>
           </div>
-          <button onClick={()=>setShowAddWish(true)} style={{
-            display:"flex",alignItems:"center",gap:7,
-            padding:"9px 20px",background:C.kangkong700,color:C.white,
-            border:"none",borderRadius:DS.radius.lg,cursor:"pointer",
-            fontFamily:FF,fontSize:13,fontWeight:700,
-            boxShadow:"0 4px 16px "+C.kangkong700+"40",
-          }}>
-            <WishSeed size={16} color={C.white}/> Plant a Seed
-          </button>
         </div>
 
         {/* Stats bar */}
@@ -3330,8 +3321,6 @@ function WishlistView({wishes, projects, authUser, onUpvote, onAddWish, onWishCl
         })}
       </div>
 
-      {/* Add Wish Modal */}
-      {showAddWish&&<AddWishModal authUser={authUser} onClose={()=>setShowAddWish(false)} onAdd={w=>{onAddWish(w);setShowAddWish(false);}}/>}
       {editingWish&&<AddWishModal authUser={authUser} existing={editingWish} onClose={()=>setEditingWish(null)} onSave={w=>{onUpdateWish(w);setEditingWish(null);}}/>}
       {claimingWish&&(
         <ClaimModal
@@ -3482,6 +3471,620 @@ function AddWishModal({onClose, onAdd, onSave, authUser, existing=null}) {
   );
 }
 
+
+// ── ChipPickerCollapse ────────────────────────────────────────────────────────
+// Reusable chip multi-select with collapse, Other inline input, None/All exclusivity
+const ChipPickerCollapse = ({
+  label, tooltip, required,
+  visibleOpts=[], hiddenOpts=[],
+  showOther=false,
+  noneOpt,   // mutually exclusive, always last in hidden section
+  allOpt,    // mutually exclusive, lives in hidden section
+  value=[], onChange,
+  otherValue="", onOtherChange,
+}) => {
+  const [expanded, setExpanded] = React.useState(false);
+
+  // Full collapsible list = hiddenOpts + allOpt (if any) + noneOpt (always last)
+  const fullHidden = [...hiddenOpts, ...(allOpt?[allOpt]:[]), ...(noneOpt?[noneOpt]:[])];
+  const selectedCollapsible = fullHidden.filter(o => value.includes(o));
+  const unselectedCollapsibleCount = fullHidden.filter(o => !value.includes(o)).length;
+
+  const isSelected = (o) => value.includes(o);
+
+  const toggle = (opt) => {
+    if (noneOpt && opt===noneOpt) { onChange([noneOpt]); return; }
+    if (allOpt  && opt===allOpt)  { onChange([allOpt]);  return; }
+    const without = value.filter(v => (noneOpt?v!==noneOpt:true) && (allOpt?v!==allOpt:true));
+    onChange(without.includes(opt) ? without.filter(v=>v!==opt) : [...without, opt]);
+  };
+
+  const base = {
+    display:"inline-flex", alignItems:"center", gap:4,
+    padding:"5px 12px", borderRadius:DS.radius.full,
+    fontFamily:FF, fontSize:12, fontWeight:600, cursor:"pointer",
+    border:"1.5px solid", transition:"all 0.12s", userSelect:"none",
+    background:"none",
+  };
+  const cs = (opt) => ({ ...base,
+    borderColor: isSelected(opt)?C.kangkong400:C.mushroom200,
+    background:  isSelected(opt)?C.kangkong50:C.white,
+    color:       isSelected(opt)?C.kangkong600:C.mushroom600,
+  });
+  const moreBtnStyle = { ...base, borderStyle:"dashed", borderColor:C.mushroom300, color:C.mushroom500 };
+
+  return (
+    <div style={{marginBottom:16}}>
+      {label && (
+        <div style={{position:"relative",display:"inline-flex",alignItems:"center",gap:5,marginBottom:7}}>
+          <span style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5}}>
+            {label}{required&&<span style={{color:C.carrot500}}> *</span>}
+          </span>
+          {tooltip && <TooltipLabel tooltip={tooltip}/>}
+        </div>
+      )}
+      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+        {/* Always-visible chips */}
+        {visibleOpts.map(opt=>(
+          <button key={opt} type="button" onClick={()=>toggle(opt)} style={cs(opt)}>
+            {isSelected(opt)&&<IcoCheck size={10} color={C.kangkong500}/>}{opt}
+          </button>
+        ))}
+        {/* Pinned selected hidden items when collapsed */}
+        {!expanded && selectedCollapsible.map(opt=>(
+          <button key={opt} type="button" onClick={()=>toggle(opt)} style={cs(opt)}>
+            <IcoCheck size={10} color={C.kangkong500}/>{opt}
+          </button>
+        ))}
+        {/* Other chip — always last in visible set */}
+        {showOther&&(
+          <button type="button" onClick={()=>toggle("Other")} style={cs("Other")}>
+            {isSelected("Other")&&<IcoCheck size={10} color={C.kangkong500}/>}Other
+          </button>
+        )}
+        {/* Expand button */}
+        {!expanded && unselectedCollapsibleCount>0 && (
+          <button type="button" onClick={()=>setExpanded(true)} style={moreBtnStyle}>
+            + {unselectedCollapsibleCount} more
+          </button>
+        )}
+        {/* Expanded: all hidden opts */}
+        {expanded && fullHidden.map(opt=>(
+          <button key={opt} type="button" onClick={()=>toggle(opt)} style={cs(opt)}>
+            {isSelected(opt)&&<IcoCheck size={10} color={C.kangkong500}/>}{opt}
+          </button>
+        ))}
+        {/* Collapse button */}
+        {expanded && (
+          <button type="button" onClick={()=>setExpanded(false)} style={moreBtnStyle}>
+            Show less ↑
+          </button>
+        )}
+      </div>
+      {/* Other free-text input */}
+      {showOther && isSelected("Other") && (
+        <input type="text" value={otherValue} onChange={e=>onOtherChange?.(e.target.value)}
+          placeholder="Type your answer…"
+          style={{marginTop:8,width:"100%",padding:"7px 10px",border:`1.5px solid ${C.mushroom300}`,
+            borderRadius:DS.radius.md,fontFamily:FF,fontSize:13,color:C.mushroom800,
+            background:C.mushroom50,outline:"none",boxSizing:"border-box"}}/>
+      )}
+    </div>
+  );
+};
+
+// ── TooltipLabel — ⓘ icon with tooltip below ──────────────────────────────────
+const TooltipLabel = ({tooltip}) => {
+  const [show, setShow] = React.useState(false);
+  return (
+    <span style={{position:"relative",display:"inline-flex",alignItems:"center",flexShrink:0}}
+      onMouseEnter={()=>setShow(true)} onMouseLeave={()=>setShow(false)}>
+      <svg width={13} height={13} viewBox="0 0 14 14" fill="none" style={{cursor:"default"}}>
+        <circle cx="7" cy="7" r="6.5" stroke={C.mushroom400} strokeWidth="1"/>
+        <text x="7" y="11" textAnchor="middle" fontSize="9" fill={C.mushroom400} fontFamily="serif" fontStyle="italic">i</text>
+      </svg>
+      {show && (
+        <div style={{position:"absolute",top:"100%",left:0,marginTop:5,zIndex:300,
+          background:C.mushroom900,color:C.white,padding:"6px 10px",borderRadius:DS.radius.md,
+          fontSize:12,fontWeight:400,letterSpacing:0,textTransform:"none",
+          whiteSpace:"nowrap",lineHeight:1.5,boxShadow:DS.shadow.md,pointerEvents:"none"}}>
+          {tooltip}
+        </div>
+      )}
+    </span>
+  );
+};
+
+// ── ContributeModal ────────────────────────────────────────────────────────────
+const ContributeModal = ({onClose, onAdd, onAddWish, projects, authUser, initialFlow=null}) => {
+  const [flow, setFlow] = React.useState(initialFlow);
+  const [step, setStep] = React.useState(1);
+  const [gatewayChoice, setGatewayChoice] = React.useState(null);
+
+  // Plant form
+  const PLANT_DEPTS = Object.keys(DEPT_ZONES);
+  const [plant, setPlantRaw] = React.useState({
+    name:"", builtBy:PLANT_DEPTS[0], builtFor:[], stage:"seedling",
+    aiAssistant:[], aiAssistantOther:"",
+    builderTools:[], builderToolsOther:"",
+    agenticFramework:[], agenticFrameworkOther:"",
+    dataSources:[], dataSourcesOther:"",
+    description:"", demoLink:"", collaboratorEmails:[],
+    problem:"", built:"", betterNow:"",
+  });
+  const setP = (k,v) => setPlantRaw(p=>({...p,[k]:v}));
+
+  // Seed form
+  const SEED_DEPTS_VIS = ["All Teams","Alliance","CA","CSM","Data","DevOps","Eng - Aurora","Eng - Prometheus"];
+  const SEED_DEPTS_HID = ["ExCom","Finance","Implementation","Legal","LDU","Marketing","MPS","PeopleOps","Prd - Aurora","Prd - Prometheus","Product Marketing","RevOps","Sales","SolCon"];
+  const [seed, setSeedRaw] = React.useState({wishPart1:"", wishPart2:"", title:"", why:"", builtFor:[]});
+  const setS = (k,v) => setSeedRaw(p=>{
+    const next = {...p,[k]:v};
+    if (k==="wishPart1"||k==="wishPart2") {
+      const p1 = k==="wishPart1"?v:p.wishPart1;
+      const p2 = k==="wishPart2"?v:p.wishPart2;
+      const auto = [p1.trim()?`A way to ${p1.trim()}`:"", p2.trim()?`so that ${p2.trim()}`:""].filter(Boolean).join(" ");
+      next.title = auto.slice(0,80);
+    }
+    return next;
+  });
+
+  // AI summarizer state
+  const [storyExpanded, setStoryExpanded] = React.useState(false);
+  const [aiSummarizing, setAiSummarizing] = React.useState(false);
+  const [aiSummaryDone, setAiSummaryDone] = React.useState(false);
+  const [aiSummaryError, setAiSummaryError] = React.useState(null);
+
+  // Duplicate check state
+  const [aiChecking, setAiChecking] = React.useState(false);
+  const [aiOverlaps, setAiOverlaps] = React.useState(null);
+  const [aiOverlapChecked, setAiOverlapChecked] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  // Validation
+  const plantStep1Valid = !!(plant.name.trim() && plant.builtFor.length>0);
+  const plantStep2Valid = !!(plant.aiAssistant.length>0 && plant.builderTools.length>0 && plant.agenticFramework.length>0 && plant.dataSources.length>0);
+  const seedStep1Valid  = seed.title.trim().length>0;
+  const seedStep2Valid  = !!(seed.why.trim() && seed.builtFor.length>0);
+
+  const canNext = () => {
+    if (flow==="plant") { if (step===1) return plantStep1Valid; if (step===2) return plantStep2Valid; return true; }
+    if (flow==="seed")  { if (step===1) return seedStep1Valid;  if (step===2) return seedStep2Valid;  return true; }
+    return false;
+  };
+
+  const handleSummarize = async () => {
+    if (aiSummarizing) return;
+    const canSum = plant.name.trim() && (plant.problem||plant.built||plant.betterNow);
+    if (!canSum) return;
+    setAiSummarizing(true); setAiSummaryError(null);
+    try {
+      const summary = await generateProjectSummary({
+        name:plant.name, builtBy:plant.builtBy, builtFor:builtForDisplay(plant.builtFor),
+        problem:plant.problem, built:plant.built, betterNow:plant.betterNow,
+      });
+      setP("description", summary); setAiSummaryDone(true);
+    } catch(e) { setAiSummaryError(e?.message||"Something went wrong."); }
+    setAiSummarizing(false);
+  };
+
+  const doAddPlant = () => {
+    onAdd({
+      name:plant.name, builtBy:plant.builtBy, builtFor:plant.builtFor,
+      builder:authUser.displayName, builderEmail:authUser.email,
+      stage:plant.stage, description:plant.description, demoLink:plant.demoLink,
+      collaboratorEmails:plant.collaboratorEmails,
+      toolUsed:[...plant.aiAssistant,...(plant.aiAssistantOther?[plant.aiAssistantOther]:[]),...plant.builderTools,...(plant.builderToolsOther?[plant.builderToolsOther]:[])],
+      agenticFramework:[...plant.agenticFramework,...(plant.agenticFrameworkOther?[plant.agenticFrameworkOther]:[])],
+      dataSources:[...plant.dataSources,...(plant.dataSourcesOther?[plant.dataSourcesOther]:[])],
+      problem:plant.problem, built:plant.built, betterNow:plant.betterNow,
+      problemSpace:"", capability:"",
+      id:Date.now(), lastUpdated:0, notes:[],
+      zx:35+Math.random()*25, zy:35+Math.random()*25,
+      milestones:[STAGE_LABELS[plant.stage]+" — "+new Date().toLocaleDateString("en-PH",{month:"short",year:"numeric"})],
+      impactNum:"TBD", interestedUsers:[],
+    });
+    onClose();
+  };
+
+  const handlePlantSubmit = async () => {
+    if (submitting||aiChecking) return;
+    if (aiOverlapChecked && aiOverlaps?.length>0) { doAddPlant(); return; }
+    setSubmitting(true); setAiChecking(true);
+    const candidates = projects.filter(p=>builtForArr(p.builtFor).some(f=>builtForArr(plant.builtFor).includes(f)));
+    const overlaps = await detectDuplicates({name:plant.name,description:plant.description,builtFor:plant.builtFor,dataSources:plant.dataSources,problemSpace:"",capability:""}, candidates);
+    setAiOverlaps(overlaps); setAiOverlapChecked(true); setAiChecking(false); setSubmitting(false);
+    if (overlaps.length===0) doAddPlant();
+  };
+
+  const handleSeedSubmit = () => {
+    onAddWish({
+      id:"w"+Date.now(), title:seed.title.trim(), why:seed.why.trim(),
+      builtFor:seed.builtFor, wisherName:authUser.displayName, wisherEmail:authUser.email,
+      country:authUser.country, createdDaysAgo:0, upvoters:[], fulfilledBy:null,
+    });
+    onClose();
+  };
+
+  const inputStyle = {
+    width:"100%", padding:"9px 12px", border:`1.5px solid ${C.mushroom300}`,
+    borderRadius:DS.radius.lg, fontFamily:FF, fontSize:13,
+    color:C.mushroom900, background:C.white, outline:"none", boxSizing:"border-box",
+  };
+
+  const backdropStyle = {position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(32,30,24,0.55)",backdropFilter:"blur(6px)"};
+  const panelStyle    = {background:C.white,borderRadius:DS.radius.xl,padding:"26px 28px 24px",maxWidth:540,width:"92%",maxHeight:"92vh",overflowY:"auto",boxShadow:DS.shadow.xl,border:`1px solid ${C.mushroom200}`,animation:"slideUp 0.25s cubic-bezier(0.34,1.2,0.64,1)"};
+
+  // ── GATEWAY ─────────────────────────────────────────────────────────────────
+  if (!flow) {
+    return (
+      <div style={backdropStyle}>
+        <div onClick={e=>e.stopPropagation()} style={{...panelStyle,maxWidth:460}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
+            <div>
+              <div style={{fontFamily:FF,fontSize:17,fontWeight:700,color:C.mushroom900,display:"flex",alignItems:"center",gap:8}}>
+                <IcoGarden size={20} color={C.kangkong600}/> Contribute to Grove
+              </div>
+              <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:3}}>What brings you here today?</div>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4,marginTop:-2}}><IcoClose size={18} color={C.mushroom400}/></button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+            {[
+              {id:"plant",emoji:"🪴",title:"I'm building something",desc:"I have a project — prototype or work in progress — and want to log it in the Garden."},
+              {id:"seed", emoji:"🌰",title:"I have an idea",         desc:"I wish an AI tool existed for something. Plant it as a Seed for builders to find."},
+            ].map(opt=>(
+              <button key={opt.id} type="button" onClick={()=>setGatewayChoice(opt.id)} style={{
+                background:gatewayChoice===opt.id?(opt.id==="plant"?C.kangkong50:C.mushroom50):C.white,
+                border:`2px solid ${gatewayChoice===opt.id?(opt.id==="plant"?C.kangkong400:C.mushroom400):C.mushroom200}`,
+                borderRadius:DS.radius.lg, padding:"14px 12px", textAlign:"left",
+                cursor:"pointer", transition:"all 0.15s", display:"flex", flexDirection:"column", gap:8,
+              }}>
+                <span style={{fontSize:22}}>{opt.emoji}</span>
+                <div>
+                  <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:opt.id==="plant"?C.kangkong700:C.mushroom800,marginBottom:4}}>{opt.title}</div>
+                  <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,lineHeight:1.5}}>{opt.desc}</div>
+                </div>
+                {gatewayChoice===opt.id&&<div style={{alignSelf:"flex-end"}}><IcoCheck size={14} color={opt.id==="plant"?C.kangkong500:C.mushroom600}/></div>}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={()=>{if(gatewayChoice){setFlow(gatewayChoice);setStep(1);}}} disabled={!gatewayChoice}
+            style={{width:"100%",padding:"11px",borderRadius:DS.radius.lg,background:gatewayChoice?C.kangkong600:C.mushroom200,border:"none",cursor:gatewayChoice?"pointer":"not-allowed",fontFamily:FF,fontSize:13,fontWeight:700,color:C.white,transition:"all 0.15s"}}>
+            Continue →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STEP BAR + LABELS ────────────────────────────────────────────────────────
+  const stepTitles = flow==="plant" ? ["The plant","How it grew","The story"] : ["The idea","The case","Review"];
+
+  const StepBar = () => (
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:18}}>
+      {[1,2,3].map(n=>(
+        <div key={n} style={{height:4,borderRadius:DS.radius.full,transition:"all 0.3s",flex:n===step?2:1,
+          background:n<step?C.kangkong500:n===step?C.kangkong400:C.mushroom200}}/>
+      ))}
+      <span style={{fontFamily:FF,fontSize:11,color:C.mushroom400,fontWeight:600,whiteSpace:"nowrap",marginLeft:4}}>{step} / 3</span>
+    </div>
+  );
+
+  return (
+    <div style={backdropStyle}>
+      <div onClick={e=>e.stopPropagation()} style={panelStyle}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+          <div>
+            <div style={{fontFamily:FF,fontSize:16,fontWeight:700,color:C.mushroom900,display:"flex",alignItems:"center",gap:8}}>
+              {flow==="plant"?<IcoGarden size={18} color={C.kangkong600}/>:<WishSeed size={18} color={C.mushroom600}/>}
+              {flow==="plant"?"Add a Plant":"Plant a Seed"}
+            </div>
+            <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginTop:2}}>{stepTitles[step-1]}</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><IcoClose size={18} color={C.mushroom400}/></button>
+        </div>
+
+        <StepBar/>
+
+        {/* ── PLANT STEP 1 ── */}
+        {flow==="plant" && step===1 && (
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>
+                Project name <span style={{color:C.carrot500}}>*</span>
+              </label>
+              <input value={plant.name} onChange={e=>setP("name",e.target.value)} placeholder="e.g. SmartSort AI" style={inputStyle}/>
+            </div>
+            <div>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>Your team</label>
+              <select value={plant.builtBy} onChange={e=>setP("builtBy",e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
+                {PLANT_DEPTS.map(d=><option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <ChipPickerCollapse
+              label="Who does this help?" required
+              visibleOpts={["Marketing","CSM","Engineering","Data","PeopleOps","RevOps"]}
+              hiddenOpts={["Finance","Sales","ExCom","Product","Legal","Alliance"]}
+              allOpt="All teams"
+              value={plant.builtFor} onChange={v=>setP("builtFor",v)}
+            />
+            <div>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>
+                Where is this project right now?
+              </label>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+                {STAGES.filter(s=>s!=="nursery").map(s=>{
+                  const sc=STAGE_COLORS[s]; const active=plant.stage===s;
+                  return (
+                    <button key={s} type="button" onClick={()=>setP("stage",s)} style={{
+                      padding:"10px 8px",borderRadius:DS.radius.lg,cursor:"pointer",textAlign:"left",
+                      border:`2px solid ${active?sc.dot:C.mushroom200}`,background:active?sc.bg:C.white,transition:"all 0.15s",
+                    }}>
+                      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+                        <StageIcon stage={s} size={12}/>
+                        <span style={{fontFamily:FF,fontSize:10,fontWeight:700,color:active?sc.text:C.mushroom700}}>{STAGE_LABELS[s]}</span>
+                        {active&&<IcoCheck size={10} color={sc.dot}/>}
+                      </div>
+                      <div style={{fontFamily:FF,fontSize:9,color:active?sc.text:C.mushroom400,lineHeight:1.4,opacity:0.85}}>{STAGE_DESC[s]}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── PLANT STEP 2 ── */}
+        {flow==="plant" && step===2 && (
+          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+            <ChipPickerCollapse label="AI assistant" required
+              tooltip="Which AI did your team talk to on this project?"
+              visibleOpts={["Claude","ChatGPT","Gemini","Copilot"]} hiddenOpts={[]} showOther
+              value={plant.aiAssistant} onChange={v=>setP("aiAssistant",v)}
+              otherValue={plant.aiAssistantOther} onOtherChange={v=>setP("aiAssistantOther",v)}
+            />
+            <ChipPickerCollapse label="Builder tools" required
+              tooltip="What did you use to actually build or automate it?"
+              visibleOpts={["Claude Code","Cursor","Cowork","Bolt","n8n"]} hiddenOpts={["Make","Retool"]} showOther
+              value={plant.builderTools} onChange={v=>setP("builderTools",v)}
+              otherValue={plant.builderToolsOther} onOtherChange={v=>setP("builderToolsOther",v)}
+            />
+            <ChipPickerCollapse label="Agentic AI framework" required
+              tooltip="Did your build use an agentic AI framework? e.g. Aulendil, BMAD"
+              visibleOpts={["Aulendil","BlackMagic","BMAD","Superpowers"]}
+              hiddenOpts={["Get Shit Done","TaskMaster","Spec Kit","LangChain","Custom-built"]}
+              noneOpt="None" showOther
+              value={plant.agenticFramework} onChange={v=>setP("agenticFramework",v)}
+              otherValue={plant.agenticFrameworkOther} onOtherChange={v=>setP("agenticFrameworkOther",v)}
+            />
+            <ChipPickerCollapse label="Data sources" required
+              tooltip="Where does your project get its data from?"
+              visibleOpts={["HubSpot","Google Drive","Sprout HR","Sprout Payroll"]}
+              hiddenOpts={["NetSuite","Product analytics","Zendesk","Website / web data","Jira","Notion / Confluence","Meeting transcripts","Survey responses","Slack / Teams","Email"]}
+              showOther
+              value={plant.dataSources} onChange={v=>setP("dataSources",v)}
+              otherValue={plant.dataSourcesOther} onOtherChange={v=>setP("dataSourcesOther",v)}
+            />
+          </div>
+        )}
+
+        {/* ── PLANT STEP 3 ── */}
+        {flow==="plant" && step===3 && (
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {/* Story expander */}
+            <div>
+              <button type="button" onClick={()=>setStoryExpanded(p=>!p)} style={{
+                width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
+                padding:"9px 12px",borderRadius:DS.radius.md,border:`1px solid ${C.mushroom200}`,
+                background:C.white,cursor:"pointer",fontFamily:FF,fontSize:12,fontWeight:600,color:C.blueberry500,transition:"all 0.15s",
+              }}>
+                <span>✦ Help me write this — answer 3 quick questions</span>
+                <span style={{fontSize:10,color:C.mushroom400,display:"inline-block",transition:"transform 0.2s",transform:storyExpanded?"rotate(180deg)":"none"}}>▾</span>
+              </button>
+              {storyExpanded&&(
+                <div style={{background:C.mushroom50,border:`1px solid ${C.mushroom200}`,borderTop:"none",borderRadius:`0 0 ${DS.radius.md} ${DS.radius.md}`,padding:"14px 12px"}}>
+                  {[
+                    {k:"problem",  label:"What problem are you solving?", ph:"What challenge or gap existed before?"},
+                    {k:"built",    label:"What are you building?",         ph:"Describe what you're creating or automating…"},
+                    {k:"betterNow",label:"What will be better?",           ph:"What changes for the team or customers?"},
+                  ].map(q=>(
+                    <div key={q.k} style={{marginBottom:10}}>
+                      <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:600,color:C.mushroom600,marginBottom:4}}>{q.label}</label>
+                      <textarea rows={2} value={plant[q.k]} onChange={e=>setP(q.k,e.target.value)} placeholder={q.ph}
+                        style={{width:"100%",padding:"7px 10px",border:`1.5px solid ${C.mushroom200}`,borderRadius:DS.radius.md,fontFamily:FF,fontSize:12,color:C.mushroom800,background:C.white,outline:"none",boxSizing:"border-box",resize:"vertical",lineHeight:1.5}}/>
+                    </div>
+                  ))}
+                  <button type="button" onClick={handleSummarize} disabled={aiSummarizing||!(plant.name.trim()&&(plant.problem||plant.built||plant.betterNow))} style={{
+                    display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
+                    padding:"7px 12px",borderRadius:DS.radius.md,
+                    border:`1.5px solid ${aiSummaryDone?C.kangkong400:C.blueberry400}`,
+                    background:aiSummaryDone?C.kangkong50:C.blueberry100,
+                    color:aiSummaryDone?C.kangkong600:C.blueberry500,
+                    fontFamily:FF,fontSize:12,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
+                  }}>
+                    {aiSummarizing?<><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Writing…</>
+                      :aiSummaryDone?<><IcoCheck size={12} color={C.kangkong500}/> Regenerate</>
+                      :<>✦ Craft my description from these answers</>}
+                  </button>
+                  {aiSummaryError&&<div style={{fontFamily:FF,fontSize:11,color:C.tomato600,marginTop:6,background:C.tomato100,border:`1px solid ${C.tomato500}`,borderRadius:DS.radius.md,padding:"6px 10px"}}>AI failed: {aiSummaryError}</div>}
+                </div>
+              )}
+            </div>
+            {/* Description */}
+            <div>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>Description</label>
+              <textarea rows={3} value={plant.description} onChange={e=>setP("description",e.target.value)}
+                placeholder="Describe your project — or use the helper above to generate a draft…"
+                style={{...inputStyle,resize:"vertical",lineHeight:1.6}}/>
+              {aiSummaryDone&&<div style={{fontFamily:FF,fontSize:11,color:C.kangkong600,marginTop:4,display:"flex",alignItems:"center",gap:4}}><IcoCheck size={11} color={C.kangkong500}/> AI-generated — feel free to edit</div>}
+            </div>
+            {/* Project link */}
+            <div>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>
+                Project link <span style={{fontWeight:400,color:C.mushroom400,textTransform:"none",letterSpacing:0}}>(optional)</span>
+              </label>
+              <div style={{position:"relative"}}>
+                <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><IcoLink size={13} color={C.mushroom400}/></span>
+                <input value={plant.demoLink} onChange={e=>setP("demoLink",e.target.value)}
+                  placeholder="Prototype, internal tool, or live product"
+                  style={{...inputStyle,paddingLeft:30}}/>
+              </div>
+            </div>
+            {/* Collaborators */}
+            <CollaboratorInput selected={plant.collaboratorEmails} onChange={v=>setP("collaboratorEmails",v)} selfEmail={authUser?.email||""}/>
+            {/* Adding as strip */}
+            <div style={{background:C.mushroom50,border:`1px solid ${C.mushroom200}`,borderRadius:DS.radius.lg,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+              <UserAvatar user={authUser} size={28}/>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom800}}>{authUser?.displayName||"You"}</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>{plant.builtBy} · {STAGE_LABELS[plant.stage]}</div>
+              </div>
+              {(()=>{const sc=STAGE_COLORS[plant.stage];return <span style={{fontFamily:FF,fontSize:10,fontWeight:600,background:sc.bg,color:sc.text,border:`0.5px solid ${sc.border}`,borderRadius:DS.radius.full,padding:"2px 8px"}}>{STAGE_LABELS[plant.stage]}</span>;})()}
+            </div>
+            {/* Overlap check result */}
+            {aiOverlapChecked&&(
+              <div style={{background:aiOverlaps?.length===0?C.kangkong50:C.mango100,border:`1.5px solid ${aiOverlaps?.length===0?C.kangkong200:C.mango500}`,borderRadius:DS.radius.lg,padding:"12px 14px"}}>
+                <div style={{fontFamily:FF,fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6,color:aiOverlaps?.length===0?C.kangkong600:C.mango600,marginBottom:aiOverlaps?.length>0?8:0}}>
+                  {aiOverlaps?.length>0?<><IcoWarning size={14} color={C.mango500}/> {aiOverlaps.length} potential overlap{aiOverlaps.length>1?"s":""} found</>:<><IcoCheck size={14} color={C.kangkong500}/> No overlaps found</>}
+                </div>
+                {aiOverlaps?.length>0&&(
+                  <div>
+                    {aiOverlaps.map((o,i)=>(
+                      <div key={i} style={{background:C.white,border:`1px solid ${C.mango500}`,borderRadius:DS.radius.md,padding:"8px 10px",marginBottom:6,display:"flex",gap:8,alignItems:"flex-start"}}>
+                        <span style={{background:o.severity==="high"?C.tomato100:C.mango100,color:o.severity==="high"?C.tomato600:C.mango600,fontFamily:FF,fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:DS.radius.full,textTransform:"uppercase",flexShrink:0,marginTop:1}}>{o.severity}</span>
+                        <div>
+                          <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom900}}>{o.name}</div>
+                          <div style={{fontFamily:FF,fontSize:11,color:C.mushroom600}}>{o.reason}</div>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{fontFamily:FF,fontSize:11,color:C.mango700,marginTop:4}}>You can still add — just reach out to the other builder first.</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SEED STEP 1 ── */}
+        {flow==="seed" && step===1 && (
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>What do you wish existed?</label>
+              <div style={{background:C.mushroom50,border:`1.5px solid ${C.mushroom200}`,borderRadius:DS.radius.lg,padding:"14px 16px",marginBottom:12}}>
+                <div style={{fontFamily:FF,fontSize:13,color:C.mushroom700,marginBottom:7}}>I wish there was a way to</div>
+                <input value={seed.wishPart1} onChange={e=>setS("wishPart1",e.target.value)}
+                  placeholder="e.g. auto-summarize Slack threads for async teams"
+                  style={{...inputStyle,marginBottom:10,background:C.white}}/>
+                <div style={{fontFamily:FF,fontSize:13,color:C.mushroom700,marginBottom:7}}>so that</div>
+                <input value={seed.wishPart2} onChange={e=>setS("wishPart2",e.target.value)}
+                  placeholder="e.g. our team can catch up without reading 200 messages"
+                  style={{...inputStyle,background:C.white}}/>
+              </div>
+              {seed.title&&(
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,marginBottom:8}}>
+                  Preview: <span style={{color:C.mushroom800,fontStyle:"italic"}}>"{seed.title}"</span>
+                </div>
+              )}
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <label style={{fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5}}>
+                    Seed title <span style={{color:C.carrot500}}>*</span>
+                  </label>
+                  <span style={{fontFamily:FF,fontSize:11,color:seed.title.length>70?C.carrot500:C.mushroom400}}>{seed.title.length}/80</span>
+                </div>
+                <input value={seed.title} onChange={e=>setS("title",e.target.value.slice(0,80))}
+                  placeholder="e.g. Auto-summarize Slack threads for async teams"
+                  style={inputStyle}/>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SEED STEP 2 ── */}
+        {flow==="seed" && step===2 && (
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>
+                Why does this matter? <span style={{color:C.carrot500}}>*</span>
+              </label>
+              <textarea rows={4} value={seed.why} onChange={e=>setS("why",e.target.value)}
+                placeholder="Who suffers without it, and how often? What would change if it existed?"
+                style={{...inputStyle,resize:"vertical",lineHeight:1.6}}/>
+            </div>
+            <ChipPickerCollapse
+              label="Who should this be built for?" required
+              visibleOpts={SEED_DEPTS_VIS} hiddenOpts={SEED_DEPTS_HID}
+              value={seed.builtFor} onChange={v=>setS("builtFor",v)}
+            />
+          </div>
+        )}
+
+        {/* ── SEED STEP 3 ── */}
+        {flow==="seed" && step===3 && (
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{background:C.mushroom50,border:`1.5px solid ${C.mushroom200}`,borderRadius:DS.radius.lg,padding:"16px"}}>
+              <div style={{fontFamily:FF,fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",color:C.mushroom500,marginBottom:8}}>Your seed preview</div>
+              <div style={{fontFamily:FF,fontSize:15,fontWeight:700,color:C.mushroom900,marginBottom:6,lineHeight:1.3}}>{seed.title||"(no title yet)"}</div>
+              {seed.why&&<div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.6,marginBottom:10,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical"}}>{seed.why}</div>}
+              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+                {seed.builtFor.map(d=>(
+                  <span key={d} style={{fontFamily:FF,fontSize:10,fontWeight:600,background:C.mushroom200,color:C.mushroom700,borderRadius:DS.radius.full,padding:"2px 8px"}}>{d}</span>
+                ))}
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:6,paddingTop:8,borderTop:`1px solid ${C.mushroom200}`}}>
+                <UserAvatar user={authUser} size={20}/>
+                <span style={{fontFamily:FF,fontSize:11,color:C.mushroom600,fontWeight:600}}>{authUser?.displayName||"You"}</span>
+              </div>
+            </div>
+            <div style={{background:C.blueberry100,border:`1px solid ${C.blueberry400}`,borderRadius:DS.radius.md,padding:"10px 14px",display:"flex",gap:8,alignItems:"flex-start"}}>
+              <span style={{fontSize:14,flexShrink:0}}>💡</span>
+              <span style={{fontFamily:FF,fontSize:12,color:C.blueberry500,lineHeight:1.55}}>
+                Anyone at Sprout can upvote this. A builder who wants to claim it will reach out directly.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Footer nav ── */}
+        <div style={{display:"flex",gap:10,marginTop:22}}>
+          <button type="button" onClick={()=>{if(step===1)setFlow(null);else setStep(s=>s-1);}} style={{
+            flex:1,padding:"10px",background:C.mushroom100,border:`1px solid ${C.mushroom200}`,
+            borderRadius:DS.radius.lg,cursor:"pointer",fontFamily:FF,fontSize:13,color:C.mushroom600,fontWeight:600,
+          }}>← Back</button>
+          {step<3&&(
+            <button type="button" onClick={()=>{if(canNext())setStep(s=>s+1);}} disabled={!canNext()} style={{
+              flex:2,padding:"10px",background:canNext()?C.kangkong600:C.mushroom200,
+              border:"none",borderRadius:DS.radius.lg,cursor:canNext()?"pointer":"not-allowed",
+              fontFamily:FF,fontSize:13,color:C.white,fontWeight:700,transition:"all 0.15s",
+            }}>Continue →</button>
+          )}
+          {step===3&&flow==="plant"&&(
+            <button type="button" onClick={handlePlantSubmit} disabled={submitting||aiChecking} style={{
+              flex:2,padding:"10px",background:(submitting||aiChecking)?C.mushroom300:C.kangkong600,
+              border:"none",borderRadius:DS.radius.lg,cursor:(submitting||aiChecking)?"not-allowed":"pointer",
+              fontFamily:FF,fontSize:13,color:C.white,fontWeight:700,
+              display:"flex",alignItems:"center",justifyContent:"center",gap:6,transition:"all 0.15s",
+            }}>
+              {aiChecking?<><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Checking…</>:<><IcoGarden size={14} color={C.white}/> Add to the Garden</>}
+            </button>
+          )}
+          {step===3&&flow==="seed"&&(
+            <button type="button" onClick={handleSeedSubmit} style={{
+              flex:2,padding:"10px",background:C.kangkong600,border:"none",borderRadius:DS.radius.lg,
+              cursor:"pointer",fontFamily:FF,fontSize:13,color:C.white,fontWeight:700,
+              display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+            }}>
+              <WishSeed size={14} color={C.white}/> Plant this Seed
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── WelcomeModal ──────────────────────────────────────────────────────────────
 function WelcomeModal({ onExplore, onDismissPermanently, onPlantSeed, onAddToGarden, isApprover, country }) {
@@ -4336,7 +4939,7 @@ function ProfileModal({authUser, projects, wishes, onClose}) {
             </div>
             {myProjects.length===0
               ? <div style={{fontFamily:FF,fontSize:13,color:C.mushroom400,fontStyle:"italic",padding:"16px",background:C.mushroom50,borderRadius:DS.radius.lg,textAlign:"center"}}>
-                  You haven't added any projects yet. Start by clicking "Add to Garden"!
+                  You haven't added any projects yet. Start by clicking "Contribute"!
                 </div>
               : myProjects.map(p=>{
                   const sc = STAGE_COLORS[p.stage];
@@ -4846,7 +5449,9 @@ export default function SproutAIGarden() {
   const [view, setView]         = useState("dashboard");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [showAddWish, setShowAddWish] = useState(false);
+  const [showContribute, setShowContribute] = useState(false);
+  const [contributeInitialFlow, setContributeInitialFlow] = useState(null);
+
   const [editingProject, setEditingProject] = useState(null);
   const [gardenNav, setGardenNav] = useState({key:0, viewMode:"directory", stageFilter:"All"});
   const [profileOpen, setProfileOpen] = useState(false);
@@ -5598,7 +6203,7 @@ export default function SproutAIGarden() {
 
         {/* Right side: add + user */}
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <button onClick={()=>setShowForm(true)} style={{
+          <button onClick={()=>{ setContributeInitialFlow(null); setShowContribute(true); }} style={{
             background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.lg,
             padding:"8px 16px",cursor:"pointer",fontFamily:FF,fontSize:12,fontWeight:700,
             display:"flex",alignItems:"center",gap:6,
@@ -5607,7 +6212,7 @@ export default function SproutAIGarden() {
             onMouseOver={e=>e.currentTarget.style.background=C.kangkong600}
             onMouseOut={e=>e.currentTarget.style.background=C.kangkong500}
           >
-            <IcoAdd size={15} color={C.white}/> Add to Garden
+            <IcoAdd size={15} color={C.white}/> Contribute
           </button>
 
           {/* User profile dropdown */}
@@ -5665,7 +6270,7 @@ export default function SproutAIGarden() {
         <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
           {view==="dashboard" && <OverviewDashboard projects={projects} wishes={wishes} activityLog={activityLog} authUser={authUser} onSelectProject={handleSelectProject} onNavigateGarden={(vm,sf)=>{setGardenNav(prev=>({key:prev.key+1,viewMode:vm,stageFilter:sf}));setView("garden");}} onNavigateWishlist={()=>setView("wishlist")}/>}
           {view==="garden"    && <GardenHub key={gardenNav.key} initialViewMode={gardenNav.viewMode} initialStageFilter={gardenNav.stageFilter} projects={projects} wishes={wishes} selected={selected} setSelected={setSelected} authUser={authUser} onMoveStage={handleMoveStage} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish}/>}
-          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} authUser={authUser} onUpvote={handleUpvote} onAddWish={handleAddWish} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish} showAddWish={showAddWish} setShowAddWish={setShowAddWish}/>}
+          {view==="wishlist"  && <WishlistView wishes={wishes} projects={projects} authUser={authUser} onUpvote={handleUpvote} onWishClaim={handleClaimWish} onUnclaimSeed={handleUnclaimSeed} onUpdateWish={handleUpdateWish}/>}
         </div>
 
         {selected && (
@@ -5698,6 +6303,17 @@ export default function SproutAIGarden() {
         />
       )}
 
+      {showContribute && (
+        <ContributeModal
+          onClose={()=>setShowContribute(false)}
+          onAdd={addProject}
+          onAddWish={handleAddWish}
+          projects={projects}
+          authUser={authUser}
+          initialFlow={contributeInitialFlow}
+        />
+      )}
+
       {profileModal==="profile"&&<ProfileModal authUser={authUser} projects={projects} wishes={wishes} onClose={()=>setProfileModal(null)}/>}
       {profileModal==="about"&&<AboutModal onClose={()=>setProfileModal(null)}/>}
 
@@ -5705,8 +6321,8 @@ export default function SproutAIGarden() {
         <WelcomeModal
           onExplore={() => setWelcomeSeen(true)}
           onDismissPermanently={handleDismissWelcomePermanently}
-          onPlantSeed={() => { setWelcomeSeen(true); setView("wishlist"); setShowAddWish(true); }}
-          onAddToGarden={() => { setWelcomeSeen(true); setShowForm(true); }}
+          onPlantSeed={() => { setWelcomeSeen(true); setContributeInitialFlow("seed"); setShowContribute(true); }}
+          onAddToGarden={() => { setWelcomeSeen(true); setContributeInitialFlow("plant"); setShowContribute(true); }}
           isApprover={authUser.isApprover}
           country={authUser.country}
         />
