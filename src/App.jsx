@@ -1049,6 +1049,51 @@ function getDashboardSubline(projects, wishes) {
   return `${total} internal AI projects across PH & TH — ${breakdown}`;
 }
 
+// ── Confetti helper ───────────────────────────────────────────────────────────
+function fireConfetti() {
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  const COLORS = ["#2d8c2d","#d69e2e","#3182ce","#e53e3e","#805ad5"];
+  const particles = Array.from({length:80}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height - canvas.height,
+    vx: (Math.random() - 0.5) * 4,
+    vy: Math.random() * 3 + 2,
+    rot: Math.random() * Math.PI * 2,
+    vrot: (Math.random() - 0.5) * 0.2,
+    w: Math.random() * 10 + 6,
+    h: Math.random() * 6 + 4,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    alpha: 1,
+  }));
+  const start = Date.now();
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const elapsed = Date.now() - start;
+    for (const p of particles) {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += 0.05;
+      p.rot+= p.vrot;
+      p.alpha = elapsed > 2000 ? Math.max(0, 1 - (elapsed - 2000) / 1000) : 1;
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    }
+    if (elapsed < 3000) requestAnimationFrame(tick);
+    else canvas.remove();
+  }
+  requestAnimationFrame(tick);
+}
+
 // ── Overview Dashboard ────────────────────────────────────────────────────────
 const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectProject, onNavigateGarden, onNavigateWishlist }) => {
   // ── Animation state ─────────────────────────────────────────────────────────
@@ -1056,7 +1101,8 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
   const [barsReady, setBarsReady] = useState(false);
   const [hoverTile, setHoverTile] = useState(null);
   const [clickTile, setClickTile] = useState(null);
-  const [rankView, setRankView]   = useState("people"); // "people" | "dept"
+  const [rankView, setRankView]       = useState("people"); // "people" | "dept"
+  const [toolFrameTab, setToolFrameTab] = useState("tools"); // "tools" | "frameworks"
 
   // ── Computed data ────────────────────────────────────────────────────────────
   const pipeline = {
@@ -1148,6 +1194,55 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
     (projects.filter(p => p.stage === "bloom" || p.stage === "thriving").length /
       Math.max(projects.length, 1)) * 100
   );
+
+  // ── New computed values ───────────────────────────────────────────────────────
+
+  // Spotlight: most recently stage-advanced project
+  const spotlightProject = (() => {
+    const ev = activityLog.find(e => e.event_type === "stage_moved" && e.project_id);
+    return ev ? (projects.find(p => String(p.id) === String(ev.project_id)) || projects[0] || null) : (projects[0] || null);
+  })();
+
+  // Now Possible: projects with non-empty descriptions
+  const nowPossible = projects.filter(p => p.description && p.description.trim().length > 20).slice(0, 8);
+
+  // Growth chart: group projects by month using createdAt
+  const growthData = (() => {
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(); d.setMonth(d.getMonth() - i);
+      const key = d.toLocaleDateString("en-US", { month:"short", year:"2-digit" });
+      months.push({ key, count: 0 });
+    }
+    for (const p of projects) {
+      if (!p.createdAt) continue;
+      const d = new Date(p.createdAt);
+      const key = d.toLocaleDateString("en-US", { month:"short", year:"2-digit" });
+      const m = months.find(mo => mo.key === key);
+      if (m) m.count++;
+    }
+    return months;
+  })();
+
+  // Dept coverage: count projects per dept
+  const deptCoverage = (() => {
+    const map = Object.fromEntries(Object.keys(DEPT_ZONES).map(d => [d, 0]));
+    for (const p of projects) { if (p.builtBy && map[p.builtBy] !== undefined) map[p.builtBy]++; }
+    return map;
+  })();
+
+  // Week-over-week deltas: count activity in last 7 days per stage
+  const weekAgo = Date.now() - 7 * 86400000;
+  const weekDeltas = (() => {
+    const deltas = { seeds:0, seedling:0, nursery:0, sprout:0, bloom:0, thriving:0 };
+    for (const ev of activityLog) {
+      if (!ev.created_at || new Date(ev.created_at).getTime() < weekAgo) continue;
+      if (ev.event_type === "seed_planted") deltas.seeds++;
+      if (ev.event_type === "project_added") deltas.seedling++;
+      if (ev.event_type === "stage_moved" && ev.to_stage) deltas[ev.to_stage] = (deltas[ev.to_stage] || 0) + 1;
+    }
+    return deltas;
+  })();
 
   // ── CountUp animation (200ms delay, 600ms duration) ─────────────────────────
   useEffect(() => {
@@ -1290,6 +1385,13 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                     {counts[t.key]}
                   </div>
 
+                  {/* Week delta */}
+                  {weekDeltas[t.key] > 0 && (
+                    <div style={{ fontSize:10, fontWeight:600, color:t.accent, marginBottom:2 }}>
+                      +{weekDeltas[t.key]} this week
+                    </div>
+                  )}
+
                   {/* Stage name + live dot */}
                   <div style={{ fontSize:13, fontWeight:700, color:t.countColor, letterSpacing:"0.02em", marginBottom:5, display:"flex", alignItems:"center", gap:4 }}>
                     {t.label}
@@ -1320,6 +1422,114 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
           );
         })}
       </div>
+
+      {/* ── Today's Spotlight ──────────────────────────────────────────── */}
+      {spotlightProject && (() => {
+        const sc  = STAGE_COLORS[spotlightProject.stage] || STAGE_COLORS.seedling;
+        const spEv = activityLog.find(e => e.event_type === "stage_moved" && String(e.project_id) === String(spotlightProject.id));
+        const spTime = spEv?.created_at || spotlightProject.lastUpdatedAt;
+        return (
+          <div style={{ marginBottom:20, animation:"fadeUp 0.4s ease 0.08s both" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+              Today's Spotlight
+            </div>
+            <div
+              onClick={() => onSelectProject(spotlightProject)}
+              onMouseEnter={e => e.currentTarget.style.boxShadow=DS.shadow.md}
+              onMouseLeave={e => e.currentTarget.style.boxShadow=DS.shadow.sm}
+              style={{
+                background:C.white, borderRadius:DS.radius.lg,
+                border:`0.5px solid ${C.mushroom200}`,
+                borderLeft:`4px solid ${sc.border}`,
+                boxShadow:DS.shadow.sm,
+                padding:"16px 20px", cursor:"pointer", transition:"box-shadow 0.15s",
+              }}
+            >
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:C.mushroom400 }}>
+                    Recently advanced
+                  </span>
+                  <span style={{ fontSize:9, fontWeight:600, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, borderRadius:DS.radius.full, padding:"1px 8px" }}>
+                    {STAGE_LABELS[spotlightProject.stage]}
+                  </span>
+                  {spotlightProject.builtBy && (
+                    <span style={{ fontSize:9, fontWeight:600, background:C.mushroom100, color:C.mushroom600, borderRadius:DS.radius.full, padding:"1px 8px" }}>
+                      {spotlightProject.builtBy}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize:11, color:C.mushroom400 }}>{spTime ? (() => {
+                  const mins = Math.floor((Date.now() - new Date(spTime).getTime()) / 60000);
+                  if (mins < 2) return "just now";
+                  if (mins < 60) return `${mins}m ago`;
+                  const hrs = Math.floor(mins / 60);
+                  if (hrs < 24) return `${hrs}h ago`;
+                  return `${Math.floor(hrs / 24)}d ago`;
+                })() : ""}</span>
+              </div>
+              <div style={{ fontSize:18, fontWeight:700, color:C.mushroom900, marginBottom:6 }}>
+                {spotlightProject.name}
+              </div>
+              {spotlightProject.description && (
+                <div style={{ fontSize:12, color:C.mushroom600, lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden", marginBottom:8 }}>
+                  {spotlightProject.description}
+                </div>
+              )}
+              <div style={{ fontSize:11, color:C.mushroom400 }}>
+                Built by <span style={{ fontWeight:600, color:C.mushroom700 }}>{spotlightProject.builder}</span>
+                <span style={{ color:sc.text, marginLeft:12, fontWeight:600 }}>View project →</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Now Possible ───────────────────────────────────────────────── */}
+      {nowPossible.length > 0 && (
+        <div style={{ marginBottom:20, animation:"fadeUp 0.4s ease 0.1s both" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500 }}>
+              What Sprout is now building
+            </div>
+            <span style={{ fontSize:10, color:C.mushroom400 }}>scroll →</span>
+          </div>
+          <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:4, scrollbarWidth:"none" }}>
+            {nowPossible.map(p => {
+              const sc = STAGE_COLORS[p.stage] || STAGE_COLORS.seedling;
+              const dc = DEPT_COLORS[p.builtBy] || C.kangkong500;
+              return (
+                <div key={p.id}
+                  onClick={() => onSelectProject(p)}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow=DS.shadow.md}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow=DS.shadow.sm}
+                  style={{
+                    minWidth:220, maxWidth:220, background:C.white,
+                    border:`0.5px solid ${C.mushroom200}`,
+                    borderTop:`3px solid ${dc}`,
+                    borderRadius:DS.radius.md, padding:"12px 14px",
+                    boxShadow:DS.shadow.sm, cursor:"pointer", transition:"box-shadow 0.15s",
+                    flexShrink:0,
+                  }}
+                >
+                  <div style={{ fontSize:12, fontWeight:700, color:C.mushroom900, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {p.name}
+                  </div>
+                  <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.5, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden", marginBottom:8, minHeight:33 }}>
+                    {p.description}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:10, color:C.mushroom500 }}>{p.builder}</span>
+                    <span style={{ fontSize:9, fontWeight:600, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, borderRadius:DS.radius.full, padding:"1px 6px" }}>
+                      {STAGE_LABELS[p.stage]}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Two-column body ─────────────────────────────────────────────── */}
       <div style={{ display:"flex", gap:16, alignItems:"start" }}>
@@ -1387,57 +1597,106 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
             </div>
           </div>
 
-          {/* ── Tools in Use ──────────────────────────────────────────────── */}
+          {/* ── Growth Chart ──────────────────────────────────────────────── */}
           <div style={{ animation:"fadeUp 0.4s ease 0.2s both" }}>
             <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
-              Tools in Use
+              Garden Growth
             </div>
             <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"14px 16px" }}>
-              {toolCounts.length === 0 ? (
-                <div style={{ fontSize:11, color:C.mushroom400 }}>No tool data yet.</div>
-              ) : (() => {
-                const maxT = toolCounts[0]?.count || 1;
+              {(() => {
+                const maxG = Math.max(...growthData.map(m => m.count), 1);
                 return (
-                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                    {toolCounts.map(({ tool, count }) => (
-                      <div key={tool} style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <span style={{ fontSize:13, fontWeight:500, color:C.mushroom800, width:130, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tool}</span>
-                        <div style={{ flex:1, height:8, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
-                          <div style={{ height:"100%", width: barsReady ? `${(count/maxT)*100}%` : 0, background:C.kangkong500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
+                  <div>
+                    <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:90, marginBottom:6 }}>
+                      {growthData.map(m => (
+                        <div key={m.key} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                          {m.count > 0 && (
+                            <span style={{ fontSize:9, color:C.kangkong600, fontWeight:700 }}>{m.count}</span>
+                          )}
+                          <div style={{ width:"100%", background:C.mushroom100, borderRadius:"3px 3px 0 0", overflow:"hidden", height:80 }}>
+                            <div style={{
+                              width:"100%",
+                              height: barsReady ? `${(m.count / maxG) * 100}%` : 0,
+                              background: m.count > 0 ? C.kangkong400 : C.mushroom100,
+                              marginTop:"auto",
+                              transition:"height 0.8s ease 0.3s",
+                              borderRadius:"3px 3px 0 0",
+                              display:"flex", alignItems:"flex-end",
+                            }}/>
+                          </div>
                         </div>
-                        <span style={{ fontSize:11, color:C.mushroom500, width:24, textAlign:"right", flexShrink:0 }}>{count}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <div style={{ display:"flex", gap:6 }}>
+                      {growthData.map(m => (
+                        <div key={m.key} style={{ flex:1, textAlign:"center", fontSize:9, color:C.mushroom400 }}>{m.key}</div>
+                      ))}
+                    </div>
                   </div>
                 );
               })()}
             </div>
           </div>
 
-          {/* ── Agentic Frameworks ────────────────────────────────────────── */}
-          <div style={{ animation:"fadeUp 0.4s ease 0.25s both" }}>
-            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
-              Agentic Frameworks
+          {/* ── Tools & Frameworks (tabbed) ───────────────────────────────── */}
+          <div style={{ animation:"fadeUp 0.4s ease 0.22s both" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+              <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500 }}>
+                {toolFrameTab === "tools" ? "Tools in Use" : "Agentic Frameworks"}
+              </div>
+              <div style={{ display:"inline-flex", background:C.mushroom100, borderRadius:DS.radius.full, padding:2 }}>
+                {[{v:"tools",label:"Tools"},{v:"frameworks",label:"Frameworks"}].map(({v,label}) => (
+                  <button key={v} onClick={() => setToolFrameTab(v)} style={{
+                    fontFamily:FF, fontSize:10, fontWeight:600,
+                    padding:"3px 10px", borderRadius:DS.radius.full, border:"none", cursor:"pointer",
+                    transition:"all 0.15s",
+                    background: toolFrameTab === v ? C.white : "transparent",
+                    color:       toolFrameTab === v ? C.kangkong600 : C.mushroom500,
+                    boxShadow:   toolFrameTab === v ? DS.shadow.sm : "none",
+                  }}>{label}</button>
+                ))}
+              </div>
             </div>
             <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"14px 16px" }}>
-              {frameworkCounts.length === 0 ? (
-                <div style={{ fontSize:11, color:C.mushroom400 }}>No framework data yet.</div>
-              ) : (() => {
-                const maxF = frameworkCounts[0]?.count || 1;
-                return (
-                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                    {frameworkCounts.map(({ framework, count }) => (
-                      <div key={framework} style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <span style={{ fontSize:13, fontWeight:500, color:C.mushroom800, width:130, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{framework}</span>
-                        <div style={{ flex:1, height:8, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
-                          <div style={{ height:"100%", width: barsReady ? `${(count/maxF)*100}%` : 0, background:C.ubas500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
+              {toolFrameTab === "tools" ? (
+                toolCounts.length === 0 ? (
+                  <div style={{ fontSize:11, color:C.mushroom400 }}>No tool data yet.</div>
+                ) : (() => {
+                  const maxT = toolCounts[0]?.count || 1;
+                  return (
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {toolCounts.map(({ tool, count }) => (
+                        <div key={tool} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <span style={{ fontSize:13, fontWeight:500, color:C.mushroom800, width:130, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tool}</span>
+                          <div style={{ flex:1, height:8, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
+                            <div style={{ height:"100%", width: barsReady ? `${(count/maxT)*100}%` : 0, background:C.kangkong500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
+                          </div>
+                          <span style={{ fontSize:11, color:C.mushroom500, width:24, textAlign:"right", flexShrink:0 }}>{count}</span>
                         </div>
-                        <span style={{ fontSize:11, color:C.mushroom500, width:24, textAlign:"right", flexShrink:0 }}>{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
+                      ))}
+                    </div>
+                  );
+                })()
+              ) : (
+                frameworkCounts.length === 0 ? (
+                  <div style={{ fontSize:11, color:C.mushroom400 }}>No framework data yet.</div>
+                ) : (() => {
+                  const maxF = frameworkCounts[0]?.count || 1;
+                  return (
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {frameworkCounts.map(({ framework, count }) => (
+                        <div key={framework} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <span style={{ fontSize:13, fontWeight:500, color:C.mushroom800, width:130, flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{framework}</span>
+                          <div style={{ flex:1, height:8, background:C.mushroom100, borderRadius:DS.radius.full, overflow:"hidden" }}>
+                            <div style={{ height:"100%", width: barsReady ? `${(count/maxF)*100}%` : 0, background:C.ubas500, transition:"width 0.8s ease 0.4s", borderRadius:DS.radius.full }}/>
+                          </div>
+                          <span style={{ fontSize:11, color:C.mushroom500, width:24, textAlign:"right", flexShrink:0 }}>{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
             </div>
           </div>
 
@@ -1536,6 +1795,27 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          {/* ── Dept Coverage Map ─────────────────────────────────────────── */}
+          <div style={{ animation:"fadeUp 0.4s ease 0.3s both" }}>
+            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
+              Dept Coverage
+            </div>
+            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"14px 16px", maxHeight:300, overflowY:"auto" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
+                {Object.entries(deptCoverage).map(([dept, count]) => {
+                  const bg = count === 0 ? C.mushroom50 : count <= 2 ? C.kangkong50 : count <= 4 ? C.kangkong100 : C.kangkong200;
+                  const textCol = count === 0 ? C.mushroom400 : C.kangkong700;
+                  return (
+                    <div key={dept} style={{ background:bg, borderRadius:DS.radius.sm, padding:"6px 8px", display:"flex", flexDirection:"column", gap:2 }}>
+                      <div style={{ fontSize:9, fontWeight:600, color:textCol, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dept}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:textCol }}>{count}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -5114,6 +5394,150 @@ function FirstTimeCountryModal({onSelect}) {
   );
 }
 
+// ── Command Palette ───────────────────────────────────────────────────────────
+function CommandPalette({ open, onClose, query, setQuery, projects, wishes, onSelectProject, onNavigate }) {
+  const [cursor, setCursor] = useState(0);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (open) { setCursor(0); setTimeout(() => inputRef.current?.focus(), 50); }
+    else       { setQuery(""); }
+  }, [open]);
+
+  const NAV_ACTIONS = [
+    { id:"overview", label:"Overview", hint:"Dashboard", action:() => { onNavigate("dashboard"); onClose(); } },
+    { id:"garden",   label:"Garden",   hint:"All plants", action:() => { onNavigate("garden"); onClose(); } },
+    { id:"wishlist", label:"Seeds",    hint:"Wishlist", action:() => { onNavigate("wishlist"); onClose(); } },
+  ];
+
+  const q = query.toLowerCase().trim();
+  const filteredNav  = q ? NAV_ACTIONS.filter(a => a.label.toLowerCase().includes(q) || a.hint.toLowerCase().includes(q)) : NAV_ACTIONS;
+  const filteredProj = projects.filter(p => !q || p.name?.toLowerCase().includes(q) || p.builtBy?.toLowerCase().includes(q)).slice(0, 6);
+  const filteredWish = wishes.filter(w => !q || w.title?.toLowerCase().includes(q)).slice(0, 4);
+
+  const allItems = [
+    ...filteredNav.map(a  => ({ type:"nav",  data:a })),
+    ...filteredProj.map(p => ({ type:"proj", data:p })),
+    ...filteredWish.map(w => ({ type:"wish", data:w })),
+  ];
+
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowDown")  { e.preventDefault(); setCursor(c => Math.min(c+1, allItems.length-1)); }
+    if (e.key === "ArrowUp")    { e.preventDefault(); setCursor(c => Math.max(c-1, 0)); }
+    if (e.key === "Enter")      { e.preventDefault(); handleSelect(allItems[cursor]); }
+    if (e.key === "Escape")     { onClose(); }
+  };
+
+  const handleSelect = (item) => {
+    if (!item) return;
+    if (item.type === "nav")  { item.data.action(); }
+    if (item.type === "proj") { onSelectProject(item.data); onClose(); }
+    if (item.type === "wish") { onNavigate("wishlist"); onClose(); }
+  };
+
+  if (!open) return null;
+  return (
+    <div onClick={onClose} style={{
+      position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", backdropFilter:"blur(4px)",
+      zIndex:9000, display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:100,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width:"100%", maxWidth:560, background:C.white, borderRadius:DS.radius.xl,
+        boxShadow:DS.shadow.xl, overflow:"hidden", fontFamily:FF,
+      }}>
+        {/* Search input */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px", borderBottom:`1px solid ${C.mushroom100}` }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.mushroom400} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={e => { setQuery(e.target.value); setCursor(0); }}
+            onKeyDown={handleKeyDown}
+            placeholder="Search projects, seeds, or navigate…"
+            style={{ flex:1, border:"none", outline:"none", fontFamily:FF, fontSize:14, color:C.mushroom900, background:"transparent" }}
+          />
+          <span style={{ fontSize:10, color:C.mushroom400, background:C.mushroom100, borderRadius:4, padding:"2px 6px", fontWeight:700 }}>ESC</span>
+        </div>
+
+        {/* Results */}
+        <div style={{ maxHeight:400, overflowY:"auto" }}>
+          {filteredNav.length > 0 && (
+            <div style={{ padding:"8px 0 0" }}>
+              <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:C.mushroom400, padding:"0 16px 4px" }}>Navigate</div>
+              {filteredNav.map((a, i) => {
+                const idx = i;
+                const active = cursor === idx;
+                return (
+                  <div key={a.id} onClick={() => a.action()}
+                    onMouseEnter={() => setCursor(idx)}
+                    style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 16px", background:active?C.mushroom50:"transparent", cursor:"pointer" }}
+                  >
+                    <span style={{ fontSize:13, fontWeight:600, color:C.mushroom800 }}>{a.label}</span>
+                    <span style={{ fontSize:11, color:C.mushroom400 }}>{a.hint}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {filteredProj.length > 0 && (
+            <div style={{ padding:"8px 0 0" }}>
+              <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:C.mushroom400, padding:"0 16px 4px" }}>Projects</div>
+              {filteredProj.map((p, i) => {
+                const idx = filteredNav.length + i;
+                const active = cursor === idx;
+                const sc = STAGE_COLORS[p.stage] || STAGE_COLORS.seedling;
+                return (
+                  <div key={p.id} onClick={() => { onSelectProject(p); onClose(); }}
+                    onMouseEnter={() => setCursor(idx)}
+                    style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 16px", background:active?C.mushroom50:"transparent", cursor:"pointer" }}
+                  >
+                    <span style={{ flex:1, fontSize:13, fontWeight:600, color:C.mushroom900, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                    <span style={{ fontSize:9, fontWeight:600, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, borderRadius:DS.radius.full, padding:"1px 7px", flexShrink:0 }}>{STAGE_LABELS[p.stage]}</span>
+                    {p.builtBy && <span style={{ fontSize:11, color:C.mushroom400, flexShrink:0 }}>{p.builtBy}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {filteredWish.length > 0 && (
+            <div style={{ padding:"8px 0 8px" }}>
+              <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:C.mushroom400, padding:"0 16px 4px" }}>Seeds</div>
+              {filteredWish.map((w, i) => {
+                const idx = filteredNav.length + filteredProj.length + i;
+                const active = cursor === idx;
+                return (
+                  <div key={w.id} onClick={() => { onNavigate("wishlist"); onClose(); }}
+                    onMouseEnter={() => setCursor(idx)}
+                    style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 16px", background:active?C.mushroom50:"transparent", cursor:"pointer" }}
+                  >
+                    <span style={{ flex:1, fontSize:13, fontWeight:500, color:C.mushroom800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{w.title}</span>
+                    <span style={{ fontSize:11, color:C.ubas500, fontWeight:600, flexShrink:0 }}>▲ {w.upvoters.length}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {allItems.length === 0 && (
+            <div style={{ padding:"24px 16px", fontSize:13, color:C.mushroom400, textAlign:"center" }}>No results for "{query}"</div>
+          )}
+        </div>
+
+        {/* Footer hint */}
+        <div style={{ display:"flex", gap:16, padding:"8px 16px", borderTop:`1px solid ${C.mushroom100}`, background:C.mushroom50 }}>
+          {[["↑↓","Navigate"],["↵","Select"],["Esc","Close"]].map(([key,label]) => (
+            <span key={key} style={{ display:"flex", alignItems:"center", gap:4, fontSize:10, color:C.mushroom400 }}>
+              <span style={{ background:C.mushroom200, borderRadius:3, padding:"1px 5px", fontWeight:700, color:C.mushroom700 }}>{key}</span>
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Help Panel ────────────────────────────────────────────────────────────────
 function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
   view, setView, submitType, setSubmitType, formTitle, setFormTitle,
@@ -5657,6 +6081,8 @@ export default function SproutAIGarden() {
   const [showForm, setShowForm] = useState(false);
   const [showContribute, setShowContribute] = useState(false);
   const [contributeInitialFlow, setContributeInitialFlow] = useState(null);
+  const [cmdOpen, setCmdOpen]   = useState(false);
+  const [cmdQuery, setCmdQuery] = useState("");
 
   const [editingProject, setEditingProject] = useState(null);
   const [gardenNav, setGardenNav] = useState({key:0, viewMode:"directory", stageFilter:"All"});
@@ -5825,6 +6251,16 @@ export default function SproutAIGarden() {
       setActivityLog(activity);
       setDataLoading(false);
     });
+
+    const channel = supabase
+      .channel("activity_live")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_log" },
+        (payload) => {
+          setActivityLog(prev => [payload.new, ...prev].slice(0, 50));
+        }
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
   }, [authUser?.email]);
 
   // ── Load notifications ──────────────────────────────────────────────────────
@@ -5915,6 +6351,16 @@ export default function SproutAIGarden() {
     const handler = e => { if (profileDropRef.current && !profileDropRef.current.contains(e.target)) setProfileOpen(false); };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Global ⌘K / Ctrl+K keydown for command palette
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setCmdOpen(o => !o); }
+      if (e.key === "Escape") setCmdOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, []);
 
   useEffect(()=>{
@@ -6045,6 +6491,7 @@ export default function SproutAIGarden() {
       ? {...p, stage: next, lastUpdated: 0, milestones: newMilestones}
       : p
     ));
+    if (next === "thriving") fireConfetti();
     supabase.from("projects").update({ stage: next, milestones: newMilestones, last_updated: new Date().toISOString() }).eq("id", project.id)
       .then(({ error }) => { if (error) console.error("handleMoveStage:", error); });
     logActivity("stage_moved", project.name, { project_id: String(project.id), from_stage: project.stage, to_stage: next });
@@ -6430,6 +6877,22 @@ export default function SproutAIGarden() {
 
         {/* Right side: add + user */}
         <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {/* ⌘K chip */}
+          <button onClick={() => setCmdOpen(o => !o)} style={{
+            display:"flex",alignItems:"center",gap:5,padding:"4px 10px",
+            background:C.mushroom50,border:"1px solid "+C.mushroom200,
+            borderRadius:DS.radius.md,cursor:"pointer",fontFamily:FF,
+            fontSize:11,color:C.mushroom500,fontWeight:600,transition:"all 0.15s",
+          }}
+            onMouseOver={e=>e.currentTarget.style.borderColor=C.kangkong400}
+            onMouseOut={e=>e.currentTarget.style.borderColor=C.mushroom200}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span style={{fontSize:10,fontWeight:700,color:C.mushroom400,background:C.mushroom100,borderRadius:4,padding:"1px 5px"}}>⌘K</span>
+          </button>
+
           <button onClick={()=>{ setContributeInitialFlow(null); setShowContribute(true); }} style={{
             background:C.kangkong500,color:C.white,border:"none",borderRadius:DS.radius.lg,
             padding:"8px 16px",cursor:"pointer",fontFamily:FF,fontSize:12,fontWeight:700,
@@ -6554,6 +7017,17 @@ export default function SproutAIGarden() {
           country={authUser.country}
         />
       )}
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        query={cmdQuery}
+        setQuery={setCmdQuery}
+        projects={projects}
+        wishes={wishes}
+        onSelectProject={handleSelectProject}
+        onNavigate={(v) => { setView(v); setSelected(null); }}
+      />
+
       <HelpPanel
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
