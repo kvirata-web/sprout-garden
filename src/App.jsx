@@ -130,6 +130,35 @@ const STAGE_COLORS = {
   thriving: {bg:C.blueberry100,    text:C.blueberry500,     border:C.blueberry400,   dot:C.blueberry500},
 };
 
+const CHANGELOG = [
+  {
+    date: "Mar 21, 2026",
+    title: "Unified Contribute entry point",
+    desc: "Replaced 'Add to Garden' with a single Contribute button. Add a Plant (3-step) and Plant a Seed (3-step) are now unified flows with chip pickers, AI summarizer, and duplicate detection.",
+    tags: ["Feature"],
+  },
+  {
+    date: "Mar 18, 2026",
+    title: "Garden horizon view + time-of-day background",
+    desc: "Replaced floating plant layout with a horizon view — dept columns, ground line, sky that changes with time of day (6 windows: sunrise to night). Overview dashboard redesigned with pipeline tiles, Momentum feed, and My Corner.",
+    tags: ["Feature"],
+  },
+  {
+    date: "Mar 17, 2026",
+    title: "Grove v2 — 5-stage pipeline + Nursery approval gate",
+    desc: "New pipeline: Seedling → Nursery → Sprout → Bloom → Thriving. Nursery is an ExCom review gate requiring a prototype and deck. Seeds tab replaces Wishlist. Claiming a Seed auto-creates a Seedling. In-app notifications added.",
+    tags: ["Feature"],
+  },
+  {
+    date: "Mar 16, 2026",
+    title: "Grove v1 launch",
+    desc: "Initial launch. Directory, Board, Garden, and Seeds views. Real Supabase backend with auth, row-level security, and full data persistence. Deployed on Vercel.",
+    tags: ["Launch"],
+  },
+];
+const CHANGELOG_LATEST = new Date("2026-03-21");
+const CHANGELOG_IS_NEW = (Date.now() - CHANGELOG_LATEST.getTime()) < 14 * 86400000;
+
 const STAGE_GUIDE = [
   {
     key: "seed", emoji: "🌰", label: "Seed",
@@ -5164,12 +5193,15 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
           <circle cx="12" cy="17" r="0.5" fill="white" stroke="white" strokeWidth="1.5"/>
         </svg>
+        {CHANGELOG_IS_NEW && (
+          <div style={{position:"absolute",top:4,right:4,width:9,height:9,borderRadius:"50%",background:"#22c55e",border:"2px solid white"}}/>
+        )}
       </button>
 
       {/* Panel */}
       {open && (
         <div style={{
-          position:"fixed", top:0, right:0, width:320, height:"100vh",
+          position:"fixed", top:0, right:0, width:380, height:"100vh",
           background:C.white, borderLeft:"1px solid "+C.mushroom200,
           zIndex:55, display:"flex", flexDirection:"column",
           transform:"translateX(0)", animation:"slideInPanel 0.22s cubic-bezier(0.4,0,0.2,1)",
@@ -5179,7 +5211,10 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           {/* Panel header */}
           <div style={{padding:"12px 14px 0", borderBottom:"1px solid "+C.mushroom200, flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help</span>
+              <div>
+                <div style={{fontFamily:FF,fontSize:15,fontWeight:700,color:C.kangkong800,letterSpacing:"-0.2px"}}>Grove</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,marginTop:1}}>Help & updates</div>
+              </div>
               <button onClick={onClose} style={{width:28,height:28,borderRadius:DS.radius.sm,border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.mushroom500,fontSize:16,fontWeight:300}}
                 onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
                 onMouseOut={e=>e.currentTarget.style.background="none"}
@@ -5190,19 +5225,28 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
             {view === "feed" && (
               <div style={{display:"flex",gap:0,marginBottom:8}}>
                 {[
-                  ["feedback",     "Feedback"],
-                  ["faq",          "FAQ"],
-                ].map(([val, label]) => (
+                  ["feedback",  "💬", "Feedback"],
+                  ["faq",       "❓", "FAQ"],
+                  ["about",     "ℹ️", "About"],
+                  ["whats_new", "✦",  "What's New"],
+                ].map(([val, icon, label]) => (
                   <button key={val}
                     onClick={() => setHelpTab(val)}
                     style={{
-                      padding:"6px 11px", fontFamily:FF, fontSize:12, fontWeight:500,
+                      padding:"6px 9px", fontFamily:FF, fontSize:11, fontWeight:500,
                       border:"none", background:"none", cursor:"pointer",
                       color: helpTab === val ? C.kangkong700 : C.mushroom500,
                       borderBottom: helpTab === val ? "2px solid "+C.kangkong600 : "2px solid transparent",
                       transition:"all 0.15s", whiteSpace:"nowrap",
+                      display:"flex", alignItems:"center", gap:4,
                     }}
-                  >{label}</button>
+                  >
+                    <span style={{fontSize:12}}>{icon}</span>
+                    {label}
+                    {val === "whats_new" && CHANGELOG_IS_NEW && (
+                      <span style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",display:"inline-block",marginLeft:1}}/>
+                    )}
+                  </button>
                 ))}
               </div>
             )}
@@ -5239,7 +5283,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
             )}
             {/* Header bottom border when filter tabs not shown */}
             {view === "feed" && helpTab !== "feedback" && (
-              <div style={{borderBottom:"1px solid "+C.mushroom200}}/>
+              <div style={{height:1,background:C.mushroom200,marginBottom:0}}/>
             )}
           </div>
 
@@ -5303,10 +5347,15 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                     const hasVoted  = item.upvoters?.includes(authUser?.email);
                     const canEdit   = isOwn && !isSettled;
                     return (
-                      <div key={item.id} style={{padding:"10px 0",borderBottom:"1px solid "+C.mushroom100,opacity:isSettled?0.5:1}}>
+                      <div key={item.id} style={{
+                        padding:"10px 12px", marginBottom:6,
+                        borderLeft:"3px solid "+(item.type==="report"?C.tomato500:C.blueberry500),
+                        borderRadius:"0 "+DS.radius.sm+" "+DS.radius.sm+" 0",
+                        background:isSettled?C.mushroom50:(item.type==="report"?"#FFF8F8":"#F8F9FF"),
+                        opacity:isSettled?0.6:1,
+                        transition:"opacity 0.15s",
+                      }}>
                         <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
-                          {/* Type dot */}
-                          <div style={{width:6,height:6,borderRadius:"50%",marginTop:5,flexShrink:0,background:item.type==="report"?C.tomato600:C.blueberry500}}/>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontFamily:FF,fontSize:13,fontWeight:500,color:C.mushroom900,lineHeight:1.4,marginBottom:4}}>{item.title}</div>
                             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:4}}>
@@ -5351,6 +5400,105 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                   })
                 )}
               </>
+            )}
+
+            {/* ── About ── */}
+            {view === "feed" && helpTab === "about" && (
+              <div style={{display:"flex",flexDirection:"column",gap:20,paddingBottom:16}}>
+                {/* What is Grove */}
+                <div>
+                  <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:6}}>What is Grove?</div>
+                  <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,lineHeight:1.7}}>
+                    Grove is Sprout's internal AI project tracker — a living garden where ideas grow from seed to production. It covers both the Philippines and Thailand offices, tracking every AI initiative from first idea through launch.
+                  </div>
+                </div>
+                {/* The pipeline */}
+                <div>
+                  <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:8}}>The pipeline</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {[
+                      {emoji:"🌱",stage:"Seedling",desc:"An idea someone's actively building — not yet reviewed."},
+                      {emoji:"🪴",stage:"Nursery",desc:"Under leadership review before scaling."},
+                      {emoji:"🌿",stage:"Sprout",desc:"Approved and accelerating — full speed ahead."},
+                      {emoji:"🌸",stage:"Bloom",desc:"In the hands of real users. Gathering feedback."},
+                      {emoji:"🌳",stage:"Thriving",desc:"Live, loved, and making an impact."},
+                    ].map(s=>(
+                      <div key={s.stage} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"7px 10px",background:C.mushroom50,borderRadius:DS.radius.sm}}>
+                        <span style={{fontSize:14,flexShrink:0}}>{s.emoji}</span>
+                        <div>
+                          <span style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom800}}>{s.stage} </span>
+                          <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600}}>{s.desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Built with */}
+                <div>
+                  <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:8}}>Built with</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {["React + Vite","Supabase Auth","Supabase Postgres","Vercel","Resend (email)"].map(t=>(
+                      <span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:500,padding:"3px 9px",borderRadius:DS.radius.full,background:C.kangkong50,color:C.kangkong700,border:"1px solid "+C.kangkong200}}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+                {/* Made by */}
+                <div style={{borderTop:"1px solid "+C.mushroom100,paddingTop:14,display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:C.kangkong600,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.white}}>S</span>
+                  </div>
+                  <div>
+                    <div style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom800}}>Sprout Product Team</div>
+                    <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>Philippines · Thailand · 2026</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── What's New ── */}
+            {view === "feed" && helpTab === "whats_new" && (
+              <div style={{display:"flex",flexDirection:"column",gap:0,paddingBottom:16}}>
+                <div style={{fontFamily:FF,fontSize:12,color:C.mushroom500,marginBottom:14,lineHeight:1.5}}>
+                  A running log of Grove updates — what's new, what improved, what launched.
+                </div>
+                {CHANGELOG.map((entry, idx) => {
+                  const isLatest = idx === 0;
+                  const tagColors = {
+                    Feature: {bg:C.kangkong50, border:C.kangkong200, text:C.kangkong700},
+                    Fix:     {bg:"#FFF8F8",    border:"#FFCDD2",     text:C.tomato600},
+                    Launch:  {bg:C.mango50,    border:C.mango200,    text:C.mango700},
+                    Design:  {bg:"#F3E8FF",    border:"#E9D5FF",     text:"#7C3AED"},
+                  };
+                  return (
+                    <div key={entry.date} style={{display:"flex",gap:0,position:"relative"}}>
+                      {/* Timeline line */}
+                      {idx < CHANGELOG.length - 1 && (
+                        <div style={{position:"absolute",left:11,top:24,bottom:0,width:1,background:C.mushroom200,zIndex:0}}/>
+                      )}
+                      {/* Dot */}
+                      <div style={{flexShrink:0,width:23,display:"flex",flexDirection:"column",alignItems:"center",zIndex:1}}>
+                        <div style={{width:11,height:11,borderRadius:"50%",marginTop:8,border:"2px solid "+(isLatest?C.kangkong500:C.mushroom300),background:isLatest?C.kangkong500:C.white}}/>
+                      </div>
+                      {/* Content */}
+                      <div style={{flex:1,paddingBottom:18}}>
+                        <div style={{fontFamily:FF,fontSize:10,fontWeight:500,color:C.mushroom400,marginBottom:2,marginTop:6}}>{entry.date}</div>
+                        <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900,marginBottom:4}}>{entry.title}</div>
+                        <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.6,marginBottom:6}}>{entry.desc}</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                          {entry.tags.map(tag=>{
+                            const tc = tagColors[tag] || tagColors.Feature;
+                            return (
+                              <span key={tag} style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:DS.radius.full,background:tc.bg,color:tc.text,border:"1px solid "+tc.border}}>
+                                {tag}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             {(view === "submit" || view === "edit") && (
