@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
-import { loadProjects, loadWishes, loadProfiles, loadActivityLog, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo } from "./lib/db";
+import { loadProjects, loadWishes, loadProfiles, loadActivityLog, fromProject, fromWish, toProject, toWish, loadNotifications, daysAgo, loadChangelog, saveChangelog, deleteChangelog } from "./lib/db";
 import { extractKeywords, countOverlap, getRelatedProjects, getActivityFeed } from "./lib/utils.js";
 
 // ── Sprout Design System Tokens ───────────────────────────────────────────────
@@ -129,6 +129,7 @@ const STAGE_COLORS = {
   bloom:    {bg:C.kangkong100,     text:C.kangkong600,      border:C.kangkong200,    dot:C.kangkong500},
   thriving: {bg:C.blueberry100,    text:C.blueberry500,     border:C.blueberry400,   dot:C.blueberry500},
 };
+
 
 const STAGE_GUIDE = [
   {
@@ -5117,7 +5118,27 @@ function FirstTimeCountryModal({onSelect}) {
 function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
   view, setView, submitType, setSubmitType, formTitle, setFormTitle,
   formDesc, setFormDesc, editItem, onOpen, onSubmit, onUpvote,
-  onResolve, onDelete, onStartEdit, loading, authUser, helpTab, setHelpTab }) {
+  onResolve, onDelete, onStartEdit, loading, authUser, helpTab, setHelpTab,
+  changelog, changelogIsNew, onSaveChangelog, onDeleteChangelog }) {
+
+  // Admin form state for new changelog entries
+  const [clFormOpen,  setClFormOpen]  = useState(false);
+  const [clForm,      setClForm]      = useState({ date: "", title: "", desc: "", tags: [], isMilestone: false });
+  const [clSaving,    setClSaving]    = useState(false);
+
+  const CL_TAGS = ["Feature","Fix","Design","Beta","MVP","Launch"];
+
+  const handleClSave = async () => {
+    if (!clForm.title.trim() || !clForm.date) return;
+    setClSaving(true);
+    try {
+      await onSaveChangelog(clForm);
+      setClFormOpen(false);
+      setClForm({ date: "", title: "", desc: "", tags: [], isMilestone: false });
+    } finally {
+      setClSaving(false);
+    }
+  };
 
 
   // helpDateLabel is local to avoid conflict with imported daysAgo (which returns a number)
@@ -5164,12 +5185,15 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
           <circle cx="12" cy="17" r="0.5" fill="white" stroke="white" strokeWidth="1.5"/>
         </svg>
+        {changelogIsNew && (
+          <div style={{position:"absolute",top:4,right:4,width:9,height:9,borderRadius:"50%",background:"#22c55e",border:"2px solid white"}}/>
+        )}
       </button>
 
       {/* Panel */}
       {open && (
         <div style={{
-          position:"fixed", top:0, right:0, width:320, height:"100vh",
+          position:"fixed", top:0, right:0, width:380, height:"100vh",
           background:C.white, borderLeft:"1px solid "+C.mushroom200,
           zIndex:55, display:"flex", flexDirection:"column",
           transform:"translateX(0)", animation:"slideInPanel 0.22s cubic-bezier(0.4,0,0.2,1)",
@@ -5179,7 +5203,10 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
           {/* Panel header */}
           <div style={{padding:"12px 14px 0", borderBottom:"1px solid "+C.mushroom200, flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontFamily:FF,fontSize:15,fontWeight:600,color:C.mushroom900}}>Help</span>
+              <div>
+                <div style={{fontFamily:FF,fontSize:15,fontWeight:700,color:C.kangkong800,letterSpacing:"-0.2px"}}>Grove</div>
+                <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500,marginTop:1}}>Help & updates</div>
+              </div>
               <button onClick={onClose} style={{width:28,height:28,borderRadius:DS.radius.sm,border:"none",background:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:C.mushroom500,fontSize:16,fontWeight:300}}
                 onMouseOver={e=>e.currentTarget.style.background=C.mushroom100}
                 onMouseOut={e=>e.currentTarget.style.background="none"}
@@ -5190,19 +5217,28 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
             {view === "feed" && (
               <div style={{display:"flex",gap:0,marginBottom:8}}>
                 {[
-                  ["feedback",     "Feedback"],
-                  ["faq",          "FAQ"],
-                ].map(([val, label]) => (
+                  ["feedback",  "💬", "Feedback"],
+                  ["faq",       "❓", "FAQ"],
+                  ["whats_new", "✦",  "What's New"],
+                  ["about",     "ℹ️", "About"],
+                ].map(([val, icon, label]) => (
                   <button key={val}
                     onClick={() => setHelpTab(val)}
                     style={{
-                      padding:"6px 11px", fontFamily:FF, fontSize:12, fontWeight:500,
+                      padding:"6px 9px", fontFamily:FF, fontSize:11, fontWeight:500,
                       border:"none", background:"none", cursor:"pointer",
                       color: helpTab === val ? C.kangkong700 : C.mushroom500,
                       borderBottom: helpTab === val ? "2px solid "+C.kangkong600 : "2px solid transparent",
                       transition:"all 0.15s", whiteSpace:"nowrap",
+                      display:"flex", alignItems:"center", gap:4,
                     }}
-                  >{label}</button>
+                  >
+                    <span style={{fontSize:12}}>{icon}</span>
+                    {label}
+                    {val === "whats_new" && changelogIsNew && (
+                      <span style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",display:"inline-block",marginLeft:1}}/>
+                    )}
+                  </button>
                 ))}
               </div>
             )}
@@ -5239,7 +5275,7 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
             )}
             {/* Header bottom border when filter tabs not shown */}
             {view === "feed" && helpTab !== "feedback" && (
-              <div style={{borderBottom:"1px solid "+C.mushroom200}}/>
+              <div style={{height:1,background:C.mushroom200,marginBottom:0}}/>
             )}
           </div>
 
@@ -5303,10 +5339,15 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                     const hasVoted  = item.upvoters?.includes(authUser?.email);
                     const canEdit   = isOwn && !isSettled;
                     return (
-                      <div key={item.id} style={{padding:"10px 0",borderBottom:"1px solid "+C.mushroom100,opacity:isSettled?0.5:1}}>
+                      <div key={item.id} style={{
+                        padding:"10px 12px", marginBottom:6,
+                        borderLeft:"3px solid "+(item.type==="report"?C.tomato500:C.blueberry500),
+                        borderRadius:"0 "+DS.radius.sm+" "+DS.radius.sm+" 0",
+                        background:isSettled?C.mushroom50:(item.type==="report"?"#FFF8F8":"#F8F9FF"),
+                        opacity:isSettled?0.6:1,
+                        transition:"opacity 0.15s",
+                      }}>
                         <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
-                          {/* Type dot */}
-                          <div style={{width:6,height:6,borderRadius:"50%",marginTop:5,flexShrink:0,background:item.type==="report"?C.tomato600:C.blueberry500}}/>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontFamily:FF,fontSize:13,fontWeight:500,color:C.mushroom900,lineHeight:1.4,marginBottom:4}}>{item.title}</div>
                             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:4}}>
@@ -5352,6 +5393,173 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                 )}
               </>
             )}
+
+            {/* ── About ── */}
+            {view === "feed" && helpTab === "about" && (
+              <div style={{display:"flex",flexDirection:"column",gap:20,paddingBottom:16}}>
+                {/* What is Grove */}
+                <div>
+                  <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:6}}>What is Grove?</div>
+                  <div style={{fontFamily:FF,fontSize:12,color:C.mushroom700,lineHeight:1.7}}>
+                    Grove is Sprout's internal AI project tracker — a living garden where ideas grow from seed to production. It covers both the Philippines and Thailand offices, tracking every AI initiative from first idea through launch.
+                  </div>
+                </div>
+                {/* The pipeline */}
+                <div>
+                  <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:8}}>The pipeline</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {[
+                      {emoji:"🌱",stage:"Seedling",desc:"An idea someone's actively building — not yet reviewed."},
+                      {emoji:"🪴",stage:"Nursery",desc:"Under leadership review before scaling."},
+                      {emoji:"🌿",stage:"Sprout",desc:"Approved and accelerating — full speed ahead."},
+                      {emoji:"🌸",stage:"Bloom",desc:"In the hands of real users. Gathering feedback."},
+                      {emoji:"🌳",stage:"Thriving",desc:"Live, loved, and making an impact."},
+                    ].map(s=>(
+                      <div key={s.stage} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"7px 10px",background:C.mushroom50,borderRadius:DS.radius.sm}}>
+                        <span style={{fontSize:14,flexShrink:0}}>{s.emoji}</span>
+                        <div>
+                          <span style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom800}}>{s.stage} </span>
+                          <span style={{fontFamily:FF,fontSize:12,color:C.mushroom600}}>{s.desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Built with */}
+                <div>
+                  <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:8}}>Built with</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {["React + Vite","Supabase Auth","Supabase Postgres","Vercel","GitHub","Claude API","Claude Code"].map(t=>(
+                      <span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:500,padding:"3px 9px",borderRadius:DS.radius.full,background:C.kangkong50,color:C.kangkong700,border:"1px solid "+C.kangkong200}}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── What's New ── */}
+            {view === "feed" && helpTab === "whats_new" && (() => {
+              const CL_TAG_COLORS = {
+                Feature: {bg:C.kangkong50,  border:C.kangkong200,  text:C.kangkong700},
+                Fix:     {bg:"#FFF8F8",     border:"#FFCDD2",      text:C.tomato600},
+                Launch:  {bg:C.mango50,     border:C.mango200,     text:C.mango700},
+                Design:  {bg:"#F3E8FF",     border:"#E9D5FF",      text:"#7C3AED"},
+                Beta:    {bg:"#EFF6FF",     border:"#BFDBFE",      text:"#1D4ED8"},
+                MVP:     {bg:"#FFF7ED",     border:"#FED7AA",      text:"#C2410C"},
+              };
+              const MILESTONE_CARD = {
+                Beta:   {bg:"#EFF6FF", border:"#93C5FD", accent:"#1D4ED8", label:"Beta Release"},
+                Launch: {bg:C.mango50,  border:C.mango300, accent:C.mango700, label:"Launch"},
+                MVP:    {bg:"#FFF7ED", border:"#FED7AA",  accent:"#C2410C", label:"MVP Release"},
+              };
+              return (
+                <div style={{display:"flex",flexDirection:"column",gap:0,paddingBottom:16}}>
+                  {/* Admin: add entry */}
+                  {authUser?.isAdmin && (
+                    <div style={{marginBottom:16}}>
+                      {!clFormOpen ? (
+                        <button onClick={()=>setClFormOpen(true)}
+                          style={{width:"100%",padding:"7px 0",borderRadius:DS.radius.sm,border:"1px dashed "+C.mushroom300,background:"none",fontFamily:FF,fontSize:12,color:C.mushroom500,cursor:"pointer",transition:"all 0.15s"}}
+                          onMouseOver={e=>{e.currentTarget.style.borderColor=C.kangkong400;e.currentTarget.style.color=C.kangkong700;}}
+                          onMouseOut={e=>{e.currentTarget.style.borderColor=C.mushroom300;e.currentTarget.style.color=C.mushroom500;}}
+                        >+ Log a change</button>
+                      ) : (
+                        <div style={{border:"1px solid "+C.mushroom200,borderRadius:DS.radius.md,padding:"12px 14px",display:"flex",flexDirection:"column",gap:10,background:C.mushroom50}}>
+                          <div style={{fontFamily:FF,fontSize:12,fontWeight:700,color:C.mushroom800}}>New entry</div>
+                          <input type="date" value={clForm.date} onChange={e=>setClForm(f=>({...f,date:e.target.value}))}
+                            style={{padding:"6px 8px",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:12,color:C.mushroom800,outline:"none"}}/>
+                          <input value={clForm.title} onChange={e=>setClForm(f=>({...f,title:e.target.value}))}
+                            placeholder="Title"
+                            style={{padding:"6px 8px",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:12,color:C.mushroom800,outline:"none"}}/>
+                          <textarea value={clForm.desc} onChange={e=>setClForm(f=>({...f,desc:e.target.value}))}
+                            placeholder="Description"
+                            rows={3} style={{padding:"6px 8px",borderRadius:DS.radius.sm,border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:12,color:C.mushroom800,outline:"none",resize:"vertical"}}/>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                            {CL_TAGS.map(t=>(
+                              <button key={t} onClick={()=>setClForm(f=>({...f,tags:f.tags.includes(t)?f.tags.filter(x=>x!==t):[...f.tags,t]}))}
+                                style={{padding:"3px 9px",borderRadius:DS.radius.full,fontFamily:FF,fontSize:11,fontWeight:500,cursor:"pointer",border:"1px solid "+(clForm.tags.includes(t)?C.kangkong400:C.mushroom200),background:clForm.tags.includes(t)?C.kangkong50:"none",color:clForm.tags.includes(t)?C.kangkong700:C.mushroom500,transition:"all 0.15s"}}
+                              >{t}</button>
+                            ))}
+                          </div>
+                          <label style={{display:"flex",alignItems:"center",gap:6,fontFamily:FF,fontSize:12,color:C.mushroom700,cursor:"pointer"}}>
+                            <input type="checkbox" checked={clForm.isMilestone} onChange={e=>setClForm(f=>({...f,isMilestone:e.target.checked}))}/>
+                            Mark as milestone
+                          </label>
+                          <div style={{display:"flex",gap:6}}>
+                            <button onClick={handleClSave} disabled={clSaving||!clForm.title.trim()||!clForm.date}
+                              style={{flex:1,padding:"7px 0",borderRadius:DS.radius.sm,background:clForm.title.trim()&&clForm.date?C.kangkong700:"#ccc",border:"none",color:C.white,fontFamily:FF,fontSize:12,fontWeight:600,cursor:clForm.title.trim()&&clForm.date?"pointer":"default"}}>
+                              {clSaving?"Saving…":"Save"}
+                            </button>
+                            <button onClick={()=>{setClFormOpen(false);setClForm({date:"",title:"",desc:"",tags:[],isMilestone:false});}}
+                              style={{padding:"7px 14px",borderRadius:DS.radius.sm,background:"none",border:"1px solid "+C.mushroom200,fontFamily:FF,fontSize:12,color:C.mushroom500,cursor:"pointer"}}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {changelog.length === 0 && (
+                    <div style={{fontFamily:FF,fontSize:12,color:C.mushroom400,textAlign:"center",padding:"24px 0"}}>No entries yet.</div>
+                  )}
+
+                  {changelog.map((entry, idx) => {
+                    const isLatest = idx === 0;
+                    const primaryTag = entry.tags[0] || "Feature";
+                    const tc = CL_TAG_COLORS[primaryTag] || CL_TAG_COLORS.Feature;
+                    const mc = MILESTONE_CARD[primaryTag];
+
+                    if (entry.isMilestone && mc) {
+                      return (
+                        <div key={entry.id} style={{marginBottom:16}}>
+                          <div style={{background:mc.bg,border:"1px solid "+mc.border,borderLeft:"4px solid "+mc.accent,borderRadius:DS.radius.md,padding:"12px 14px"}}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                              <span style={{fontFamily:FF,fontSize:10,fontWeight:700,letterSpacing:"0.8px",textTransform:"uppercase",color:mc.accent}}>{mc.label}</span>
+                              <span style={{fontFamily:FF,fontSize:10,color:C.mushroom400}}>{new Date(entry.date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
+                            </div>
+                            <div style={{fontFamily:FF,fontSize:14,fontWeight:800,color:C.mushroom900,marginBottom:5}}>{entry.title}</div>
+                            {entry.desc && <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.6,marginBottom:8}}>{entry.desc}</div>}
+                            <div style={{display:"flex",flexWrap:"wrap",gap:5,alignItems:"center",justifyContent:"space-between"}}>
+                              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                                {entry.tags.map(tag=>{const t2=CL_TAG_COLORS[tag]||CL_TAG_COLORS.Feature;return(<span key={tag} style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:DS.radius.full,background:t2.bg,color:t2.text,border:"1px solid "+t2.border}}>{tag}</span>);})}
+                              </div>
+                              {authUser?.isAdmin && (
+                                <button onClick={()=>onDeleteChangelog(entry.id)} style={{fontFamily:FF,fontSize:10,color:C.tomato500,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Delete</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={entry.id} style={{display:"flex",gap:0,position:"relative"}}>
+                        {idx < changelog.length - 1 && (
+                          <div style={{position:"absolute",left:11,top:24,bottom:0,width:1,background:C.mushroom200,zIndex:0}}/>
+                        )}
+                        <div style={{flexShrink:0,width:23,display:"flex",flexDirection:"column",alignItems:"center",zIndex:1}}>
+                          <div style={{width:11,height:11,borderRadius:"50%",marginTop:8,border:"2px solid "+(isLatest?C.kangkong500:C.mushroom300),background:isLatest?C.kangkong500:C.white}}/>
+                        </div>
+                        <div style={{flex:1,paddingBottom:18}}>
+                          <div style={{fontFamily:FF,fontSize:10,fontWeight:500,color:C.mushroom400,marginBottom:2,marginTop:6}}>
+                            {new Date(entry.date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}
+                          </div>
+                          <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.mushroom900,marginBottom:4}}>{entry.title}</div>
+                          {entry.desc && <div style={{fontFamily:FF,fontSize:12,color:C.mushroom600,lineHeight:1.6,marginBottom:6}}>{entry.desc}</div>}
+                          <div style={{display:"flex",flexWrap:"wrap",gap:5,alignItems:"center",justifyContent:"space-between"}}>
+                            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                              {entry.tags.map(tag=>{const t2=CL_TAG_COLORS[tag]||CL_TAG_COLORS.Feature;return(<span key={tag} style={{fontFamily:FF,fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:DS.radius.full,background:t2.bg,color:t2.text,border:"1px solid "+t2.border}}>{tag}</span>);})}
+                            </div>
+                            {authUser?.isAdmin && (
+                              <button onClick={()=>onDeleteChangelog(entry.id)} style={{fontFamily:FF,fontSize:10,color:C.tomato500,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Delete</button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {(view === "submit" || view === "edit") && (
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -5464,6 +5672,7 @@ export default function SproutAIGarden() {
   // Help panel state
   const [helpOpen,        setHelpOpen]        = useState(false);
   const [helpTab,         setHelpTab]         = useState("feedback");
+  const [changelog,       setChangelog]       = useState([]);
   const [helpItems,       setHelpItems]       = useState([]);
   const [helpFilter,      setHelpFilter]      = useState("all"); // "all" | "report" | "ask"
   const [helpPage,        setHelpPage]        = useState(1);
@@ -5595,6 +5804,7 @@ export default function SproutAIGarden() {
   useEffect(() => {
     if (!authUser) return;
     setDataLoading(true);
+    loadChangelog().then(setChangelog);
     Promise.all([loadProjects(), loadWishes(), loadProfiles(), loadActivityLog()]).then(([projs, wishs, profs, activity]) => {
       const nameMap = Object.fromEntries(profs.map(p => [p.email, p.display_name]));
       const fmtName = (raw) => {
@@ -5710,6 +5920,25 @@ export default function SproutAIGarden() {
   useEffect(()=>{
     if (selected) setSelected(projects.find(p=>p.id===selected.id)||null);
   }, [projects]);
+
+  // ── Changelog ─────────────────────────────────────────────────────────────
+  const changelogIsNew = changelog.length > 0 &&
+    (Date.now() - new Date(changelog[0].date).getTime()) < 14 * 86400000;
+
+  const handleSaveChangelog = async (entry) => {
+    const saved = await saveChangelog(entry);
+    setChangelog(prev => {
+      const updated = entry.id
+        ? prev.map(e => e.id === entry.id ? saved : e)
+        : [saved, ...prev];
+      return updated.sort((a, b) => new Date(b.date) - new Date(a.date));
+    });
+  };
+
+  const handleDeleteChangelog = async (id) => {
+    await deleteChangelog(id);
+    setChangelog(prev => prev.filter(e => e.id !== id));
+  };
 
   // ── Project mutations ─────────────────────────────────────────────────────
 
@@ -6352,6 +6581,10 @@ export default function SproutAIGarden() {
         authUser={authUser}
         helpTab={helpTab}
         setHelpTab={setHelpTab}
+        changelog={changelog}
+        changelogIsNew={changelogIsNew}
+        onSaveChangelog={handleSaveChangelog}
+        onDeleteChangelog={handleDeleteChangelog}
       />
 
       <style>{`

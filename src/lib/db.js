@@ -106,6 +106,24 @@ export const fromWish = (wish) => ({
   claimed_at:       wish.claimedAt       || null,
 })
 
+export const toChangelog = (row) => ({
+  id:          row.id,
+  date:        row.entry_date,
+  title:       row.title,
+  desc:        row.description,
+  tags:        row.tags        || [],
+  isMilestone: row.is_milestone || false,
+  createdAt:   row.created_at,
+})
+
+export const fromChangelog = (entry) => ({
+  entry_date:   entry.date,
+  title:        entry.title,
+  description:  entry.desc,
+  tags:         entry.tags        || [],
+  is_milestone: entry.isMilestone || false,
+})
+
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 export const loadProjects = async () => {
@@ -146,4 +164,27 @@ export const loadNotifications = async () => {
     .order('created_at', { ascending: false })
   if (error) { console.error('loadNotifications:', error); return [] }
   return data
+}
+
+export const loadChangelog = async () => {
+  const { data, error } = await supabase
+    .from('changelog')
+    .select('*')
+    .order('entry_date', { ascending: false })
+  if (error) { console.error('loadChangelog:', error); return [] }
+  return data.map(toChangelog)
+}
+
+export const saveChangelog = async (entry) => {
+  const row = fromChangelog(entry)
+  const { data, error } = entry.id
+    ? await supabase.from('changelog').update(row).eq('id', entry.id).select().single()
+    : await supabase.from('changelog').insert(row).select().single()
+  if (error) throw error
+  return toChangelog(data)
+}
+
+export const deleteChangelog = async (id) => {
+  const { error } = await supabase.from('changelog').delete().eq('id', id)
+  if (error) throw error
 }
