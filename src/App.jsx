@@ -1203,34 +1203,6 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
     return ev ? (projects.find(p => String(p.id) === String(ev.project_id)) || projects[0] || null) : (projects[0] || null);
   })();
 
-  // Now Possible: projects with non-empty descriptions
-  const nowPossible = projects.filter(p => p.description && p.description.trim().length > 20).slice(0, 8);
-
-  // Growth chart: group projects by month using createdAt
-  const growthData = (() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(); d.setMonth(d.getMonth() - i);
-      const key = d.toLocaleDateString("en-US", { month:"short", year:"2-digit" });
-      months.push({ key, count: 0 });
-    }
-    for (const p of projects) {
-      if (!p.createdAt) continue;
-      const d = new Date(p.createdAt);
-      const key = d.toLocaleDateString("en-US", { month:"short", year:"2-digit" });
-      const m = months.find(mo => mo.key === key);
-      if (m) m.count++;
-    }
-    return months;
-  })();
-
-  // Dept coverage: count projects per dept
-  const deptCoverage = (() => {
-    const map = Object.fromEntries(Object.keys(DEPT_ZONES).map(d => [d, 0]));
-    for (const p of projects) { if (p.builtBy && map[p.builtBy] !== undefined) map[p.builtBy]++; }
-    return map;
-  })();
-
   // Week-over-week deltas: count activity in last 7 days per stage
   const weekAgo = Date.now() - 7 * 86400000;
   const weekDeltas = (() => {
@@ -1485,52 +1457,6 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
         );
       })()}
 
-      {/* ── Now Possible ───────────────────────────────────────────────── */}
-      {nowPossible.length > 0 && (
-        <div style={{ marginBottom:20, animation:"fadeUp 0.4s ease 0.1s both" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500 }}>
-              What Sprout is now building
-            </div>
-            <span style={{ fontSize:10, color:C.mushroom400 }}>scroll →</span>
-          </div>
-          <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:4, scrollbarWidth:"none" }}>
-            {nowPossible.map(p => {
-              const sc = STAGE_COLORS[p.stage] || STAGE_COLORS.seedling;
-              const dc = DEPT_COLORS[p.builtBy] || C.kangkong500;
-              return (
-                <div key={p.id}
-                  onClick={() => onSelectProject(p)}
-                  onMouseEnter={e => e.currentTarget.style.boxShadow=DS.shadow.md}
-                  onMouseLeave={e => e.currentTarget.style.boxShadow=DS.shadow.sm}
-                  style={{
-                    minWidth:220, maxWidth:220, background:C.white,
-                    border:`0.5px solid ${C.mushroom200}`,
-                    borderTop:`3px solid ${dc}`,
-                    borderRadius:DS.radius.md, padding:"12px 14px",
-                    boxShadow:DS.shadow.sm, cursor:"pointer", transition:"box-shadow 0.15s",
-                    flexShrink:0,
-                  }}
-                >
-                  <div style={{ fontSize:12, fontWeight:700, color:C.mushroom900, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                    {p.name}
-                  </div>
-                  <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.5, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden", marginBottom:8, minHeight:33 }}>
-                    {p.description}
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:10, color:C.mushroom500 }}>{p.builder}</span>
-                    <span style={{ fontSize:9, fontWeight:600, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, borderRadius:DS.radius.full, padding:"1px 6px" }}>
-                      {STAGE_LABELS[p.stage]}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* ── Two-column body ─────────────────────────────────────────────── */}
       <div style={{ display:"flex", gap:16, alignItems:"start" }}>
 
@@ -1594,47 +1520,6 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* ── Growth Chart ──────────────────────────────────────────────── */}
-          <div style={{ animation:"fadeUp 0.4s ease 0.2s both" }}>
-            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
-              Garden Growth
-            </div>
-            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"14px 16px" }}>
-              {(() => {
-                const maxG = Math.max(...growthData.map(m => m.count), 1);
-                return (
-                  <div>
-                    <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:90, marginBottom:6 }}>
-                      {growthData.map(m => (
-                        <div key={m.key} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                          {m.count > 0 && (
-                            <span style={{ fontSize:9, color:C.kangkong600, fontWeight:700 }}>{m.count}</span>
-                          )}
-                          <div style={{ width:"100%", background:C.mushroom100, borderRadius:"3px 3px 0 0", overflow:"hidden", height:80 }}>
-                            <div style={{
-                              width:"100%",
-                              height: barsReady ? `${(m.count / maxG) * 100}%` : 0,
-                              background: m.count > 0 ? C.kangkong400 : C.mushroom100,
-                              marginTop:"auto",
-                              transition:"height 0.8s ease 0.3s",
-                              borderRadius:"3px 3px 0 0",
-                              display:"flex", alignItems:"flex-end",
-                            }}/>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display:"flex", gap:6 }}>
-                      {growthData.map(m => (
-                        <div key={m.key} style={{ flex:1, textAlign:"center", fontSize:9, color:C.mushroom400 }}>{m.key}</div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           </div>
 
@@ -1795,27 +1680,6 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                 </div>
               </div>
 
-            </div>
-          </div>
-
-          {/* ── Dept Coverage Map ─────────────────────────────────────────── */}
-          <div style={{ animation:"fadeUp 0.4s ease 0.3s both" }}>
-            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
-              Dept Coverage
-            </div>
-            <div style={{ background:C.white, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.md, padding:"14px 16px", maxHeight:300, overflowY:"auto" }}>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
-                {Object.entries(deptCoverage).map(([dept, count]) => {
-                  const bg = count === 0 ? C.mushroom50 : count <= 2 ? C.kangkong50 : count <= 4 ? C.kangkong100 : C.kangkong200;
-                  const textCol = count === 0 ? C.mushroom400 : C.kangkong700;
-                  return (
-                    <div key={dept} style={{ background:bg, borderRadius:DS.radius.sm, padding:"6px 8px", display:"flex", flexDirection:"column", gap:2 }}>
-                      <div style={{ fontSize:9, fontWeight:600, color:textCol, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dept}</div>
-                      <div style={{ fontSize:11, fontWeight:700, color:textCol }}>{count}</div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
 
