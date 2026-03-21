@@ -3602,9 +3602,9 @@ const ContributeModal = ({onClose, onAdd, onAddWish, projects, authUser, initial
   const [gatewayChoice, setGatewayChoice] = React.useState(null);
 
   // Plant form
-  const PLANT_DEPTS = Object.keys(DEPT_ZONES);
+  const SORTED_DEPTS = Object.keys(DEPT_ZONES).sort();
   const [plant, setPlantRaw] = React.useState({
-    name:"", builtBy:PLANT_DEPTS[0], builtFor:[], stage:"seedling",
+    name:"", builtBy:SORTED_DEPTS[0], builtFor:[], stage:"seedling",
     aiAssistant:[], aiAssistantOther:"",
     builderTools:[], builderToolsOther:"",
     agenticFramework:[], agenticFrameworkOther:"",
@@ -3615,8 +3615,6 @@ const ContributeModal = ({onClose, onAdd, onAddWish, projects, authUser, initial
   const setP = (k,v) => setPlantRaw(p=>({...p,[k]:v}));
 
   // Seed form
-  const SEED_DEPTS_VIS = ["All Teams","Alliance","CA","CSM","Data","DevOps","Eng - Aurora","Eng - Prometheus"];
-  const SEED_DEPTS_HID = ["ExCom","Finance","Implementation","Legal","LDU","Marketing","MPS","PeopleOps","Prd - Aurora","Prd - Prometheus","Product Marketing","RevOps","Sales","SolCon"];
   const [seed, setSeedRaw] = React.useState({wishPart1:"", wishPart2:"", title:"", why:"", builtFor:[]});
   const setS = (k,v) => setSeedRaw(p=>{
     const next = {...p,[k]:v};
@@ -3800,13 +3798,12 @@ const ContributeModal = ({onClose, onAdd, onAddWish, projects, authUser, initial
             <div>
               <label style={{display:"block",fontFamily:FF,fontSize:11,fontWeight:700,color:C.mushroom600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>Your team</label>
               <select value={plant.builtBy} onChange={e=>setP("builtBy",e.target.value)} style={{...inputStyle,cursor:"pointer"}}>
-                {PLANT_DEPTS.map(d=><option key={d} value={d}>{d}</option>)}
+                {SORTED_DEPTS.map(d=><option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <ChipPickerCollapse
               label="Who does this help?" required
-              visibleOpts={["Marketing","CSM","Engineering","Data","PeopleOps","RevOps"]}
-              hiddenOpts={["Finance","Sales","ExCom","Product","Legal","Alliance"]}
+              visibleOpts={SORTED_DEPTS} hiddenOpts={[]}
               allOpt="All teams"
               value={plant.builtFor} onChange={v=>setP("builtFor",v)}
             />
@@ -4016,7 +4013,8 @@ const ContributeModal = ({onClose, onAdd, onAddWish, projects, authUser, initial
             </div>
             <ChipPickerCollapse
               label="Who should this be built for?" required
-              visibleOpts={SEED_DEPTS_VIS} hiddenOpts={SEED_DEPTS_HID}
+              visibleOpts={SORTED_DEPTS} hiddenOpts={[]}
+              allOpt="All teams"
               value={seed.builtFor} onChange={v=>setS("builtFor",v)}
             />
           </div>
