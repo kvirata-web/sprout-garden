@@ -104,9 +104,6 @@ export const fromWish = (wish) => ({
   claimed_by:       wish.claimedBy       || null,
   claimed_by_email: wish.claimedByEmail  || null,
   claimed_at:       wish.claimedAt       || null,
-  ready_for_review: wish.readyForReview  || false,
-  prototype_link:   wish.prototypeLink   || null,
-  prototype_note:   wish.prototypeNote   || null,
 })
 
 // ── Queries ───────────────────────────────────────────────────────────────────
