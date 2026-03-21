@@ -5437,19 +5437,9 @@ function HelpPanel({ open, onClose, items, filter, setFilter, page, setPage,
                 <div>
                   <div style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.kangkong800,marginBottom:8}}>Built with</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {["React + Vite","Supabase Auth","Supabase Postgres","Vercel","Resend (email)"].map(t=>(
+                    {["React + Vite","Supabase Auth","Supabase Postgres","Vercel"].map(t=>(
                       <span key={t} style={{fontFamily:FF,fontSize:11,fontWeight:500,padding:"3px 9px",borderRadius:DS.radius.full,background:C.kangkong50,color:C.kangkong700,border:"1px solid "+C.kangkong200}}>{t}</span>
                     ))}
-                  </div>
-                </div>
-                {/* Made by */}
-                <div style={{borderTop:"1px solid "+C.mushroom100,paddingTop:14,display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:32,height:32,borderRadius:"50%",background:C.kangkong600,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <span style={{fontFamily:FF,fontSize:13,fontWeight:700,color:C.white}}>S</span>
-                  </div>
-                  <div>
-                    <div style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom800}}>Sprout Product Team</div>
-                    <div style={{fontFamily:FF,fontSize:11,color:C.mushroom500}}>Philippines · Thailand · 2026</div>
                   </div>
                 </div>
               </div>
