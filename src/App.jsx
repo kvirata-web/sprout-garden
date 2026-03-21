@@ -1067,14 +1067,6 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
     thriving: projects.filter(p => p.stage === "thriving").length,
   };
 
-  const spotlight = (() => {
-    const pool = projects.filter(p => p.stage === "bloom" || p.stage === "thriving");
-    if (!pool.length) return null;
-    // Daily shuffle — same pick all day, rotates each midnight
-    const seed = [...new Date().toDateString()].reduce((a, c) => a + c.charCodeAt(0), 0);
-    return pool[seed % pool.length];
-  })();
-
   // Activity log feed — already sorted newest-first from DB
   const ACTIVITY_DOTS = {
     project_added:          C.mushroom400,
@@ -1392,61 +1384,6 @@ const OverviewDashboard = ({ projects, wishes, activityLog, authUser, onSelectPr
                 );
               })}
             </div>
-          </div>
-
-          {/* ── Project Spotlight ─────────────────────────────────────────── */}
-          <div style={{ animation:"fadeUp 0.4s ease 0.15s both" }}>
-            <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mushroom500, marginBottom:8 }}>
-              Project Spotlight
-            </div>
-            {spotlight ? (
-              <div
-                onMouseEnter={e => { e.currentTarget.style.borderColor=C.kangkong400; e.currentTarget.style.boxShadow=DS.shadow.sm; e.currentTarget.style.transform="translateY(-1px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor=C.kangkong200; e.currentTarget.style.boxShadow="none"; e.currentTarget.style.transform="none"; }}
-                onClick={() => onSelectProject(spotlight)}
-                style={{ background:C.kangkong50, border:`0.5px solid ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"14px 16px", cursor:"pointer", transition:"all 0.18s" }}
-              >
-                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-                  <div style={{ width:6, height:6, borderRadius:"50%", background:C.kangkong500, animation:"ovPulse 2s infinite", flexShrink:0 }}/>
-                  <span style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.kangkong700 }}>Today's spotlight</span>
-                </div>
-                <div style={{ fontSize:16, fontWeight:700, color:C.mushroom900, marginBottom:4 }}>{spotlight.name}</div>
-                {spotlight.description && (
-                  <div style={{ fontSize:12, color:C.mushroom700, lineHeight:1.6, marginBottom:12, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
-                    {spotlight.description}
-                  </div>
-                )}
-                {/* Builder + team row */}
-                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
-                  <div style={{ width:26, height:26, borderRadius:DS.radius.sm, background:C.kangkong100, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:C.kangkong700, flexShrink:0 }}>
-                    {(spotlight.builder || spotlight.builtBy || "?").slice(0,2).toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontSize:12, fontWeight:600, color:C.mushroom900, lineHeight:1.2 }}>
-                      {spotlight.builder || spotlight.builtBy}
-                    </div>
-                    <div style={{ fontSize:11, color:C.mushroom500, lineHeight:1.2 }}>
-                      for <strong style={{ color:C.mushroom700 }}>{builtForDisplay(spotlight.builtFor) || spotlight.builtBy}</strong>
-                      {spotlight.country ? ` · ${spotlight.country}` : ""}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  {(() => { const sc = STAGE_COLORS[spotlight.stage] || STAGE_COLORS.sprout; return <span style={{ fontSize:10, fontWeight:600, background:sc.bg, color:sc.text, border:`0.5px solid ${sc.border}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>{STAGE_LABELS[spotlight.stage] || spotlight.stage}</span>; })()}
-                  {spotlight.builtBy && (
-                    <span style={{ fontSize:10, color:C.mushroom500, background:C.mushroom100, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>{spotlight.builtBy}</span>
-                  )}
-                  {(spotlight.toolUsed || []).slice(0,2).map(tool => (
-                    <span key={tool} style={{ fontSize:10, color:C.mushroom500, background:C.mushroom100, border:`0.5px solid ${C.mushroom200}`, borderRadius:DS.radius.full, padding:"2px 8px" }}>{tool}</span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{ background:C.kangkong50, border:`0.5px dashed ${C.kangkong200}`, borderRadius:DS.radius.md, padding:"28px 14px", textAlign:"center" }}>
-                <div style={{ fontSize:12, fontWeight:500, color:C.kangkong500, marginBottom:4 }}>No spotlight yet</div>
-                <div style={{ fontSize:11, color:C.mushroom500 }}>Projects in Bloom or Thriving will appear here</div>
-              </div>
-            )}
           </div>
 
           {/* ── Tools in Use ──────────────────────────────────────────────── */}
@@ -5682,7 +5619,6 @@ export default function SproutAIGarden() {
               cursor:"pointer",transition:"all 0.15s",
             }}>
               <UserAvatar user={authUser} size={26}/>
-              {authUser.country&&<CountryBadge country={authUser.country}/>}
               <span style={{fontFamily:FF,fontSize:12,fontWeight:600,color:C.mushroom700,maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{authUser.displayName||authUser.email.split("@")[0]}</span>
               {authUser.isAdmin&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.mango100,color:C.mango600,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Admin</span>}
               {authUser.isApprover&&<span style={{fontFamily:FF,fontSize:9,fontWeight:800,background:C.wintermelon100,color:C.wintermelon500,borderRadius:DS.radius.full,padding:"1px 6px",letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>Approver</span>}
